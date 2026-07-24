@@ -275,6 +275,15 @@ quando `tipo_pagamento === 'Pix'` e o pedido ainda não está pago.
    automática de recebimento (exigiria gateway/webhook — Mercado Pago,
    Asaas etc — não construído, decisão deliberada de não adicionar mais
    uma conta/API externa por ora).
-6. Antes de produção: restringir `next.config.ts`'s `images.remotePatterns`
-   (hoje aberto pra qualquer host http/https porque as fotos de produto
-   vêm de fontes variadas) a hosts conhecidos.
+6. ~~Restringir `images.remotePatterns`~~ — **feito**. Checado contra os
+   dados reais (939 produtos, 2026-07-24): só 2 aparecem com
+   `imagem_url` preenchida, hospedadas em exatamente 2 domínios —
+   Supabase Storage (hostname resolvido de `NEXT_PUBLIC_SUPABASE_URL`,
+   restrito a `/storage/v1/object/public/**`) e `imagens.lukz.com.br`
+   (CDN próprio). Qualquer host novo precisa ser adicionado aqui
+   explicitamente — testado ao vivo: host desconhecido → `400`
+   (rejeitado pelo Next), os dois hosts reais → aceitos pela regra.
+   **Achado à parte, não é bug daqui**: a imagem em `imagens.lukz.com.br`
+   está com certificado SSL inválido (curl recusa por padrão) *e*
+   retorna `404` mesmo ignorando o certificado — arquivo realmente
+   quebrado no CDN do usuário, fora do meu alcance corrigir.
