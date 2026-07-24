@@ -53,6 +53,8 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
 - Tema por empresa (cor, logo, nome).
 - **Login do cliente final por telefone/OTP** (`/loja/[slug]/entrar` →
   `/loja/[slug]/conta`), ver seção própria abaixo.
+- **Carrinho e checkout** (`/loja/[slug]/carrinho`, `/loja/[slug]/pedido/[id]`),
+  ver seção própria abaixo.
 
 ## Login do cliente (telefone/OTP)
 
@@ -132,21 +134,60 @@ Supabase (Authentication > Providers > Phone → habilitar; Authentication
 > Hooks > Send SMS Hook → HTTPS → colar a URL do workflow acima).
 Nenhuma mudança de código deve ser necessária depois disso.
 
+## Carrinho e checkout
+
+Reaproveita `carrinho`/`carrinho_itens` (já existiam no banco, sem uso até
+agora). RLS nova escopada por `clientes.auth_user_id = auth.uid()` — aqui,
+diferente de `clientes`, **escrita direta é segura** (sem coluna sensível
+de CRM em jogo, só quantidade/preço do próprio carrinho). Exige login;
+sem carrinho de visitante por enquanto.
+
+Checkout é a função `finalizar_pedido_site(empresa_id, tipo_pagamento,
+observacoes)` (SECURITY DEFINER, migração `checkout_site_proprio`):
+- **Preço e custo nunca vêm do carrinho** — são relidos de `produtos` no
+  momento do checkout (o snapshot em `carrinho_itens` é só para exibição;
+  o cliente não tem como manipular o preço final editando o carrinho).
+- **Achado real ao testar**: existe produto na base com
+  `preco_promocional` MAIOR que `preco` (dado sujo da planilha
+  importada). A função só usa `preco_promocional` quando ele é de fato
+  menor — mesma guarda que a `ProdutoCard`/página de produto já usa pra
+  decidir se mostra "em promoção", agora também protegendo o valor
+  cobrado de verdade.
+- Valida estoque total (soma entre depósitos) antes de criar o pedido —
+  `trg_baixar_estoque` não bloqueia estoque negativo sozinho.
+- Deixa toda a automação existente fazer o resto: `trg_calcular_subtotal_item`
+  calcula subtotal/margem por item, `trigger_atualiza_totais` soma em
+  `pedidos.valor_produtos`, `trg_baixar_estoque` desconta o estoque,
+  `trg_evento_pedido` loga em `eventos_sistema`, `trg_metricas_cliente`
+  atualiza o CRM do cliente — só forneço `valor_total` (produtos + entrega
+  − desconto) no final, que é o único valor que nenhum trigger calcula
+  sozinho.
+- `custo_total`/`lucro_bruto` "reais" (descontando taxas de marketplace
+  etc) só ficam definitivos quando o pedido é marcado `entregue`/`concluido`
+  E `status_pagamento='pago'` no Gestor — comportamento já existente do
+  sistema pra qualquer canal, não é específico do site.
+- **Só retirada por enquanto** — `valor_entrega=0` sempre, sem cálculo de
+  frete/zona de entrega. Maior próximo incremento.
+- Validado via `SET ROLE authenticated` real simulando um cliente de
+  verdade fazendo um pedido de 2 produtos com estoque real, depois
+  desfeito (estoque restaurado, pedido de teste apagado).
+
+Cliente só lê os próprios pedidos (`pedidos_cliente_le_proprio`/
+`itens_pedido_cliente_le_proprio`, SELECT-only, mesmo padrão de
+`clientes`) — necessário pra página de confirmação `/loja/[slug]/pedido/[id]`.
+
 ## O que falta (nessa ordem provável)
 
 1. ~~Identidade do cliente final~~ — **feito**, ver acima (pendente só a
-   configuração do provedor de SMS, que é do usuário).
-2. **Carrinho** — as tabelas `carrinho`/`carrinho_itens` já existem no
-   banco mas hoje só têm policy para `authenticated` (lojista). Precisa de
-   policy nova escopada via `clientes.auth_user_id = auth.uid()` (mesmo
-   padrão da policy de SELECT em `clientes`).
-3. **Checkout / criação de pedido** — inserir em `pedidos`/`itens_pedido`
-   com `origem`/`canal_venda` = algo como `'site_proprio'` (mesmo padrão
-   já usado pra `'ifood'` — os triggers de baixa de estoque, cálculo de
-   margem etc. já funcionam pra qualquer origem, não precisam mudar).
-4. **Pagamento** — hoje não existe gateway integrado. Pix é o mínimo
+   configuração do provedor de mensagem, que é do usuário).
+2. ~~Carrinho~~ — **feito**, ver acima.
+3. ~~Checkout / criação de pedido~~ — **feito**, ver acima (só retirada).
+4. **Entrega com cálculo de frete** — usar `zonas_entrega` (já existe,
+   distância-tiered, usado hoje só no Gestor) pra oferecer entrega no
+   site, não só retirada. Precisa de endereço do cliente + geocoding.
+5. **Pagamento** — hoje não existe gateway integrado. Pix é o mínimo
    viável; `empresas.chave_pix` já existe mas nunca foi usado pra gerar
    cobrança.
-5. Antes de produção: restringir `next.config.ts`'s `images.remotePatterns`
+6. Antes de produção: restringir `next.config.ts`'s `images.remotePatterns`
    (hoje aberto pra qualquer host http/https porque as fotos de produto
    vêm de fontes variadas) a hosts conhecidos.

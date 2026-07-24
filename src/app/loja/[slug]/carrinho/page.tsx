@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
+import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
-import { Button } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { createClient } from "@/lib/supabase/server";
@@ -51,10 +51,11 @@ export default async function CarrinhoPage({
         <span className="text-xl font-bold">{formatarPreco(carrinho.valorTotal)}</span>
       </div>
 
-      {/* TODO: checkout ainda não existe — próximo passo depois do carrinho. */}
-      <Button disabled className="w-full">
-        Finalizar pedido (em breve)
-      </Button>
+      <CheckoutForm
+        slug={slug}
+        empresaId={empresa.id}
+        metodosPagamento={empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]}
+      />
     </div>
   );
 }
