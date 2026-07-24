@@ -1,4 +1,4 @@
-type IconeCategoria =
+export type IconeCategoria =
   | "medico"
   | "comida"
   | "higiene"
@@ -7,7 +7,7 @@ type IconeCategoria =
   | "brinquedo"
   | "pata";
 
-function detectarIcone(categoria: string | null): IconeCategoria {
+export function detectarIcone(categoria: string | null): IconeCategoria {
   const c = (categoria ?? "").toUpperCase();
 
   if (/FARM[ÁA]|DERMATOL|VERM[ÍI]FUG|ANTIPULG|DEDETIZ/.test(c)) return "medico";
@@ -19,7 +19,7 @@ function detectarIcone(categoria: string | null): IconeCategoria {
   return "pata";
 }
 
-function IconeSvg({ tipo, className }: { tipo: IconeCategoria; className?: string }) {
+export function IconeSvg({ tipo, className }: { tipo: IconeCategoria; className?: string }) {
   const props = {
     viewBox: "0 0 24 24",
     fill: "none",

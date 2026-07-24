@@ -46,6 +46,14 @@ export interface ProdutoCatalogo {
   imagem_url_secundaria: string | null;
 }
 
+/** Uma variante (peso/tamanho) de um produto-pai, pra montar as pills de seleção. */
+export interface VarianteProduto {
+  id: string;
+  rotulo: string;
+  preco: number;
+  preco_promocional: number | null;
+}
+
 export interface CategoriaCatalogo {
   id: string;
   empresa_id: string;
