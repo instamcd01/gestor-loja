@@ -51,17 +51,58 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
   (ISR) de 60s — rápido, sempre razoavelmente atualizado, sem precisar de
   rebuild a cada mudança de preço/estoque.
 - Tema por empresa (cor, logo, nome).
+- **Login do cliente final por telefone/OTP** (`/loja/[slug]/entrar` →
+  `/loja/[slug]/conta`), ver seção própria abaixo.
+
+## Login do cliente (telefone/OTP)
+
+Fluxo: telefone → SMS com código de 6 dígitos → confirma → função
+`entrar_ou_criar_cliente(empresa_id, nome)` no Supabase (SECURITY DEFINER)
+vincula ou cria a linha em `clientes` daquela empresa e devolve o id.
+
+- `clientes.auth_user_id` (novo, migração `auth_cliente_final`) é o
+  vínculo com `auth.users`. Índice único em `(empresa_id, auth_user_id)`.
+- O cliente só tem policy de **SELECT** na própria linha
+  (`auth_user_id = auth.uid()`) — de propósito, sem policy de INSERT/UPDATE
+  direta. Toda escrita passa pela função acima, que só toca telefone
+  (já verificado pelo GoTrue, não vem do client) e nome — assim o cliente
+  nunca consegue mexer em `saldo`/`segmento`/`score_fidelidade` etc via um
+  UPDATE cru, mesmo tendo a mesma role Postgres (`authenticated`) que o
+  lojista usa no Gestor.
+- **Não tenta casar telefone com CRM legado por heurística.** Os
+  `telefone` já cadastrados no banco estão em formatos inconsistentes
+  (`(21) 98855-5444`, `2144557788456`, números mascarados 0800 do iFood,
+  etc — dado real, checado antes de escrever essa função). A função só
+  reaproveita uma linha existente se o telefone bater **exatamente** com
+  o que o GoTrue verificou (E.164, ex: `5521987654321`); senão cria uma
+  linha nova. Vai gerar clientes "duplicados" (um do CRM antigo, um novo
+  do site) até os dados antigos serem normalizados — problema conhecido,
+  não resolvido aqui.
+- Header (`AccountLink`) resolve o estado de login **no browser**, não no
+  server — o layout de `/loja/[slug]` é ISR (cacheado entre visitantes);
+  ler cookie/sessão ali forçaria a rota inteira a virar dinâmica e
+  perderia esse cache. `/entrar` e `/conta` são `force-dynamic` (correto,
+  são páginas com dado pessoal, não podem ser cacheadas/compartilhadas).
+
+### ⚠️ Pendência do usuário, fora do código: provedor de SMS
+
+Testado ao vivo — o endpoint de OTP responde `phone_provider_disabled`.
+Supabase Auth **não envia SMS sozinho**, precisa de um provedor terceiro
+configurado em Authentication > Providers > Phone no dashboard do projeto
+(`dwswpwxnzjgoohucngbb`). Twilio é o mais documentado/testado com Supabase
+(tem trial gratuito). Isso exige criar conta própria (e depois pagar por
+SMS enviado) — não é algo que dá pra automatizar por aqui. Até isso ser
+configurado, o fluxo de login está pronto mas não funciona de ponta a
+ponta (a etapa "enviar código" sempre vai falhar).
 
 ## O que falta (nessa ordem provável)
 
-1. **Identidade do cliente final** — ainda não decidido. Candidato mais
-   natural dado o schema existente (`clientes.telefone` é `NOT NULL`,
-   sempre foi a chave de upsert nas integrações de marketplace): login por
-   telefone/OTP via Supabase Auth, não email/senha.
+1. ~~Identidade do cliente final~~ — **feito**, ver acima (pendente só a
+   configuração do provedor de SMS, que é do usuário).
 2. **Carrinho** — as tabelas `carrinho`/`carrinho_itens` já existem no
    banco mas hoje só têm policy para `authenticated` (lojista). Precisa de
-   policy nova escopada ao cliente dono do carrinho, dependente da decisão
-   do item 1.
+   policy nova escopada via `clientes.auth_user_id = auth.uid()` (mesmo
+   padrão da policy de SELECT em `clientes`).
 3. **Checkout / criação de pedido** — inserir em `pedidos`/`itens_pedido`
    com `origem`/`canal_venda` = algo como `'site_proprio'` (mesmo padrão
    já usado pra `'ifood'` — os triggers de baixa de estoque, cálculo de

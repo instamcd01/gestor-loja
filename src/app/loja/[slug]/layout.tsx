@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { AccountLink } from "@/components/auth/account-link";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 
 export const revalidate = 300; // dados de branding mudam raramente
@@ -47,6 +48,9 @@ export default async function LojaLayout({
             </div>
           )}
           <span className="text-lg font-semibold">{empresa.nome}</span>
+          <div className="ml-auto">
+            <AccountLink slug={slug} />
+          </div>
         </div>
       </header>
 

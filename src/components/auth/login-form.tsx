@@ -1,0 +1,154 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { formatarTelefoneBr, paraE164, telefoneValido } from "@/lib/telefone";
+
+type Etapa = "telefone" | "codigo";
+
+export function LoginForm({ empresaId, slug }: { empresaId: string; slug: string }) {
+  const router = useRouter();
+  const [etapa, setEtapa] = useState<Etapa>("telefone");
+  const [telefone, setTelefone] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [nome, setNome] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  async function enviarCodigo(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+
+    if (!telefoneValido(telefone)) {
+      setErro("Digite um telefone válido com DDD.");
+      return;
+    }
+
+    setCarregando(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: paraE164(telefone) });
+    setCarregando(false);
+
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEtapa("codigo");
+  }
+
+  async function confirmarCodigo(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+
+    if (codigo.trim().length < 6) {
+      setErro("Digite o código de 6 dígitos recebido por SMS.");
+      return;
+    }
+
+    setCarregando(true);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      phone: paraE164(telefone),
+      token: codigo.trim(),
+      type: "sms",
+    });
+
+    if (verifyError) {
+      setCarregando(false);
+      setErro(verifyError.message);
+      return;
+    }
+
+    const { error: rpcError } = await supabase.rpc("entrar_ou_criar_cliente", {
+      p_empresa_id: empresaId,
+      p_nome: nome.trim() || null,
+    });
+    setCarregando(false);
+
+    if (rpcError) {
+      setErro(rpcError.message);
+      return;
+    }
+
+    router.push(`/loja/${slug}/conta`);
+    router.refresh();
+  }
+
+  if (etapa === "codigo") {
+    return (
+      <form onSubmit={confirmarCodigo} className="flex flex-col gap-4">
+        <p className="text-sm text-black/60 dark:text-white/60">
+          Enviamos um código por SMS para {formatarTelefoneBr(telefone)}.
+        </p>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="nome" className="text-sm font-medium">
+            Seu nome (só na primeira vez)
+          </label>
+          <input
+            id="nome"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Como podemos te chamar?"
+            className="rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="codigo" className="text-sm font-medium">
+            Código de verificação
+          </label>
+          <input
+            id="codigo"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            placeholder="000000"
+            className="rounded-lg border border-black/10 px-3 py-2 text-center text-lg tracking-[0.5em] outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+          />
+        </div>
+
+        {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+
+        <Button type="submit" disabled={carregando}>
+          {carregando ? "Confirmando..." : "Confirmar"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setEtapa("telefone")}
+          className="text-xs text-black/40 hover:underline dark:text-white/40"
+        >
+          Trocar número
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={enviarCodigo} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="telefone" className="text-sm font-medium">
+          Seu telefone
+        </label>
+        <input
+          id="telefone"
+          inputMode="tel"
+          autoComplete="tel"
+          value={telefone}
+          onChange={(e) => setTelefone(formatarTelefoneBr(e.target.value))}
+          placeholder="(00) 00000-0000"
+          className="rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+        />
+      </div>
+
+      {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+
+      <Button type="submit" disabled={carregando}>
+        {carregando ? "Enviando..." : "Enviar código por SMS"}
+      </Button>
+    </form>
+  );
+}
