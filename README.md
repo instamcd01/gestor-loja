@@ -55,6 +55,19 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
   `/loja/[slug]/conta`), ver seção própria abaixo.
 - **Carrinho e checkout** (`/loja/[slug]/carrinho`, `/loja/[slug]/pedido/[id]`),
   ver seção própria abaixo.
+- **Placeholder por categoria pra produto sem foto** — hoje é a maioria
+  (937 de 939). `ProdutoPlaceholder` mapeia a categoria pra um ícone
+  (cruz médica, tigela, gota, cama...) sobre gradiente com as cores da
+  marca; `ProdutoImagem` (client component) cai nesse placeholder tanto
+  quando `imagem_url` é vazio quanto quando a URL existe mas a imagem
+  falha de verdade ao carregar (achado real testando: um produto tinha
+  link pra um CDN fora do ar e mostrava ícone de imagem quebrada do
+  navegador — pior que não ter foto nenhuma). Fotos reais dependem de
+  pedido feito aos fornecedores das marcas (Whiskas, Pedigree etc.) —
+  decisão deliberada de não fazer scraping de varejista (Petz e
+  similares) pra "resolver" isso: foto de produto é material com
+  direito autoral do fotógrafo/varejista, não fica livre só por o
+  produto em si ser genérico.
 
 ## Login do cliente (telefone/OTP)
 
