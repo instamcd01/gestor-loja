@@ -106,6 +106,20 @@ uma empresa só), as fotos vão pra uma tabela nova, compartilhada entre
   no catálogo, ou tamanho de embalagem diferente do produto real (uma
   foto de embalagem de 500g não pode ir num produto de 60g, isso
   enganaria o cliente sobre o que está comprando).
+- **Achado real, corrigido**: o `coalesce` na view resolve a imagem só
+  pro **site** — o Gestor (app do lojista) lê `produtos.imagem_url`
+  direto da tabela, nunca passa pela view, então a foto não aparecia lá
+  mesmo já aparecendo aqui. Corrigido com dois triggers (migração
+  `auto_preencher_imagem_produto_por_barcode`): um preenche
+  `produtos.imagem_url` automaticamente ao inserir/editar um produto
+  cujo código de barras já tem imagem na biblioteca; outro propaga uma
+  imagem nova/atualizada na biblioteca pra **todo** produto existente
+  (de qualquer empresa) com esse código de barras que ainda não tenha
+  foto própria. Isso fecha o ciclo pros dois lados — app e site — e
+  também cobre produto que já estava cadastrado antes da foto chegar,
+  não só cadastro futuro. Testado ao vivo nos dois sentidos (produto
+  antigo ganhando foto quando ela chega na biblioteca; produto novo já
+  nascendo com foto de um código de barras já conhecido).
 - Imagens vieram em ~35-40MB cada (resolução de impressão) — comprimidas
   pra ~1200px/JPEG 82% (~130-170KB) antes de subir, senão destruiria a
   performance de carregamento do catálogo.
