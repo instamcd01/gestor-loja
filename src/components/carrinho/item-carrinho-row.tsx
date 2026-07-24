@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useTransition } from "react";
+import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ItemCarrinho } from "@/lib/types";
 import { atualizarQuantidade } from "@/lib/carrinho";
 import { formatarPreco } from "@/lib/utils";
@@ -26,9 +26,12 @@ export function ItemCarrinhoRow({
   return (
     <div className={`flex items-center gap-4 py-4 ${pending ? "opacity-50" : ""}`}>
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-black/5 dark:bg-white/5">
-        {item.produto?.imagem_url ? (
-          <Image src={item.produto.imagem_url} alt={item.produto.nome} fill className="object-cover" />
-        ) : null}
+        <ProdutoImagem
+          src={item.produto?.imagem_url ?? null}
+          alt={item.produto?.nome ?? "Produto"}
+          categoria={item.produto?.categoria ?? null}
+          className="object-cover"
+        />
       </div>
 
       <div className="flex-1">

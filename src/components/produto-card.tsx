@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
 
@@ -19,19 +19,13 @@ export function ProdutoCard({
       className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white transition-shadow hover:shadow-lg dark:border-white/10 dark:bg-white/5"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5">
-        {produto.imagem_url ? (
-          <Image
-            src={produto.imagem_url}
-            alt={produto.nome}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-black/30 dark:text-white/30">
-            sem foto
-          </div>
-        )}
+        <ProdutoImagem
+          src={produto.imagem_url}
+          alt={produto.nome}
+          categoria={produto.categoria}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         {produto.destaque && (
           <span className="absolute left-2 top-2 rounded-full bg-[var(--brand-secondary)] px-2.5 py-1 text-xs font-semibold text-white">
             Destaque
