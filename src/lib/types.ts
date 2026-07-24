@@ -25,6 +25,7 @@ export interface EmpresaCatalogo {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  chave_pix: string | null;
 }
 
 export interface ProdutoCatalogo {

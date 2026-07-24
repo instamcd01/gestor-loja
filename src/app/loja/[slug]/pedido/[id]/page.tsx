@@ -1,6 +1,9 @@
 import { notFound, redirect } from "next/navigation";
+import QRCode from "qrcode";
+import { PixPagamento } from "@/components/pedido/pix-pagamento";
 import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
+import { gerarPixCopiaECola } from "@/lib/pix";
 import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
 
@@ -53,6 +56,22 @@ export default async function PedidoPage({
       : { data: [] };
   const nomesPorId = new Map((produtos ?? []).map((p) => [p.id, p.nome]));
 
+  const mostrarPix =
+    pedido.tipo_pagamento === "Pix" && pedido.status_pagamento !== "pago" && !!empresa.chave_pix;
+
+  let qrCodeDataUrl: string | null = null;
+  let copiaECola: string | null = null;
+  if (mostrarPix) {
+    copiaECola = gerarPixCopiaECola({
+      chavePix: empresa.chave_pix!,
+      nomeRecebedor: empresa.nome,
+      cidade: empresa.cidade ?? "BRASIL",
+      valor: pedido.valor_total ?? 0,
+      txid: `PED${pedido.numero_sequencial}`,
+    });
+    qrCodeDataUrl = await QRCode.toDataURL(copiaECola, { margin: 1, width: 384 });
+  }
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 py-8">
       <div className="text-center">
@@ -78,9 +97,14 @@ export default async function PedidoPage({
         </div>
 
         <p className="mt-1 text-xs text-black/50 dark:text-white/50">
-          Pagamento: {pedido.tipo_pagamento} — na retirada
+          Pagamento: {pedido.tipo_pagamento}
+          {pedido.status_pagamento === "pago" ? " — pago" : ""}
         </p>
       </div>
+
+      {mostrarPix && qrCodeDataUrl && copiaECola && (
+        <PixPagamento qrCodeDataUrl={qrCodeDataUrl} copiaECola={copiaECola} />
+      )}
 
       <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mx-auto w-fit">
         Voltar ao catálogo

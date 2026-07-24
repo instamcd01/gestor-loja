@@ -232,6 +232,38 @@ a chave inevitavelmente vai no APK).
 - **Sem CEP-autocomplete** (ViaCEP, que o Gestor já usa) — formulário de
   endereço é só campos de texto simples por enquanto.
 
+## Pagamento (Pix)
+
+Sem gateway/API de pagamento nenhuma — Pix BR Code é um **padrão público
+do Banco Central** (EMV/TLV), dá pra gerar o QR/copia-e-cola sozinho, sem
+integrar com ninguém. `src/lib/pix.ts` monta o payload (`gerarPixCopiaECola`)
+e `qrcode` (npm) renderiza a imagem. Mostrado em `/loja/[slug]/pedido/[id]`
+quando `tipo_pagamento === 'Pix'` e o pedido ainda não está pago.
+
+- **Bem mais completo que o que já existe no Gestor hoje** — a tela de
+  Pix do app (`pagamento_pix_screen.dart`) só mostra a chave crua com
+  botão de copiar (o próprio código comenta "aqui você pode gerar QR
+  code Pix ou lógica real de pagamento"), nunca chegou a gerar um BR
+  Code de verdade. Aqui gera.
+- **Confirmação continua manual** — não existe webhook/gateway avisando
+  quando o Pix realmente caiu; o lojista confirma o pagamento no Gestor
+  do jeito que já faz hoje pra venda presencial em Pix. O QR só carrega
+  os dados de recebimento (chave, nome, cidade, valor, um txid com o
+  número do pedido pra facilitar conferência manual).
+- **CRC16 validado contra o vetor de teste padrão** (CRC-16/CCITT-FALSE
+  de `"123456789"` = `29B1`, conhecido/publicado) antes de confiar na
+  implementação — a estrutura de campos (TLV, GUI `BR.GOV.BCB.PIX`,
+  método de iniciação estático) foi conferida contra duas fontes
+  independentes e o payload final foi verificado campo a campo à mão
+  (cada tamanho declarado bate com o valor real) com a chave Pix real
+  da empresa.
+- `chave_pix` agora também sai em `catalogo_empresas_publico` — não é
+  segredo, é exatamente o dado que a loja quer que quem for pagar veja
+  (mesmo raciocínio do WhatsApp/endereço já expostos).
+- Nome/cidade da loja são normalizados (maiúsculo, sem acento, cortado
+  no tamanho máximo do campo EMV) antes de entrar no payload — exigência
+  do padrão, não é escolha de formatação.
+
 ## O que falta (nessa ordem provável)
 
 1. ~~Identidade do cliente final~~ — **feito**, ver acima (pendente só a
@@ -239,9 +271,10 @@ a chave inevitavelmente vai no APK).
 2. ~~Carrinho~~ — **feito**, ver acima.
 3. ~~Checkout / criação de pedido~~ — **feito**, ver acima.
 4. ~~Entrega com cálculo de frete~~ — **feito**, ver acima.
-5. **Pagamento** — hoje não existe gateway integrado. Pix é o mínimo
-   viável; `empresas.chave_pix` já existe mas nunca foi usado pra gerar
-   cobrança.
+5. ~~Pagamento (Pix)~~ — **feito**, ver acima. Falta só uma confirmação
+   automática de recebimento (exigiria gateway/webhook — Mercado Pago,
+   Asaas etc — não construído, decisão deliberada de não adicionar mais
+   uma conta/API externa por ora).
 6. Antes de produção: restringir `next.config.ts`'s `images.remotePatterns`
    (hoje aberto pra qualquer host http/https porque as fotos de produto
    vêm de fontes variadas) a hosts conhecidos.
