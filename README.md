@@ -143,7 +143,8 @@ de CRM em jogo, só quantidade/preço do próprio carrinho). Exige login;
 sem carrinho de visitante por enquanto.
 
 Checkout é a função `finalizar_pedido_site(empresa_id, tipo_pagamento,
-observacoes)` (SECURITY DEFINER, migração `checkout_site_proprio`):
+tipo_entrega, zona_id, observacoes)` (SECURITY DEFINER, migração
+`checkout_site_proprio`, estendida em `entrega_site_proprio`):
 - **Preço e custo nunca vêm do carrinho** — são relidos de `produtos` no
   momento do checkout (o snapshot em `carrinho_itens` é só para exibição;
   o cliente não tem como manipular o preço final editando o carrinho).
@@ -166,8 +167,7 @@ observacoes)` (SECURITY DEFINER, migração `checkout_site_proprio`):
   etc) só ficam definitivos quando o pedido é marcado `entregue`/`concluido`
   E `status_pagamento='pago'` no Gestor — comportamento já existente do
   sistema pra qualquer canal, não é específico do site.
-- **Só retirada por enquanto** — `valor_entrega=0` sempre, sem cálculo de
-  frete/zona de entrega. Maior próximo incremento.
+- Suporta **retirada ou entrega**, ver seção própria abaixo.
 - Validado via `SET ROLE authenticated` real simulando um cliente de
   verdade fazendo um pedido de 2 produtos com estoque real, depois
   desfeito (estoque restaurado, pedido de teste apagado).
@@ -176,15 +176,69 @@ Cliente só lê os próprios pedidos (`pedidos_cliente_le_proprio`/
 `itens_pedido_cliente_le_proprio`, SELECT-only, mesmo padrão de
 `clientes`) — necessário pra página de confirmação `/loja/[slug]/pedido/[id]`.
 
+## Entrega e cálculo de frete
+
+Reaproveita `zonas_entrega` (faixas de distância com preço, já existia,
+usada até agora só pelo Gestor) e a mesma técnica do app Flutter
+(`DistanciaService`): distância real de rota via Google Distance Matrix
+API, não linha reta — mesma chave já usada lá, agora como
+`GOOGLE_MAPS_API_KEY` **sem** prefixo `NEXT_PUBLIC_` (só roda no
+servidor, nunca chega no bundle do browser — diferente do Flutter, onde
+a chave inevitavelmente vai no APK).
+
+- `atualizar_endereco_cliente` (SECURITY DEFINER, mesmo padrão de
+  `entrar_ou_criar_cliente`) grava o endereço do cliente em `clientes`
+  (colunas que já existiam, usadas até agora só pelo cadastro do Gestor).
+- `calcular_frete_site(empresa_id, distancia_km, subtotal)` (SECURITY
+  DEFINER, `stable`, liberado pra `anon` também) acha a zona que cobre a
+  distância e já aplica frete grátis quando `subtotal >= valor_minimo_frete_gratis`
+  — mesma lógica exata de `ZonaEntrega.cobreDistancia`/
+  `opcao_entrega_screen.dart` no Gestor, replicada aqui.
+- `src/lib/frete.ts` (marcado `import "server-only"`) monta os endereços
+  no mesmo formato do `DistanciaService._montarEndereco`, chama a
+  Distance Matrix API, e então `calcular_frete_site`.
+- `finalizar_pedido_site` ganhou `p_tipo_entrega`/`p_zona_id`: **nunca
+  aceita o valor do frete como número cru** — só um `zona_id`, que a
+  função relê do banco (`zonas_entrega.valor`/`valor_minimo_frete_gratis`)
+  e recalcula contra o `valor_produtos` real que ela mesma acabou de
+  montar. Fecha o mesmo tipo de risco já tratado pro preço de produto:
+  um cliente chamando a função direto (fora da UI) não consegue forçar
+  frete grátis nem um valor arbitrário, só uma das faixas que o próprio
+  lojista já configurou. **Gap conhecido e aceito**: nada impede tecnicamente
+  esse mesmo cliente de escolher uma faixa mais barata que sua distância
+  real — a distância só é verificada no Next.js (Google API), não dá pra
+  reverificar dentro do Postgres sem uma chamada HTTP síncrona. Risco
+  baixo (só desconta um pouco o frete, nunca zera preço de produto).
+- Grava `pedidos.metadata->>'entregaSelecionada'` com o nome da zona só
+  quando é entrega — é a chave que `Venda.temEntrega`
+  (`valorEntrega > 0 || entregaSelecionada.isNotEmpty`) já lê no Gestor,
+  necessária pra um pedido de entrega com frete grátis (`valorEntrega=0`)
+  ainda ser reconhecido como entrega pelo app do lojista.
+- Endereço da loja (`empresas.endereco/cidade/estado/cep`) agora também
+  sai em `catalogo_empresas_publico` — seguro de expor (é o endereço de
+  retirada, faz sentido o cliente ver de qualquer forma) e necessário
+  como origem do cálculo de rota.
+- **Achado, não corrigido aqui**: `CarrinhoProvider.entregaSelecionadaId`
+  no Gestor tem fallback `'Retirada na Loja'` (string não-vazia) mesmo
+  pra pedidos sem entrega — o que faz `temEntrega` avaliar `true` também
+  pra retirada nesse fluxo específico (bug pré-existente, não deste
+  site). Aqui não escrevo `entregaSelecionada` pra retirada, seguindo a
+  convenção correta (a mesma que a ingestão do iFood já usa).
+- Testado ao vivo, ponta a ponta, via `SET ROLE authenticated`: endereço
+  salvo, frete calculado e cobrado certo (`R$4,99` pra 2km/subtotal
+  R$2,99, frete grátis pra subtotal ≥ R$30), pedido sem endereço rejeitado
+  corretamente. Chamada real à Distance Matrix API confirmada funcionando
+  fora do fluxo do site também (curl direto).
+- **Sem CEP-autocomplete** (ViaCEP, que o Gestor já usa) — formulário de
+  endereço é só campos de texto simples por enquanto.
+
 ## O que falta (nessa ordem provável)
 
 1. ~~Identidade do cliente final~~ — **feito**, ver acima (pendente só a
    configuração do provedor de mensagem, que é do usuário).
 2. ~~Carrinho~~ — **feito**, ver acima.
-3. ~~Checkout / criação de pedido~~ — **feito**, ver acima (só retirada).
-4. **Entrega com cálculo de frete** — usar `zonas_entrega` (já existe,
-   distância-tiered, usado hoje só no Gestor) pra oferecer entrega no
-   site, não só retirada. Precisa de endereço do cliente + geocoding.
+3. ~~Checkout / criação de pedido~~ — **feito**, ver acima.
+4. ~~Entrega com cálculo de frete~~ — **feito**, ver acima.
 5. **Pagamento** — hoje não existe gateway integrado. Pix é o mínimo
    viável; `empresas.chave_pix` já existe mas nunca foi usado pra gerar
    cobrança.

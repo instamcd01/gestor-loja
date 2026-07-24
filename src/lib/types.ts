@@ -21,6 +21,10 @@ export interface EmpresaCatalogo {
   metodos_pagamento_ativos: string[] | null;
   horario_funcionamento: Record<string, { abre?: string; fecha?: string; aberto?: boolean }> | null;
   aceita_pedidos_online: boolean;
+  endereco: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
 }
 
 export interface ProdutoCatalogo {
@@ -60,4 +64,21 @@ export interface Carrinho {
   id: string | null;
   itens: ItemCarrinho[];
   valorTotal: number;
+}
+
+export interface EnderecoCliente {
+  endereco: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
+  complemento: string | null;
+}
+
+export interface OpcaoFrete {
+  zona_id: string;
+  zona_nome: string;
+  valor: number;
+  frete_gratis: boolean;
 }

@@ -2,35 +2,196 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { finalizarPedido } from "@/lib/checkout";
+import { finalizarPedido, obterOpcaoFrete } from "@/lib/checkout";
+import { salvarEndereco } from "@/lib/cliente";
+import type { EnderecoCliente } from "@/lib/types";
+import { formatarPreco } from "@/lib/utils";
+
+const ENDERECO_VAZIO: EnderecoCliente = {
+  endereco: "",
+  numero: "",
+  bairro: "",
+  cidade: "",
+  estado: "",
+  cep: "",
+  complemento: "",
+};
+
+type TipoEntrega = "retirada" | "entrega";
 
 export function CheckoutForm({
   slug,
   empresaId,
   metodosPagamento,
+  enderecoEmpresa,
+  subtotal,
+  enderecoSalvo,
 }: {
   slug: string;
   empresaId: string;
   metodosPagamento: string[];
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  subtotal: number;
+  enderecoSalvo: EnderecoCliente | null;
 }) {
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   const [observacoes, setObservacoes] = useState("");
-  const [carregando, setCarregando] = useState(false);
+  const [endereco, setEndereco] = useState<EnderecoCliente>(enderecoSalvo ?? ENDERECO_VAZIO);
+  const [frete, setFrete] = useState<Awaited<ReturnType<typeof obterOpcaoFrete>> | null>(null);
+  const [calculando, setCalculando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  async function confirmar() {
-    setCarregando(true);
+  function mudarTipoEntrega(novo: TipoEntrega) {
+    setTipoEntrega(novo);
+    setFrete(null);
     setErro(null);
-    const resultado = await finalizarPedido(slug, empresaId, tipoPagamento, observacoes);
+  }
+
+  function campoPreenchido(campo: keyof EnderecoCliente) {
+    return (endereco[campo] ?? "").trim().length > 0;
+  }
+
+  const enderecoCompleto =
+    campoPreenchido("endereco") &&
+    campoPreenchido("numero") &&
+    campoPreenchido("bairro") &&
+    campoPreenchido("cidade") &&
+    campoPreenchido("estado") &&
+    campoPreenchido("cep");
+
+  async function calcularFreteAgora() {
+    setCalculando(true);
+    setErro(null);
+
+    const salvo = await salvarEndereco(empresaId, endereco);
+    if (!salvo.ok) {
+      setCalculando(false);
+      setErro(salvo.erro);
+      return;
+    }
+
+    const resultado = await obterOpcaoFrete(empresaId, enderecoEmpresa, subtotal);
+    setCalculando(false);
+    setFrete(resultado);
+  }
+
+  async function confirmar() {
+    setConfirmando(true);
+    setErro(null);
+
+    const zonaId = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao.zona_id : null;
+    const resultado = await finalizarPedido(slug, empresaId, tipoPagamento, tipoEntrega, zonaId, observacoes);
+
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
-    setCarregando(false);
+    setConfirmando(false);
     setErro(resultado.erro);
   }
+
+  const podeConfirmar = tipoEntrega === "retirada" || (frete?.disponivel ?? false);
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-4 dark:border-white/10">
       <div>
-        <p className="mb-2 text-sm font-medium">Forma de pagamento (na retirada)</p>
+        <p className="mb-2 text-sm font-medium">Retirada ou entrega</p>
+        <div className="flex gap-2">
+          {(["retirada", "entrega"] as const).map((opcao) => (
+            <button
+              key={opcao}
+              type="button"
+              onClick={() => mudarTipoEntrega(opcao)}
+              className={`rounded-full border px-4 py-1.5 text-sm ${
+                tipoEntrega === opcao
+                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                  : "border-black/10 dark:border-white/10"
+              }`}
+            >
+              {opcao === "retirada" ? "Retirar na loja" : "Entrega"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tipoEntrega === "entrega" && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-black/5 p-4 dark:border-white/10">
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              placeholder="Rua"
+              value={endereco.endereco ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, endereco: e.target.value })}
+              className="col-span-2 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              placeholder="Número"
+              value={endereco.numero ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, numero: e.target.value })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              placeholder="Bairro"
+              value={endereco.bairro ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, bairro: e.target.value })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              placeholder="Complemento (opcional)"
+              value={endereco.complemento ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, complemento: e.target.value })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              placeholder="Cidade"
+              value={endereco.cidade ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, cidade: e.target.value })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              placeholder="UF"
+              maxLength={2}
+              value={endereco.estado ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, estado: e.target.value.toUpperCase() })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              placeholder="CEP"
+              value={endereco.cep ?? ""}
+              onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })}
+              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+          </div>
+
+          <Button
+            variant="secondary"
+            onClick={calcularFreteAgora}
+            disabled={!enderecoCompleto || calculando}
+          >
+            {calculando ? "Calculando..." : "Calcular frete"}
+          </Button>
+
+          {frete && frete.disponivel && (
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              {frete.opcao.frete_gratis
+                ? "Frete grátis!"
+                : `Frete (${frete.opcao.zona_nome}): ${formatarPreco(frete.opcao.valor)}`}
+            </p>
+          )}
+          {frete && !frete.disponivel && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {frete.motivo === "fora_de_area"
+                ? "Esse endereço está fora da nossa área de entrega."
+                : "Não foi possível calcular o frete para esse endereço."}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Forma de pagamento (na retirada/entrega)</p>
         <div className="flex flex-wrap gap-2">
           {metodosPagamento.map((metodo) => (
             <label
@@ -70,13 +231,12 @@ export function CheckoutForm({
 
       {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
 
-      <Button onClick={confirmar} disabled={carregando} className="w-full">
-        {carregando ? "Confirmando..." : "Confirmar pedido"}
+      <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="w-full">
+        {confirmando ? "Confirmando..." : "Confirmar pedido"}
       </Button>
 
       <p className="text-center text-xs text-black/40 dark:text-white/40">
-        Retirada na loja. Pedido é confirmado direto com o lojista — sem pagamento online por
-        enquanto.
+        Pedido é confirmado direto com o lojista — sem pagamento online por enquanto.
       </p>
     </div>
   );

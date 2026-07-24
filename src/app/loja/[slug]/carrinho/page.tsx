@@ -3,6 +3,7 @@ import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
+import { getEnderecoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
 
@@ -23,7 +24,10 @@ export default async function CarrinhoPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/loja/${slug}/entrar`);
 
-  const carrinho = await getCarrinho(empresa.id);
+  const [carrinho, enderecoSalvo] = await Promise.all([
+    getCarrinho(empresa.id),
+    getEnderecoCliente(empresa.id),
+  ]);
 
   if (!carrinho.id || carrinho.itens.length === 0) {
     return (
@@ -55,6 +59,14 @@ export default async function CarrinhoPage({
         slug={slug}
         empresaId={empresa.id}
         metodosPagamento={empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]}
+        enderecoEmpresa={{
+          endereco: empresa.endereco,
+          cidade: empresa.cidade,
+          estado: empresa.estado,
+          cep: empresa.cep,
+        }}
+        subtotal={carrinho.valorTotal}
+        enderecoSalvo={enderecoSalvo}
       />
     </div>
   );
