@@ -43,6 +43,7 @@ export interface ProdutoCatalogo {
   permite_fracionamento: boolean;
   destaque: boolean;
   produto_pai_id: string | null;
+  imagem_url_secundaria: string | null;
 }
 
 export interface CategoriaCatalogo {

@@ -68,6 +68,51 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
   direito autoral do fotógrafo/varejista, não fica livre só por o
   produto em si ser genérico.
 - **Busca e filtro por categoria**, ver seção própria abaixo.
+- **Biblioteca de fotos compartilhada por código de barras** entre
+  empresas do sistema (não só um campo preso a um produto/empresa),
+  ver seção própria abaixo.
+
+## Fotos de produto compartilhadas por código de barras
+
+Um fornecedor (Quatree) mandou fotos oficiais de embalagem — primeira
+leva real de fotos de produto do projeto, além das 2 que já existiam.
+Em vez de gravar direto em `produtos.imagem_url` (preso a uma linha,
+uma empresa só), as fotos vão pra uma tabela nova, compartilhada entre
+**todas** as empresas do sistema:
+
+- `catalogo_imagens_barcode` (`codigo_barras` PK, `imagem_url`,
+  `imagem_url_secundaria`, `origem` pra auditoria) — RLS habilitado,
+  **sem nenhuma policy** de propósito. Ninguém acessa essa tabela
+  direto, nem o site nem o Gestor; só a view faz o join, do mesmo jeito
+  que as outras views públicas desse projeto já bypassam RLS.
+- `catalogo_produtos_publico` agora resolve `imagem_url`/
+  `imagem_url_secundaria` com `coalesce(produtos.imagem_url, ...)` —
+  **`produtos.imagem_url` continua existindo como override manual** (se
+  um lojista quiser uma foto própria diferente da compartilhada), mas
+  o fallback por código de barras é quem resolve a maioria dos casos.
+  Testado ao vivo com o campo do produto propositalmente `null`, pra
+  confirmar que o fallback funciona de verdade, não só no papel.
+- **Por que isso importa pro sistema como um todo**: produtos de marca
+  nacional (Whiskas, Pedigree, Quatree...) se repetem entre lojistas
+  diferentes que usam o Gestor — o mesmo EAN vendido por duas empresas
+  diferentes agora herda a mesma foto automaticamente, sem cada uma
+  precisar pedir/subir a própria.
+- **Verificação rigorosa antes de aplicar** (a pasta do fornecedor tinha
+  bem mais imagens do que produtos com correspondência real e
+  confiável): de ~20 arquivos recebidos, só 2 tinham frente de
+  embalagem batendo exatamente com um produto do catálogo por nome
+  *e* tamanho — o resto foi descartado por ser só verso (tabela
+  nutricional, não serve como foto principal), sabor sem correspondência
+  no catálogo, ou tamanho de embalagem diferente do produto real (uma
+  foto de embalagem de 500g não pode ir num produto de 60g, isso
+  enganaria o cliente sobre o que está comprando).
+- Imagens vieram em ~35-40MB cada (resolução de impressão) — comprimidas
+  pra ~1200px/JPEG 82% (~130-170KB) antes de subir, senão destruiria a
+  performance de carregamento do catálogo.
+- `produtos.imagem_url_secundaria` (nova coluna) + `GaleriaProduto`
+  (client component, miniaturas clicáveis) mostram frente e verso na
+  página de produto — carrinho/card do catálogo continuam mostrando só
+  a foto principal, como é padrão em e-commerce.
 
 ## Busca e filtro no catálogo
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AdicionarCarrinhoButton } from "@/components/carrinho/adicionar-carrinho-button";
-import { ProdutoImagem } from "@/components/produto-imagem";
+import { GaleriaProduto } from "@/components/galeria-produto";
 import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug, getProdutoCatalogo } from "@/lib/catalogo";
 import { formatarPreco } from "@/lib/utils";
@@ -42,16 +42,12 @@ export default async function ProdutoPage({
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/5 dark:bg-white/5">
-        <ProdutoImagem
-          src={produto.imagem_url}
-          alt={produto.nome}
-          categoria={produto.categoria}
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover"
-          priority
-        />
-      </div>
+      <GaleriaProduto
+        nome={produto.nome}
+        categoria={produto.categoria}
+        imagemPrincipal={produto.imagem_url}
+        imagemSecundaria={produto.imagem_url_secundaria}
+      />
 
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold">{produto.nome}</h1>
