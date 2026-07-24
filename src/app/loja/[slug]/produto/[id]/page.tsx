@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { AdicionarCarrinhoButton } from "@/components/carrinho/adicionar-carrinho-button";
 import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug, getProdutoCatalogo } from "@/lib/catalogo";
 import { formatarPreco } from "@/lib/utils";
@@ -78,12 +79,11 @@ export default async function ProdutoPage({
           </p>
         )}
 
-        {/*
-          TODO: botão "Adicionar ao carrinho" — depende da estratégia de
-          identidade do cliente (sessão anônima vs. login por telefone)
-          ainda não decidida. Ver README.
-        */}
-        <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-4 w-fit">
+        <div className="mt-2">
+          <AdicionarCarrinhoButton slug={slug} empresaId={dados.empresa.id} produtoId={produto.id} />
+        </div>
+
+        <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-2 w-fit">
           ← Voltar ao catálogo
         </ButtonLink>
       </div>

@@ -84,16 +84,53 @@ vincula ou cria a linha em `clientes` daquela empresa e devolve o id.
   perderia esse cache. `/entrar` e `/conta` são `force-dynamic` (correto,
   são páginas com dado pessoal, não podem ser cacheadas/compartilhadas).
 
-### ⚠️ Pendência do usuário, fora do código: provedor de SMS
+### Entrega do código: WhatsApp via Send SMS Hook (não Twilio)
 
-Testado ao vivo — o endpoint de OTP responde `phone_provider_disabled`.
-Supabase Auth **não envia SMS sozinho**, precisa de um provedor terceiro
-configurado em Authentication > Providers > Phone no dashboard do projeto
-(`dwswpwxnzjgoohucngbb`). Twilio é o mais documentado/testado com Supabase
-(tem trial gratuito). Isso exige criar conta própria (e depois pagar por
-SMS enviado) — não é algo que dá pra automatizar por aqui. Até isso ser
-configurado, o fluxo de login está pronto mas não funciona de ponta a
-ponta (a etapa "enviar código" sempre vai falhar).
+Usuário não quis Twilio. O canal WhatsApp nativo do Supabase só existe via
+Twilio/Twilio Verify, então em vez disso usamos o **Send SMS Hook**
+(Authentication > Hooks no dashboard do Supabase) — um endpoint HTTPS
+próprio assume o envio, o Supabase continua cuidando de gerar/validar o
+OTP e a sessão. O endpoint é um workflow n8n:
+
+- Workflow `Site - Enviar OTP Login via WhatsApp` (n8n, id `vvSbhI6JWIqxUvhp`).
+  A URL completa do webhook **não fica registrada aqui de propósito** — o
+  path é um token aleatório que funciona como a única proteção desse
+  endpoint (ver abaixo), então colar a URL num arquivo versionado
+  anularia essa proteção. Pegar a URL direto no editor do workflow no n8n
+  quando for configurar o hook no Supabase.
+  Valida o payload, manda template `AUTHENTICATION` via WhatsApp Cloud API
+  (Meta Graph API, `POST /{phone-number-id}/messages`, botão `copy_code`),
+  loga em `eventos_sistema` (`tipo_evento` `site_login_otp_enviado`/`_falha`),
+  responde no formato que o Supabase espera (`{}`/200 ou
+  `{"error":{"http_code":...}}`/erro).
+- **Sem verificação de assinatura HMAC real** — confirmado ao vivo que o
+  node Crypto nativo do n8n não sabe decodificar uma chave em base64 (o
+  que o padrão Standard Webhooks do Supabase exige) e que Code node com
+  `require('crypto')` está bloqueado nessa instância. A proteção real hoje
+  é só o path do webhook ser um token aleatório de 48 hex chars — trade-off
+  deliberado, não é criptograficamente equivalente a uma assinatura
+  verificada. Dá pra corrigir depois configurando
+  `NODE_FUNCTION_ALLOW_BUILTIN=crypto` no servidor do n8n.
+
+### ⚠️ Pendência do usuário, fora do código: verificação de negócio na Meta
+
+Testado ao vivo, ponta a ponta — tudo funciona (validação, formatação,
+log, resposta) exceto o envio real: a Meta recusa `(#132001) Template
+name does not exist`, porque **o template de Authentication não existe**
+e não dá pra criar um (`POST /message_templates` retorna "esta conta não
+tem permissão para criar um modelo de mensagem") até a empresa concluir a
+**verificação de negócio no Meta Business Suite**. É processo deles
+(documentos da empresa), fora do meu alcance. A WABA em uso hoje
+(id termina em `...813`) inclusive ainda se chama "Test WhatsApp Business
+Account" — nunca saiu do modo de teste padrão do Cloud API.
+
+Assim que a verificação for concluída: recriar o template (JSON já
+pronto, testado contra a API — `name: login_codigo_verificacao`,
+`language: pt_BR`, categoria `AUTHENTICATION`, botão OTP `copy_code`),
+esperar aprovação, e então configurar o Send SMS Hook no dashboard do
+Supabase (Authentication > Providers > Phone → habilitar; Authentication
+> Hooks > Send SMS Hook → HTTPS → colar a URL do workflow acima).
+Nenhuma mudança de código deve ser necessária depois disso.
 
 ## O que falta (nessa ordem provável)
 

@@ -46,3 +46,18 @@ export interface CategoriaCatalogo {
   nome: string;
   ordem: number | null;
 }
+
+export interface ItemCarrinho {
+  id: string;
+  produto_id: string;
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+  produto: { nome: string; imagem_url: string | null } | null;
+}
+
+export interface Carrinho {
+  id: string | null;
+  itens: ItemCarrinho[];
+  valorTotal: number;
+}

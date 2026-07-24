@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountLink } from "@/components/auth/account-link";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
@@ -48,7 +49,10 @@ export default async function LojaLayout({
             </div>
           )}
           <span className="text-lg font-semibold">{empresa.nome}</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <Link href={`/loja/${slug}/carrinho`} className="text-sm font-medium hover:underline">
+              Carrinho
+            </Link>
             <AccountLink slug={slug} />
           </div>
         </div>
