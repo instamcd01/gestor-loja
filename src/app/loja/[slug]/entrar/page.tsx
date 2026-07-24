@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { DevLoginButton } from "@/components/auth/dev-login-button";
 import { LoginForm } from "@/components/auth/login-form";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +28,7 @@ export default async function EntrarPage({
         <p className="text-sm text-black/50 dark:text-white/50">{empresa.nome}</p>
       </div>
       <LoginForm empresaId={empresa.id} slug={slug} />
+      <DevLoginButton slug={slug} />
     </div>
   );
 }
