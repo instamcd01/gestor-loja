@@ -16,12 +16,26 @@ export async function getEmpresaPorSlug(slug: string): Promise<EmpresaCatalogo |
   return data;
 }
 
-export async function getProdutosCatalogo(empresaId: string): Promise<ProdutoCatalogo[]> {
+export async function getProdutosCatalogo(
+  empresaId: string,
+  filtros?: { busca?: string; categoria?: string },
+): Promise<ProdutoCatalogo[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("catalogo_produtos_publico")
-    .select("*")
-    .eq("empresa_id", empresaId)
+  let query = supabase.from("catalogo_produtos_publico").select("*").eq("empresa_id", empresaId);
+
+  if (filtros?.busca) {
+    query = query.ilike("nome", `%${filtros.busca}%`);
+  }
+  if (filtros?.categoria) {
+    // "Outros" é o rótulo pra categoria vazia (ver getCategoriasComContagem)
+    // — precisa de IS NULL, não IGUAL A 'Outros' (que nunca bate com null).
+    query =
+      filtros.categoria === "Outros"
+        ? query.is("categoria", null)
+        : query.eq("categoria", filtros.categoria);
+  }
+
+  const { data, error } = await query
     .order("destaque", { ascending: false })
     .order("nome", { ascending: true });
 
@@ -30,6 +44,38 @@ export async function getProdutosCatalogo(empresaId: string): Promise<ProdutoCat
     return [];
   }
   return data ?? [];
+}
+
+/**
+ * Categorias com contagem, derivadas de `produtos.categoria` (texto
+ * livre, com dado real) — não da tabela `categorias` dedicada, que
+ * existe mas está praticamente vazia nesse projeto. Usado pra montar
+ * os filtros; busca só a coluna categoria (leve, sem trazer os
+ * produtos inteiros).
+ */
+export async function getCategoriasComContagem(
+  empresaId: string,
+): Promise<{ categoria: string; total: number }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("categoria")
+    .eq("empresa_id", empresaId);
+
+  if (error) {
+    console.error("Erro ao buscar categorias com contagem:", error.message);
+    return [];
+  }
+
+  const contagem = new Map<string, number>();
+  for (const { categoria } of data ?? []) {
+    const chave = categoria ?? "Outros";
+    contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+  }
+
+  return [...contagem.entries()]
+    .map(([categoria, total]) => ({ categoria, total }))
+    .sort((a, b) => b.total - a.total);
 }
 
 export async function getProdutoCatalogo(

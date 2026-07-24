@@ -47,9 +47,8 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
 
 ## O que existe
 
-- Catálogo público (listagem + página de produto), SSR com revalidação
-  (ISR) de 60s — rápido, sempre razoavelmente atualizado, sem precisar de
-  rebuild a cada mudança de preço/estoque.
+- Catálogo público (listagem + página de produto), SSR — sem ISR na
+  listagem desde que busca/filtro existem (ver seção própria abaixo).
 - Tema por empresa (cor, logo, nome).
 - **Login do cliente final por telefone/OTP** (`/loja/[slug]/entrar` →
   `/loja/[slug]/conta`), ver seção própria abaixo.
@@ -68,6 +67,40 @@ personalização visual) são aplicadas por tenant via CSS vars no layout de
   similares) pra "resolver" isso: foto de produto é material com
   direito autoral do fotógrafo/varejista, não fica livre só por o
   produto em si ser genérico.
+- **Busca e filtro por categoria**, ver seção própria abaixo.
+
+## Busca e filtro no catálogo
+
+Guiado por URL (`?q=...&categoria=...`), não estado só no browser —
+resultado é link compartilhável/indexável, e não precisa mandar os 541
+produtos pro cliente pra filtrar em JS. Isso significa que
+`/loja/[slug]` **deixou de ser ISR** (usar `searchParams` num Server
+Component força renderização dinâmica pra rota inteira) — troca
+deliberada, performance por funcionalidade real de busca; catálogo é
+pequeno o bastante (poucas centenas de produtos) pra uma query no
+Postgres a cada request não ser problema.
+
+- `BuscaCatalogo` (client) — input com debounce de 350ms, atualiza `?q=`
+  via `router.replace` (não polui o histórico do navegador a cada tecla).
+- `FiltroCategorias` (client) — pills com contagem por categoria
+  (`getCategoriasComContagem`, derivada de `produtos.categoria` — a
+  tabela `categorias` dedicada existe mas está praticamente vazia nesse
+  projeto, não é a fonte real de dado).
+- **Sem estado "sem foto" (`categoria = null`) ≠ string `'Outros'`** —
+  achado ao implementar: filtrar clicando na pill "Outros" faria
+  `.eq('categoria', 'Outros')`, que nunca bate com `NULL` no Postgres.
+  Corrigido pra usar `.is('categoria', null)` nesse caso específico.
+  Não afeta o catálogo hoje (nenhum produto ativo está sem categoria),
+  mas ficaria quebrado silenciosamente na primeira importação de
+  planilha que deixasse algum produto sem categoria.
+- Navegar sem filtro mantém a listagem agrupada por seção (como já
+  era); buscar ou filtrar troca pra grid único com os resultados —
+  agrupar por categoria não faz sentido quando o filtro já é a
+  categoria, ou quando a busca cruza várias.
+- Testado ao vivo com Playwright: busca digitando de verdade (não só
+  preenchendo o campo, `keyboard.type` pra disparar o debounce igual um
+  usuário real), filtro de categoria, busca+filtro combinados, e o
+  estado de "nenhum produto encontrado".
 
 ## Login do cliente (telefone/OTP)
 
