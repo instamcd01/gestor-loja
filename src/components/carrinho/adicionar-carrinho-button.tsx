@@ -1,39 +1,62 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adicionarAoCarrinho } from "@/lib/carrinho";
+import { adicionarItemConvidado } from "@/lib/carrinho-convidado";
+import { createClient } from "@/lib/supabase/client";
 
 export function AdicionarCarrinhoButton({
   slug,
   empresaId,
   produtoId,
+  produto,
 }: {
   slug: string;
   empresaId: string;
   produtoId: string;
+  produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number };
 }) {
-  const router = useRouter();
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
   const [status, setStatus] = useState<"idle" | "adicionado" | "erro">("idle");
 
+  // Mesmo motivo do AccountLink: a página de produto é ISR compartilhada
+  // entre visitantes, então o estado de login é resolvido no browser, não
+  // no servidor — senão perderia o cache.
+  const [logado, setLogado] = useState<boolean | null>(null);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLogado(!!session?.user);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   async function adicionar() {
     setCarregando(true);
     setStatus("idle");
-    const resultado = await adicionarAoCarrinho(slug, empresaId, produtoId, quantidade);
-    setCarregando(false);
 
-    if (!resultado.ok) {
-      if (resultado.erro === "login_necessario") {
-        router.push(`/loja/${slug}/entrar`);
-        return;
-      }
-      setStatus("erro");
+    // Sem login, o carrinho fica só no navegador — login só é pedido na
+    // hora de finalizar o pedido (ver mesclarCarrinhoConvidado).
+    if (!logado) {
+      adicionarItemConvidado(empresaId, {
+        produtoId,
+        nome: produto.nome,
+        imagemUrl: produto.imagemUrl,
+        categoria: produto.categoria,
+        preco: produto.preco,
+        quantidade,
+      });
+      setCarregando(false);
+      setStatus("adicionado");
       return;
     }
-    setStatus("adicionado");
+
+    const resultado = await adicionarAoCarrinho(slug, empresaId, produtoId, quantidade);
+    setCarregando(false);
+    setStatus(resultado.ok ? "adicionado" : "erro");
   }
 
   return (
@@ -59,7 +82,7 @@ export function AdicionarCarrinhoButton({
           </button>
         </div>
 
-        <Button onClick={adicionar} disabled={carregando} className="flex-1">
+        <Button onClick={adicionar} disabled={carregando || logado === null} className="flex-1">
           {carregando ? "Adicionando..." : "Adicionar ao carrinho"}
         </Button>
       </div>

@@ -1,4 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
@@ -28,7 +29,12 @@ export default async function CarrinhoPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/loja/${slug}/entrar`);
+
+  // Sem login, o carrinho vive só no navegador — telefone só é pedido
+  // na hora de finalizar (ver CarrinhoConvidado e mesclarCarrinhoConvidado).
+  if (!user) {
+    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} />;
+  }
 
   const [carrinho, enderecoSalvo, saldoCliente] = await Promise.all([
     getCarrinho(empresa.id),

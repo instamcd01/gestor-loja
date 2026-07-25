@@ -88,7 +88,17 @@ export default async function ProdutoPage({
           )}
 
           <div className="mt-2">
-            <AdicionarCarrinhoButton slug={slug} empresaId={dados.empresa.id} produtoId={produto.id} />
+            <AdicionarCarrinhoButton
+              slug={slug}
+              empresaId={dados.empresa.id}
+              produtoId={produto.id}
+              produto={{
+                nome: produto.nome,
+                imagemUrl: produto.imagem_url,
+                categoria: produto.categoria,
+                preco: temPromocao ? produto.preco_promocional! : produto.preco,
+              }}
+            />
           </div>
 
           <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-2 w-fit">

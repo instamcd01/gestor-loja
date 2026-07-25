@@ -3,12 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { mesclarCarrinhoConvidado } from "@/lib/carrinho";
+import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { createClient } from "@/lib/supabase/client";
 import { formatarTelefoneBr, paraE164, telefoneValido } from "@/lib/telefone";
 
 type Etapa = "telefone" | "codigo";
 
-export function LoginForm({ empresaId, slug }: { empresaId: string; slug: string }) {
+export function LoginForm({
+  empresaId,
+  slug,
+  rotaPosLogin = "conta",
+}: {
+  empresaId: string;
+  slug: string;
+  rotaPosLogin?: string;
+}) {
   const router = useRouter();
   const [etapa, setEtapa] = useState<Etapa>("telefone");
   const [telefone, setTelefone] = useState("");
@@ -65,14 +75,28 @@ export function LoginForm({ empresaId, slug }: { empresaId: string; slug: string
       p_empresa_id: empresaId,
       p_nome: nome.trim() || null,
     });
-    setCarregando(false);
 
     if (rpcError) {
+      setCarregando(false);
       setErro(rpcError.message);
       return;
     }
 
-    router.push(`/loja/${slug}/conta`);
+    // Leva pro carrinho de verdade o que foi montado sem login — preço
+    // é sempre recalculado a partir do catálogo, nunca do que estava
+    // guardado no navegador.
+    const itensConvidado = lerCarrinhoConvidado(empresaId);
+    if (itensConvidado.length > 0) {
+      await mesclarCarrinhoConvidado(
+        slug,
+        empresaId,
+        itensConvidado.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
+      );
+      limparCarrinhoConvidado(empresaId);
+    }
+
+    setCarregando(false);
+    router.push(`/loja/${slug}/${rotaPosLogin}`);
     router.refresh();
   }
 

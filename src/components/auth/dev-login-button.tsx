@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { mesclarCarrinhoConvidado } from "@/lib/carrinho";
+import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -12,7 +14,15 @@ import { createClient } from "@/lib/supabase/client";
  * contornando o envio real de WhatsApp — só pra testar carrinho/
  * checkout/entrega sem esperar a verificação de negócio da Meta.
  */
-export function DevLoginButton({ slug }: { slug: string }) {
+export function DevLoginButton({
+  slug,
+  empresaId,
+  rotaPosLogin = "conta",
+}: {
+  slug: string;
+  empresaId: string;
+  rotaPosLogin?: string;
+}) {
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -27,13 +37,25 @@ export function DevLoginButton({ slug }: { slug: string }) {
       phone: "+5521999990000",
       password: "teste123456",
     });
-    setCarregando(false);
 
     if (error) {
+      setCarregando(false);
       setErro(error.message);
       return;
     }
-    router.push(`/loja/${slug}/conta`);
+
+    const itensConvidado = lerCarrinhoConvidado(empresaId);
+    if (itensConvidado.length > 0) {
+      await mesclarCarrinhoConvidado(
+        slug,
+        empresaId,
+        itensConvidado.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
+      );
+      limparCarrinhoConvidado(empresaId);
+    }
+
+    setCarregando(false);
+    router.push(`/loja/${slug}/${rotaPosLogin}`);
     router.refresh();
   }
 

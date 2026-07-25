@@ -181,3 +181,20 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
     })),
   };
 }
+
+/**
+ * Chamado pelo LoginForm logo depois do OTP confirmado — passa pro
+ * carrinho real (banco) os itens que o visitante montou sem login
+ * (guardados no navegador). Reusa adicionarAoCarrinho item a item, então
+ * o preço é sempre recalculado a partir do catálogo público, nunca do
+ * que veio do carrinho de convidado.
+ */
+export async function mesclarCarrinhoConvidado(
+  slug: string,
+  empresaId: string,
+  itens: { produtoId: string; quantidade: number }[],
+) {
+  for (const item of itens) {
+    await adicionarAoCarrinho(slug, empresaId, item.produtoId, item.quantidade);
+  }
+}
