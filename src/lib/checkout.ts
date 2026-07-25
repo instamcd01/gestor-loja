@@ -14,6 +14,8 @@ export async function finalizarPedido(
   tipoEntrega: "retirada" | "entrega",
   zonaId: string | null,
   observacoes: string,
+  saldoUsado: number,
+  trocoPara: number | null,
 ): Promise<ResultadoCheckout> {
   const supabase = await createClient();
 
@@ -23,6 +25,8 @@ export async function finalizarPedido(
     p_tipo_entrega: tipoEntrega,
     p_zona_id: zonaId,
     p_observacoes: observacoes.trim() || null,
+    p_saldo_usado: saldoUsado,
+    p_troco_para: trocoPara,
   });
 
   if (error) {

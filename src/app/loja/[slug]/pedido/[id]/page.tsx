@@ -36,13 +36,17 @@ export default async function PedidoPage({
   const { data: pedido } = await supabase
     .from("pedidos")
     .select(
-      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, valor_total, observacoes, created_at",
+      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, valor_total, observacoes, created_at, metadata",
     )
     .eq("id", id)
     .eq("empresa_id", empresa.id)
     .maybeSingle();
 
   if (!pedido) notFound();
+
+  const metadata = (pedido.metadata ?? {}) as { saldoAplicado?: number; trocoPara?: number };
+  const troco =
+    metadata.trocoPara != null ? metadata.trocoPara - (pedido.valor_total ?? 0) : null;
 
   const { data: itens } = await supabase
     .from("itens_pedido")
@@ -91,6 +95,13 @@ export default async function PedidoPage({
           </div>
         ))}
 
+        {metadata.saldoAplicado != null && metadata.saldoAplicado > 0 && (
+          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+            <span>Saldo aplicado</span>
+            <span>-{formatarPreco(metadata.saldoAplicado)}</span>
+          </div>
+        )}
+
         <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-sm font-semibold dark:border-white/10">
           <span>Total</span>
           <span>{formatarPreco(pedido.valor_total ?? 0)}</span>
@@ -100,6 +111,11 @@ export default async function PedidoPage({
           Pagamento: {pedido.tipo_pagamento}
           {pedido.status_pagamento === "pago" ? " — pago" : ""}
         </p>
+        {troco != null && troco > 0 && (
+          <p className="text-xs text-black/50 dark:text-white/50">
+            Pagará com {formatarPreco(metadata.trocoPara!)} — troco de {formatarPreco(troco)}
+          </p>
+        )}
       </div>
 
       {mostrarPix && qrCodeDataUrl && copiaECola && (

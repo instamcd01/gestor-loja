@@ -3,9 +3,15 @@ import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
-import { getEnderecoCliente } from "@/lib/cliente";
+import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
+
+// "Link de Pagamento" e "Outros" só fazem sentido com um atendente
+// mediando (gerar/enviar link, decidir o que é "outros") — no
+// autoatendimento do site, o cliente escolhe sozinho, então só faz
+// sentido oferecer os métodos que se resolvem na entrega/retirada.
+const METODOS_SEM_MEDIACAO_DE_ATENDENTE = new Set(["Dinheiro", "Pix", "Cartão de Débito", "Cartão de Crédito"]);
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +30,10 @@ export default async function CarrinhoPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/loja/${slug}/entrar`);
 
-  const [carrinho, enderecoSalvo] = await Promise.all([
+  const [carrinho, enderecoSalvo, saldoCliente] = await Promise.all([
     getCarrinho(empresa.id),
     getEnderecoCliente(empresa.id),
+    getSaldoCliente(empresa.id),
   ]);
 
   if (!carrinho.id || carrinho.itens.length === 0) {
@@ -58,7 +65,9 @@ export default async function CarrinhoPage({
       <CheckoutForm
         slug={slug}
         empresaId={empresa.id}
-        metodosPagamento={empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]}
+        metodosPagamento={(empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
+          METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
+        )}
         enderecoEmpresa={{
           endereco: empresa.endereco,
           cidade: empresa.cidade,
@@ -67,6 +76,7 @@ export default async function CarrinhoPage({
         }}
         subtotal={carrinho.valorTotal}
         enderecoSalvo={enderecoSalvo}
+        saldoCliente={saldoCliente}
       />
     </div>
   );

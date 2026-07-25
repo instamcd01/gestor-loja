@@ -20,6 +20,24 @@ export async function getEnderecoCliente(empresaId: string): Promise<EnderecoCli
   return data;
 }
 
+/** Saldo/crédito de loja do cliente logado — mesmo campo que o atendente usa no app. */
+export async function getSaldoCliente(empresaId: string): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data } = await supabase
+    .from("clientes")
+    .select("saldo")
+    .eq("empresa_id", empresaId)
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  return data?.saldo ?? 0;
+}
+
 export type ResultadoEndereco = { ok: true } | { ok: false; erro: string };
 
 export async function salvarEndereco(
