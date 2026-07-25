@@ -1,9 +1,12 @@
 /**
- * Extrai o peso/tamanho do final do nome do produto (ex: "...3KG" -> {rotulo:"3kg", gramas:3000}).
- * Mesma regex usada na migração que populou `produtos.produto_pai_id` — precisa
- * ficar em sincronia se algum dia mudar o agrupamento no banco.
+ * Extrai o peso/tamanho do nome do produto (ex: "...3kg – PremieRpet" ->
+ * {rotulo:"3kg", gramas:3000}). Não exige mais que o peso esteja no fim da
+ * string — o padrão de nome atual (ver gestor_padrao_nome_produto) põe o
+ * fabricante depois do peso ("... 10kg – Quatree"), então o peso fica no
+ * meio. Continua exigindo espaço antes do número (evita casar um token
+ * tipo "100mg" ou grudado em outra palavra).
  */
-const REGEX_PESO = /\s+(\d+(?:[.,]\d+)?)\s*(KG|G)\.?\s*$/i;
+const REGEX_PESO = /\s+(\d+(?:[.,]\d+)?)\s*(KG|G)\b/i;
 
 export function extrairPeso(nome: string): { rotulo: string; gramas: number } | null {
   const match = nome.match(REGEX_PESO);
