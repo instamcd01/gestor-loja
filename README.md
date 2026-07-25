@@ -392,3 +392,70 @@ quando `tipo_pagamento === 'Pix'` e o pedido ainda não está pago.
    está com certificado SSL inválido (curl recusa por padrão) *e*
    retorna `404` mesmo ignorando o certificado — arquivo realmente
    quebrado no CDN do usuário, fora do meu alcance corrigir.
+7. ~~Domínio próprio por empresa (multi-tenant)~~ — **feito**, ver
+   "Deploy" abaixo.
+
+## Deploy
+
+Alvo escolhido (2026-07-25): self-host via **Easypanel** na mesma VPS
+Hostinger que já roda o n8n (KVM 2, 8GB RAM, Campinas) — evita conta paga
+nova (mesmo raciocínio já usado pra escolher Pix sem gateway em vez de
+Mercado Pago/Asaas). Migração pra Vercel (ou outro host) fica fácil
+depois se o negócio crescer, já que o app é empacotado como imagem Docker
+padrão — sem lock-in num host específico.
+
+**`Dockerfile`**: build multi-stage padrão do Next.js
+(`next.config.ts` tem `output: "standalone"`), roda como usuário não-root
+na imagem final. `sharp` foi adicionado às dependências — recomendação
+oficial do Next.js pra otimização de imagem em produção fora da Vercel
+(sem ele, cai num fallback WASM mais lento).
+
+**Variáveis de ambiente — atenção à diferença build-time vs runtime**
+(detalhe em `.env.example`):
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` são
+  inlinadas no bundle do cliente em **build-time** — no Easypanel,
+  precisam ir em "Build Arguments" do serviço (o `Dockerfile` declara os
+  `ARG` correspondentes). Setar só como env var de runtime não funciona:
+  o bundle já foi compilado sem elas.
+- `GOOGLE_MAPS_API_KEY` é server-only, lida em **runtime** — vai na aba
+  normal de variáveis de ambiente do serviço.
+
+**Domínio próprio por empresa**: migração `dominio_customizado_multi_tenant`
+adicionou `empresas.dominio_customizado` (único, case-insensitive) e a
+view pública `catalogo_dominios_publico` (mesmo padrão
+security_invoker=false + grant só na view das demais `catalogo_*_publico`
+deste projeto). `middleware.ts` resolve o host da requisição pra um
+`catalogo_slug` via `src/lib/dominio-tenant.ts` (cache em memória de
+processo, 5min — a tabela muda raríssimo) e reescreve transparentemente
+pra dentro de `/loja/[slug]/...`; host sem domínio reconhecido cai no
+comportamento de sempre (rota explícita `/loja/[slug]`, usada em dev e
+por quem acessa o host de hospedagem direto). **Pra dar um domínio a uma
+empresa**: só `UPDATE empresas SET dominio_customizado = 'exemplo.com.br'
+WHERE id = ...` — nenhum redeploy necessário, o cache expira em até 5min.
+Testado ao vivo via `next start` + `curl -H "Host: ..."` contra os 3
+casos (domínio reconhecido reescrevendo raiz e subpáginas, já dentro do
+escopo `/loja/[slug]` sem reescrever de novo, host desconhecido passando
+direto) antes de remover o domínio de teste.
+
+**Quirk real encontrado e não é bug deste código**: o `middleware.ts`
+simplesmente não executa nenhuma requisição no dev server com Turbopack
+(`next dev`, Next.js 16.2.11) — nenhum log, nenhum rewrite, mesmo com o
+build reconhecendo o arquivo corretamente (aparece como
+"ƒ Proxy (Middleware)" no output do build). Funciona perfeitamente em
+produção (`npm run build && next start`), que é o que roda de verdade no
+Easypanel — então não bloqueia o deploy, só significa que testar o
+rewrite por domínio precisa ser feito contra um build de produção local,
+não contra `npm run dev`. Também tentei renomear pra `proxy.ts` (Next.js
+16 introduziu esse nome como sucessor de `middleware.ts`, ver
+`next.config.ts`'s docs de migração) — piorou (nem o build reconheceu
+mais); revertido pra `middleware.ts`, que é o nome que de fato funciona
+nesta versão.
+
+**Ainda depende do usuário, fora do meu alcance**:
+1. Criar o serviço no Easypanel (App a partir de um repo Git ou de uma
+   imagem Docker buildada localmente), colar os build args/env vars
+   acima, apontar o domínio.
+2. Apontar o DNS do domínio real (registro A) pro IP da VPS
+   (`187.77.60.141`) — Easypanel emite SSL automático (Let's Encrypt)
+   assim que o domínio resolver pra ele.
+3. Rodar o `UPDATE` acima com o domínio real depois que o DNS propagar.

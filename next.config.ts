@@ -7,6 +7,10 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   : undefined;
 
 const nextConfig: NextConfig = {
+  // Standalone: gera .next/standalone com só as deps realmente usadas em
+  // runtime — é o formato recomendado pelo Next.js pra self-host via
+  // Docker (evita copiar node_modules inteiro pra imagem final).
+  output: "standalone",
   images: {
     // Hosts checados contra os dados reais de produção (939 produtos,
     // 2026-07-24): só dois hosts aparecem em `produtos.imagem_url` hoje
