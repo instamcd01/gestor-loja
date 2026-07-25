@@ -27,5 +27,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Qualquer path com extensão de arquivo (robots.txt, sitemap.xml,
+  // arquivo de verificação do Search Console, etc.) é um asset estático
+  // de `public/` — nunca deve ser reescrito pro namespace do tenant.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
