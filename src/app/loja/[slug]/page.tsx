@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AtalhosCategoria } from "@/components/catalogo/atalhos-categoria";
-import { BuscaCatalogo } from "@/components/catalogo/busca-catalogo";
-import { FiltroCategorias } from "@/components/catalogo/filtro-categorias";
-import { FiltroMarca } from "@/components/catalogo/filtro-marca";
-import { FiltroPreco } from "@/components/catalogo/filtro-preco";
+import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
-  getCategoriasComContagem,
   getEmpresaPorSlug,
   getFaixasPrecoComContagem,
   getMarcasComContagem,
@@ -56,7 +51,7 @@ export default async function LojaPage({
 
   const filtroAtivo = !!q || !!categoria || !!marca || !!precoMin;
 
-  const [produtos, categorias, marcas, faixasPreco, freteGratisMinimo] = await Promise.all([
+  const [produtos, marcas, faixasPreco, freteGratisMinimo] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
       busca: q,
       categoria,
@@ -65,7 +60,6 @@ export default async function LojaPage({
       precoMax: precoMax ? Number(precoMax) : undefined,
       ordenar,
     }),
-    getCategoriasComContagem(empresa.id),
     getMarcasComContagem(empresa.id),
     getFaixasPrecoComContagem(empresa.id),
     getMenorValorFreteGratis(empresa.id),
@@ -88,21 +82,15 @@ export default async function LojaPage({
         metodosPagamento={empresa.metodos_pagamento_ativos}
       />
 
-      {!filtroAtivo && (
-        <>
-          <AtalhosCategoria categorias={categorias} slug={slug} />
-          <ClubeEmBreve nome={empresa.nome} />
-        </>
-      )}
+      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} />}
 
-      <div className="flex flex-col gap-3">
-        <BuscaCatalogo valorInicial={q ?? ""} />
-        {categorias.length > 1 && (
-          <FiltroCategorias categorias={categorias} categoriaAtiva={categoria ?? null} />
-        )}
-        {marcas.length > 1 && <FiltroMarca marcas={marcas} marcaAtiva={marca ?? null} />}
-        {faixasPreco.length > 1 && <FiltroPreco faixas={faixasPreco} faixaAtiva={faixaAtiva} />}
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-black/50 dark:text-white/50">
+          {produtos.length} produto{produtos.length === 1 ? "" : "s"}
+          {categoria ? ` em ${categoria}` : ""}
+        </p>
+        <div className="flex items-center gap-2">
+          <FiltrosDrawer marcas={marcas} marcaAtiva={marca ?? null} faixasPreco={faixasPreco} faixaAtiva={faixaAtiva} />
           <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
         </div>
       </div>
