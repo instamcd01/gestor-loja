@@ -6,7 +6,7 @@ type Variant = "brand" | "secondary" | "success" | "neutral" | "outline";
 const variants: Record<Variant, string> = {
   brand: "bg-[var(--brand-primary)] text-white",
   secondary: "bg-[var(--brand-secondary)] text-white",
-  success: "bg-green-600 text-white dark:bg-green-500",
+  success: "bg-[var(--color-success)] text-white",
   neutral: "bg-black/80 text-white dark:bg-white/20",
   outline: "border border-black/10 text-black/60 dark:border-white/15 dark:text-white/60",
 };

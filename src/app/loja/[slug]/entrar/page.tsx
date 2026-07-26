@@ -40,7 +40,7 @@ export default async function EntrarPage({
         <DevLoginButton slug={slug} empresaId={empresa.id} rotaPosLogin={rotaPosLogin} />
       </div>
 
-      <div className="relative hidden overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] p-8 text-white md:flex md:flex-col md:justify-center md:gap-5">
+      <div className="relative hidden overflow-hidden rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] p-8 text-white md:flex md:flex-col md:justify-center md:gap-5">
         <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-10 h-56 w-56 rounded-full bg-black/10 blur-3xl" />
         <h2 className="relative text-xl font-bold">Sua conta na {empresa.nome}</h2>

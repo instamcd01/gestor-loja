@@ -98,7 +98,7 @@ export function AdicionarCarrinhoButton({
       </div>
 
       {erro && (
-        <p className="text-sm text-red-600 dark:text-red-400">Não foi possível adicionar. Tente de novo.</p>
+        <p className="text-sm text-[var(--color-danger)]">Não foi possível adicionar. Tente de novo.</p>
       )}
 
       {drawerAberto && (

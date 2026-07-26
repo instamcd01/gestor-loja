@@ -32,7 +32,7 @@ export default async function ContaPage({
     <div className="mx-auto flex max-w-sm flex-col gap-6 py-10">
       <h1 className="text-xl font-semibold">Minha conta</h1>
 
-      <div className="rounded-2xl border border-black/5 p-4 dark:border-white/10">
+      <div className="rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
         <p className="text-sm text-black/50 dark:text-white/50">Nome</p>
         <p className="mb-3 font-medium">{cliente?.nome ?? "—"}</p>
         <p className="text-sm text-black/50 dark:text-white/50">Telefone</p>

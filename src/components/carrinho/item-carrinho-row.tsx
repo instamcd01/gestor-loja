@@ -25,7 +25,7 @@ export function ItemCarrinhoRow({
 
   return (
     <div className={`flex items-center gap-4 py-4 ${pending ? "opacity-50" : ""}`}>
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-black/5 dark:bg-white/5">
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
         <ProdutoImagem
           src={item.produto?.imagem_url ?? null}
           alt={item.produto?.nome ?? "Produto"}

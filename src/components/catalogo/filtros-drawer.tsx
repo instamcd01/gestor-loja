@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiltroMarca } from "@/components/catalogo/filtro-marca";
 import { FiltroPreco } from "@/components/catalogo/filtro-preco";
 import type { FaixaPreco } from "@/lib/catalogo";
+import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 
 export function FiltrosDrawer({
   marcas,
@@ -18,6 +19,7 @@ export function FiltrosDrawer({
 }) {
   const [aberto, setAberto] = useState(false);
   const ativos = (marcaAtiva ? 1 : 0) + (faixaAtiva ? 1 : 0);
+  const painelRef = useDrawerA11y(aberto, () => setAberto(false));
 
   if (marcas.length <= 1 && faixasPreco.length <= 1) return null;
 
@@ -45,7 +47,13 @@ export function FiltrosDrawer({
             onClick={() => setAberto(false)}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="relative flex h-full w-full max-w-xs flex-col gap-6 overflow-y-auto bg-[var(--surface)] p-5 shadow-xl">
+          <div
+            ref={painelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtros"
+            className="relative flex h-full w-full max-w-xs flex-col gap-6 overflow-y-auto bg-[var(--surface)] p-5 shadow-xl"
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">Filtros</h2>
               <button

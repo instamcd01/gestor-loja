@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
  */
 export function ClubeEmBreve({ nome }: { nome: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4 sm:p-5">
+    <div className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4 sm:p-5">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/15 text-[var(--brand-primary)]">
         <IconeEstrela className="h-5 w-5" />
       </div>

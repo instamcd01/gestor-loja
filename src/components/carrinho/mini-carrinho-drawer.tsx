@@ -2,6 +2,7 @@
 
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
+import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 import { formatarPreco } from "@/lib/utils";
 
 export function MiniCarrinhoDrawer({
@@ -19,6 +20,8 @@ export function MiniCarrinhoDrawer({
   };
   onFechar: () => void;
 }) {
+  const painelRef = useDrawerA11y(true, onFechar);
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <button
@@ -27,7 +30,13 @@ export function MiniCarrinhoDrawer({
         onClick={onFechar}
         className="absolute inset-0 bg-black/40"
       />
-      <div className="relative flex h-full w-full max-w-sm flex-col gap-4 bg-[var(--surface)] p-5 shadow-xl">
+      <div
+        ref={painelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Adicionado ao carrinho"
+        className="relative flex h-full w-full max-w-sm flex-col gap-4 bg-[var(--surface)] p-5 shadow-xl"
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Adicionado ao carrinho</h2>
           <button
@@ -40,8 +49,8 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-black/5 p-3 dark:border-white/10">
-          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-black/5 dark:bg-white/5">
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-black/5 p-3 dark:border-white/10">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
             <ProdutoImagem
               src={item.imagemUrl}
               alt={item.nome}

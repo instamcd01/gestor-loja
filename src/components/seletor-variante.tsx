@@ -31,7 +31,7 @@ export function SeletorVariante({
             key={variante.id}
             type="button"
             onClick={() => router.push(`/loja/${slug}/produto/${variante.id}`)}
-            className={`rounded-lg border px-3 py-1.5 text-sm ${
+            className={`rounded-[var(--radius-sm)] border px-3 py-1.5 text-sm ${
               variante.id === idAtual
                 ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 font-medium text-[var(--brand-primary)]"
                 : "border-black/10 text-black/60 hover:border-black/20 dark:border-white/10 dark:text-white/60"

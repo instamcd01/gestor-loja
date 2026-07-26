@@ -85,7 +85,7 @@ export default async function PedidoPage({
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-black/5 p-4 dark:border-white/10">
+      <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
         {(itens ?? []).map((item) => (
           <div key={item.id} className="flex justify-between text-sm">
             <span>
@@ -96,7 +96,7 @@ export default async function PedidoPage({
         ))}
 
         {metadata.saldoAplicado != null && metadata.saldoAplicado > 0 && (
-          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+          <div className="flex justify-between text-sm text-[var(--color-success)]">
             <span>Saldo aplicado</span>
             <span>-{formatarPreco(metadata.saldoAplicado)}</span>
           </div>

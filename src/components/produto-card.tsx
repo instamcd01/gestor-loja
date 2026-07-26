@@ -37,7 +37,7 @@ export function ProdutoCard({
   return (
     <Link
       href={`/loja/${slug}/produto/${selecionada.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-[var(--surface)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5">
         <ProdutoImagem

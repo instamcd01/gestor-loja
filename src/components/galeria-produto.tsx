@@ -19,7 +19,7 @@ export function GaleriaProduto({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/5 dark:bg-white/5">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5">
         <ProdutoImagem
           src={imagens[ativa] ?? null}
           alt={nome}
@@ -37,7 +37,7 @@ export function GaleriaProduto({
               key={src}
               type="button"
               onClick={() => setAtiva(i)}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] border-2 ${
                 ativa === i ? "border-[var(--brand-primary)]" : "border-transparent"
               }`}
             >

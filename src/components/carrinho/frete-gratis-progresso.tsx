@@ -10,7 +10,7 @@ export function FreteGratisProgresso({ subtotal, minimo }: { subtotal: number; m
   const progresso = Math.min(100, Math.round((subtotal / minimo) * 100));
 
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-[var(--surface)] p-4 dark:border-white/10">
+    <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] p-4 dark:border-white/10">
       <p className="text-xs font-medium">
         {falta > 0 ? (
           <>
@@ -18,7 +18,7 @@ export function FreteGratisProgresso({ subtotal, minimo }: { subtotal: number; m
             pra frete grátis
           </>
         ) : (
-          <span className="font-semibold text-green-600 dark:text-green-400">Frete grátis desbloqueado!</span>
+          <span className="font-semibold text-[var(--color-success)]">Frete grátis desbloqueado!</span>
         )}
       </p>
       <div className="h-2 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">

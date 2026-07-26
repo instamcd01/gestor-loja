@@ -6,6 +6,25 @@
   --background: #f6f6f8;
   --foreground: #171717;
   --surface: #ffffff;
+
+  /* Escala formal de raio — mesmos valores que já dominavam o site
+     (rounded-lg/xl/2xl/3xl), só que agora nomeados por papel em vez de
+     escolhidos ad hoc componente a componente. rounded-full continua
+     direto via Tailwind pra pills/avatares (já é consistente). */
+  --radius-sm: 0.5rem; /* chips, miniaturas */
+  --radius-md: 0.75rem; /* inputs, controles pequenos */
+  --radius-lg: 1rem; /* cards, contêineres — o padrão da maioria */
+  --radius-xl: 1.5rem; /* painéis grandes (hero, login) */
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Cores semânticas — fixas de propósito, não atreladas à marca de
+     cada loja: "sucesso" precisa continuar parecendo sucesso mesmo se
+     a cor da loja for vermelha. Só centraliza o que já era usado
+     espalhado como green-600/red-600/amber-700 em vários arquivos. */
+  --color-success: #16a34a;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
 }
 
 @theme inline {
@@ -21,13 +40,16 @@
     --background: #0a0a0a;
     --foreground: #ededed;
     --surface: #17171a;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 .scrollbar-none {
@@ -37,4 +59,21 @@ body {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Foco de teclado visível em qualquer controle — antes não existia em
+   lugar nenhum do site. --brand-primary só existe dentro do escopo de
+   uma loja (injetado por tenant); fora dali (404, erro) cai no fallback. */
+:focus-visible {
+  outline: 2px solid var(--brand-primary, #2f6b62);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Pills de seleção escondem o <input> real com sr-only — o anel de
+   foco precisa aparecer no rótulo visível, não no input invisível. */
+label:has(:focus-visible) {
+  outline: 2px solid var(--brand-primary, #2f6b62);
+  outline-offset: 2px;
+  border-radius: 2px;
 }

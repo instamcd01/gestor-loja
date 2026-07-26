@@ -12,7 +12,7 @@ export function PixPagamento({ qrCodeDataUrl, copiaECola }: { qrCodeDataUrl: str
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-black/5 p-4 dark:border-white/10">
+    <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
       <p className="text-sm font-medium">Pague com Pix</p>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={qrCodeDataUrl} alt="QR Code Pix" className="h-48 w-48" />

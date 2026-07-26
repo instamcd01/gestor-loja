@@ -31,7 +31,7 @@ export function SelosConfianca({
       {selos.map((selo) => (
         <div
           key={selo.titulo}
-          className="flex items-center gap-3 rounded-2xl border border-black/5 bg-[var(--surface)] px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-white/10"
+          className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-card)] dark:border-white/10"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10">
             <IconeSelo tipo={selo.icone} className="h-4.5 w-4.5 text-[var(--brand-primary)]" />

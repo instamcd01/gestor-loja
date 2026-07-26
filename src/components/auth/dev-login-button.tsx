@@ -60,19 +60,19 @@ export function DevLoginButton({
   }
 
   return (
-    <div className="mt-4 rounded-lg border border-dashed border-amber-500/50 bg-amber-500/5 p-3">
-      <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
+    <div className="mt-4 rounded-[var(--radius-sm)] border border-dashed border-[var(--color-warning)]/50 bg-[var(--color-warning)]/5 p-3">
+      <p className="mb-2 text-xs text-[var(--color-warning)]">
         Só aparece em desenvolvimento — atalho pra testar sem WhatsApp.
       </p>
       <button
         type="button"
         onClick={entrar}
         disabled={carregando}
-        className="text-sm font-medium text-amber-700 underline dark:text-amber-400"
+        className="text-sm font-medium text-[var(--color-warning)] underline"
       >
         {carregando ? "Entrando..." : "Entrar como cliente de teste"}
       </button>
-      {erro && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{erro}</p>}
+      {erro && <p className="mt-1 text-xs text-[var(--color-danger)]">{erro}</p>}
     </div>
   );
 }

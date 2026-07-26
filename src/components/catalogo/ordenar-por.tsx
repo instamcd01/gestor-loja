@@ -33,7 +33,7 @@ export function OrdenarPor({ ordenacaoAtiva }: { ordenacaoAtiva: Ordenacao }) {
       <select
         value={ordenacaoAtiva}
         onChange={(e) => alterar(e.target.value)}
-        className="rounded-lg border border-black/10 bg-white py-1.5 pl-2 pr-7 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+        className="rounded-[var(--radius-sm)] border border-black/10 bg-white py-1.5 pl-2 pr-7 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
       >
         {OPCOES.map((opcao) => (
           <option key={opcao.valor} value={opcao.valor}>

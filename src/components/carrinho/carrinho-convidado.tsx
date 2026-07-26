@@ -67,7 +67,7 @@ export function CarrinhoConvidado({
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (
           <div key={item.produtoId} className="flex items-center gap-4 py-4">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-black/5 dark:bg-white/5">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
               <ProdutoImagem
                 src={item.imagemUrl}
                 alt={item.nome}

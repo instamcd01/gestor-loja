@@ -193,14 +193,14 @@ export function CheckoutForm({
           </Button>
 
           {frete && frete.disponivel && (
-            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+            <p className="text-sm font-medium text-[var(--color-success)]">
               {frete.opcao.frete_gratis
                 ? "Frete grátis!"
                 : `Frete (${frete.opcao.zona_nome}): ${formatarPreco(frete.opcao.valor)}`}
             </p>
           )}
           {frete && !frete.disponivel && (
-            <p className="text-sm text-red-600 dark:text-red-400">
+            <p className="text-sm text-[var(--color-danger)]">
               {frete.motivo === "fora_de_area"
                 ? "Esse endereço está fora da nossa área de entrega."
                 : "Não foi possível calcular o frete para esse endereço."}
@@ -210,7 +210,7 @@ export function CheckoutForm({
       )}
 
       {saldoCliente > 0 && (
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">
           <span className="flex flex-col">
             <span className="text-sm font-semibold">Usar meu saldo na loja</span>
             <span className="text-xs text-black/50 dark:text-white/50">
@@ -266,7 +266,7 @@ export function CheckoutForm({
             onChange={(e) => setTrocoParaTexto(e.target.value)}
           />
           {trocoValido && troco !== null && (
-            <p className={`text-sm font-medium ${troco >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <p className={`text-sm font-medium ${troco >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>
               {troco >= 0 ? `Troco: ${formatarPreco(troco)}` : `Faltam ${formatarPreco(-troco)} — informe um valor maior`}
             </p>
           )}
@@ -282,7 +282,7 @@ export function CheckoutForm({
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           rows={2}
-          className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
+          className="w-full rounded-[var(--radius-md)] border border-black/10 bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
         />
       </div>
 
@@ -296,7 +296,7 @@ export function CheckoutForm({
           <span>{valorEntrega === 0 ? "Grátis" : formatarPreco(valorEntrega)}</span>
         </div>
         {saldoAplicado > 0 && (
-          <div className="flex justify-between text-green-600 dark:text-green-400">
+          <div className="flex justify-between text-[var(--color-success)]">
             <span>Saldo aplicado</span>
             <span>-{formatarPreco(saldoAplicado)}</span>
           </div>
@@ -307,7 +307,7 @@ export function CheckoutForm({
         </div>
       </Card>
 
-      {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+      {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
       <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="w-full py-3.5 text-base">
         {confirmando ? "Confirmando..." : `Confirmar pedido — ${formatarPreco(valorFinal)}`}

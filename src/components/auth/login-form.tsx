@@ -135,7 +135,7 @@ export function LoginForm({
           />
         </div>
 
-        {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+        {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
         <Button type="submit" disabled={carregando} className="py-3 text-base">
           {carregando ? "Confirmando..." : "Confirmar"}
@@ -167,7 +167,7 @@ export function LoginForm({
         />
       </div>
 
-      {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+      {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
       <Button type="submit" disabled={carregando} className="py-3 text-base">
         {carregando ? "Enviando..." : "Enviar código por SMS"}
