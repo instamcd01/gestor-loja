@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { mesclarCarrinhoConvidado } from "@/lib/carrinho";
 import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { createClient } from "@/lib/supabase/client";
@@ -111,12 +112,11 @@ export function LoginForm({
           <label htmlFor="nome" className="text-sm font-medium">
             Seu nome (só na primeira vez)
           </label>
-          <input
+          <Input
             id="nome"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Como podemos te chamar?"
-            className="rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
           />
         </div>
 
@@ -124,20 +124,20 @@ export function LoginForm({
           <label htmlFor="codigo" className="text-sm font-medium">
             Código de verificação
           </label>
-          <input
+          <Input
             id="codigo"
             inputMode="numeric"
             autoComplete="one-time-code"
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
             placeholder="000000"
-            className="rounded-lg border border-black/10 px-3 py-2 text-center text-lg tracking-[0.5em] outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+            className="text-center text-lg tracking-[0.5em]"
           />
         </div>
 
         {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
 
-        <Button type="submit" disabled={carregando}>
+        <Button type="submit" disabled={carregando} className="py-3 text-base">
           {carregando ? "Confirmando..." : "Confirmar"}
         </Button>
         <button
@@ -157,20 +157,19 @@ export function LoginForm({
         <label htmlFor="telefone" className="text-sm font-medium">
           Seu telefone
         </label>
-        <input
+        <Input
           id="telefone"
           inputMode="tel"
           autoComplete="tel"
           value={telefone}
           onChange={(e) => setTelefone(formatarTelefoneBr(e.target.value))}
           placeholder="(00) 00000-0000"
-          className="rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
         />
       </div>
 
       {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
 
-      <Button type="submit" disabled={carregando}>
+      <Button type="submit" disabled={carregando} className="py-3 text-base">
         {carregando ? "Enviando..." : "Enviar código por SMS"}
       </Button>
     </form>

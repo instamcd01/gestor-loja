@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { finalizarPedido, obterOpcaoFrete } from "@/lib/checkout";
 import { salvarEndereco } from "@/lib/cliente";
 import type { EnderecoCliente } from "@/lib/types";
@@ -114,18 +117,18 @@ export function CheckoutForm({
   const podeConfirmar = tipoEntrega === "retirada" || (frete?.disponivel ?? false);
 
   return (
-    <div className="flex flex-col gap-4 border-t border-black/10 pt-4 dark:border-white/10">
+    <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
       <div>
-        <p className="mb-2 text-sm font-medium">Retirada ou entrega</p>
+        <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
         <div className="flex gap-2">
           {(["retirada", "entrega"] as const).map((opcao) => (
             <button
               key={opcao}
               type="button"
               onClick={() => mudarTipoEntrega(opcao)}
-              className={`rounded-full border px-4 py-1.5 text-sm ${
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 tipoEntrega === opcao
-                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
                   : "border-black/10 dark:border-white/10"
               }`}
             >
@@ -136,54 +139,48 @@ export function CheckoutForm({
       </div>
 
       {tipoEntrega === "entrega" && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-black/5 p-4 dark:border-white/10">
+        <Card className="flex flex-col gap-3 p-4">
           <div className="grid grid-cols-3 gap-2">
-            <input
+            <Input
               placeholder="Rua"
               value={endereco.endereco ?? ""}
               onChange={(e) => setEndereco({ ...endereco, endereco: e.target.value })}
-              className="col-span-2 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+              className="col-span-2"
             />
-            <input
+            <Input
               placeholder="Número"
               value={endereco.numero ?? ""}
               onChange={(e) => setEndereco({ ...endereco, numero: e.target.value })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input
+            <Input
               placeholder="Bairro"
               value={endereco.bairro ?? ""}
               onChange={(e) => setEndereco({ ...endereco, bairro: e.target.value })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
-            <input
+            <Input
               placeholder="Complemento (opcional)"
               value={endereco.complemento ?? ""}
               onChange={(e) => setEndereco({ ...endereco, complemento: e.target.value })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <input
+            <Input
               placeholder="Cidade"
               value={endereco.cidade ?? ""}
               onChange={(e) => setEndereco({ ...endereco, cidade: e.target.value })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
-            <input
+            <Input
               placeholder="UF"
               maxLength={2}
               value={endereco.estado ?? ""}
               onChange={(e) => setEndereco({ ...endereco, estado: e.target.value.toUpperCase() })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
-            <input
+            <Input
               placeholder="CEP"
               value={endereco.cep ?? ""}
               onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })}
-              className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
           </div>
 
@@ -209,13 +206,13 @@ export function CheckoutForm({
                 : "Não foi possível calcular o frete para esse endereço."}
             </p>
           )}
-        </div>
+        </Card>
       )}
 
       {saldoCliente > 0 && (
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-black/5 p-4 dark:border-white/10">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">
           <span className="flex flex-col">
-            <span className="text-sm font-medium">Usar meu saldo na loja</span>
+            <span className="text-sm font-semibold">Usar meu saldo na loja</span>
             <span className="text-xs text-black/50 dark:text-white/50">
               Você tem {formatarPreco(saldoCliente)} disponível
             </span>
@@ -230,14 +227,14 @@ export function CheckoutForm({
       )}
 
       <div>
-        <p className="mb-2 text-sm font-medium">Forma de pagamento (na retirada/entrega)</p>
+        <p className="mb-2 text-sm font-semibold">Forma de pagamento (na retirada/entrega)</p>
         <div className="flex flex-wrap gap-2">
           {metodosPagamento.map((metodo) => (
             <label
               key={metodo}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
                 tipoPagamento === metodo
-                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
                   : "border-black/10 dark:border-white/10"
               }`}
             >
@@ -249,6 +246,7 @@ export function CheckoutForm({
                 onChange={() => setTipoPagamento(metodo)}
                 className="sr-only"
               />
+              <IconePagamento metodo={metodo} className="h-4 w-4" />
               {metodo}
             </label>
           ))}
@@ -256,28 +254,27 @@ export function CheckoutForm({
       </div>
 
       {tipoPagamento === "Dinheiro" && valorFinal > 0 && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-black/5 p-4 dark:border-white/10">
-          <label htmlFor="trocoPara" className="text-sm font-medium">
+        <Card className="flex flex-col gap-2 p-4">
+          <label htmlFor="trocoPara" className="text-sm font-semibold">
             Vai pagar com quanto? (pra levarmos o troco certo)
           </label>
-          <input
+          <Input
             id="trocoPara"
             inputMode="decimal"
             placeholder={`Ex: ${formatarPreco(Math.ceil(valorFinal / 10) * 10)}`}
             value={trocoParaTexto}
             onChange={(e) => setTrocoParaTexto(e.target.value)}
-            className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
           />
           {trocoValido && troco !== null && (
             <p className={`text-sm font-medium ${troco >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
               {troco >= 0 ? `Troco: ${formatarPreco(troco)}` : `Faltam ${formatarPreco(-troco)} — informe um valor maior`}
             </p>
           )}
-        </div>
+        </Card>
       )}
 
       <div>
-        <label htmlFor="observacoes" className="mb-1 block text-sm font-medium">
+        <label htmlFor="observacoes" className="mb-1 block text-sm font-semibold">
           Observações (opcional)
         </label>
         <textarea
@@ -285,13 +282,13 @@ export function CheckoutForm({
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           rows={2}
-          className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+          className="w-full rounded-xl border border-black/10 bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
         />
       </div>
 
-      <div className="flex flex-col gap-1 rounded-2xl border border-black/5 p-4 text-sm dark:border-white/10">
+      <Card className="flex flex-col gap-1.5 p-4 text-sm">
         <div className="flex justify-between">
-          <span className="text-black/50 dark:text-white/50">Subtotal</span>
+          <span className="text-black/50 dark:text-white/50">Valor dos produtos</span>
           <span>{formatarPreco(subtotal)}</span>
         </div>
         <div className="flex justify-between">
@@ -304,15 +301,15 @@ export function CheckoutForm({
             <span>-{formatarPreco(saldoAplicado)}</span>
           </div>
         )}
-        <div className="mt-1 flex justify-between border-t border-black/10 pt-1 text-base font-semibold dark:border-white/10">
+        <div className="mt-1.5 flex justify-between border-t border-black/10 pt-2 text-base font-semibold dark:border-white/10">
           <span>Total</span>
           <span>{formatarPreco(valorFinal)}</span>
         </div>
-      </div>
+      </Card>
 
       {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
 
-      <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="w-full">
+      <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="w-full py-3.5 text-base">
         {confirmando ? "Confirmando..." : `Confirmar pedido — ${formatarPreco(valorFinal)}`}
       </Button>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
 import { Button } from "@/components/ui/button";
 import { adicionarAoCarrinho } from "@/lib/carrinho";
 import { adicionarItemConvidado } from "@/lib/carrinho-convidado";
@@ -19,7 +20,8 @@ export function AdicionarCarrinhoButton({
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
-  const [status, setStatus] = useState<"idle" | "adicionado" | "erro">("idle");
+  const [erro, setErro] = useState(false);
+  const [drawerAberto, setDrawerAberto] = useState(false);
 
   // Mesmo motivo do AccountLink: a página de produto é ISR compartilhada
   // entre visitantes, então o estado de login é resolvido no browser, não
@@ -36,7 +38,7 @@ export function AdicionarCarrinhoButton({
 
   async function adicionar() {
     setCarregando(true);
-    setStatus("idle");
+    setErro(false);
 
     // Sem login, o carrinho fica só no navegador — login só é pedido na
     // hora de finalizar o pedido (ver mesclarCarrinhoConvidado).
@@ -50,13 +52,17 @@ export function AdicionarCarrinhoButton({
         quantidade,
       });
       setCarregando(false);
-      setStatus("adicionado");
+      setDrawerAberto(true);
       return;
     }
 
     const resultado = await adicionarAoCarrinho(slug, empresaId, produtoId, quantidade);
     setCarregando(false);
-    setStatus(resultado.ok ? "adicionado" : "erro");
+    if (resultado.ok) {
+      setDrawerAberto(true);
+    } else {
+      setErro(true);
+    }
   }
 
   return (
@@ -82,16 +88,25 @@ export function AdicionarCarrinhoButton({
           </button>
         </div>
 
-        <Button onClick={adicionar} disabled={carregando || logado === null} className="flex-1">
+        <Button
+          onClick={adicionar}
+          disabled={carregando || logado === null}
+          className="flex-1 py-3 text-base"
+        >
           {carregando ? "Adicionando..." : "Adicionar ao carrinho"}
         </Button>
       </div>
 
-      {status === "adicionado" && (
-        <p className="text-sm text-green-600 dark:text-green-400">Adicionado ao carrinho.</p>
-      )}
-      {status === "erro" && (
+      {erro && (
         <p className="text-sm text-red-600 dark:text-red-400">Não foi possível adicionar. Tente de novo.</p>
+      )}
+
+      {drawerAberto && (
+        <MiniCarrinhoDrawer
+          slug={slug}
+          item={{ ...produto, quantidade }}
+          onFechar={() => setDrawerAberto(false)}
+        />
       )}
     </div>
   );

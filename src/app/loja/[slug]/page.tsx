@@ -6,6 +6,8 @@ import { FiltroCategorias } from "@/components/catalogo/filtro-categorias";
 import { FiltroMarca } from "@/components/catalogo/filtro-marca";
 import { FiltroPreco } from "@/components/catalogo/filtro-preco";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
+import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
+import { HeroBanner } from "@/components/loja/hero-banner";
 import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
@@ -79,13 +81,18 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {!filtroAtivo && <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} />}
+
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}
         metodosPagamento={empresa.metodos_pagamento_ativos}
       />
 
       {!filtroAtivo && (
-        <AtalhosCategoria categorias={categorias} slug={slug} />
+        <>
+          <AtalhosCategoria categorias={categorias} slug={slug} />
+          <ClubeEmBreve nome={empresa.nome} />
+        </>
       )}
 
       <div className="flex flex-col gap-3">

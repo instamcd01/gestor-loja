@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CheckoutForm } from "@/components/carrinho/checkout-form";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
-import { getEmpresaPorSlug } from "@/lib/catalogo";
+import { Card } from "@/components/ui/card";
+import { getEmpresaPorSlug, getMenorValorFreteGratis } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
@@ -30,10 +32,12 @@ export default async function CarrinhoPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const freteGratisMinimo = await getMenorValorFreteGratis(empresa.id);
+
   // Sem login, o carrinho vive só no navegador — telefone só é pedido
   // na hora de finalizar (ver CarrinhoConvidado e mesclarCarrinhoConvidado).
   if (!user) {
-    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} />;
+    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} freteGratisMinimo={freteGratisMinimo} />;
   }
 
   const [carrinho, enderecoSalvo, saldoCliente] = await Promise.all([
@@ -57,13 +61,17 @@ export default async function CarrinhoPage({
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
       <h1 className="text-xl font-semibold">Seu carrinho</h1>
 
-      <div className="divide-y divide-black/5 dark:divide-white/10">
+      {freteGratisMinimo != null && carrinho.valorTotal < freteGratisMinimo && (
+        <FreteGratisProgresso subtotal={carrinho.valorTotal} minimo={freteGratisMinimo} />
+      )}
+
+      <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {carrinho.itens.map((item) => (
           <ItemCarrinhoRow key={item.id} slug={slug} carrinhoId={carrinho.id!} item={item} />
         ))}
-      </div>
+      </Card>
 
-      <div className="flex items-center justify-between border-t border-black/10 pt-4 dark:border-white/10">
+      <div className="flex items-center justify-between px-1">
         <span className="text-base font-medium">Total</span>
         <span className="text-xl font-bold">{formatarPreco(carrinho.valorTotal)}</span>
       </div>

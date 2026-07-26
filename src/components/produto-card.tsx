@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
-import { formatarPreco } from "@/lib/utils";
+import { formatarPreco, percentualDesconto } from "@/lib/utils";
 import { extrairPeso } from "@/lib/variantes";
 
 export function ProdutoCard({
@@ -31,11 +32,12 @@ export function ProdutoCard({
   const selecionada = opcoes[ativa];
   const temPromocao =
     selecionada.preco_promocional != null && selecionada.preco_promocional < selecionada.preco;
+  const percentualOff = percentualDesconto(selecionada.preco, selecionada.preco_promocional);
 
   return (
     <Link
       href={`/loja/${slug}/produto/${selecionada.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white transition-shadow hover:shadow-lg dark:border-white/10 dark:bg-white/5"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-[var(--surface)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5">
         <ProdutoImagem
@@ -45,11 +47,10 @@ export function ProdutoCard({
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        {produto.destaque && (
-          <span className="absolute left-2 top-2 rounded-full bg-[var(--brand-secondary)] px-2.5 py-1 text-xs font-semibold text-white">
-            Destaque
-          </span>
-        )}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {percentualOff > 0 && <Badge variant="secondary">{percentualOff}% OFF</Badge>}
+          {produto.destaque && <Badge variant="neutral">Destaque</Badge>}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 p-3">

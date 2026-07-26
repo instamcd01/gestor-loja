@@ -1,8 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   assinarCarrinhoConvidado,
   atualizarItemConvidado,
@@ -22,7 +24,15 @@ import { formatarPreco } from "@/lib/utils";
  * o real só chega depois de montar no cliente — sem isso, um setState
  * direto dentro do efeito dispara um render em cascata.
  */
-export function CarrinhoConvidado({ slug, empresaId }: { slug: string; empresaId: string }) {
+export function CarrinhoConvidado({
+  slug,
+  empresaId,
+  freteGratisMinimo,
+}: {
+  slug: string;
+  empresaId: string;
+  freteGratisMinimo: number | null;
+}) {
   const itens = useSyncExternalStore(
     assinarCarrinhoConvidado,
     () => obterSnapshotCarrinhoConvidado(empresaId),
@@ -50,7 +60,11 @@ export function CarrinhoConvidado({ slug, empresaId }: { slug: string; empresaId
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
       <h1 className="text-xl font-semibold">Seu carrinho</h1>
 
-      <div className="divide-y divide-black/5 dark:divide-white/10">
+      {freteGratisMinimo != null && total < freteGratisMinimo && (
+        <FreteGratisProgresso subtotal={total} minimo={freteGratisMinimo} />
+      )}
+
+      <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (
           <div key={item.produtoId} className="flex items-center gap-4 py-4">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-black/5 dark:bg-white/5">
@@ -92,14 +106,14 @@ export function CarrinhoConvidado({ slug, empresaId }: { slug: string; empresaId
             </span>
           </div>
         ))}
-      </div>
+      </Card>
 
-      <div className="flex items-center justify-between border-t border-black/10 pt-4 dark:border-white/10">
+      <div className="flex items-center justify-between px-1">
         <span className="text-base font-medium">Total</span>
         <span className="text-xl font-bold">{formatarPreco(total)}</span>
       </div>
 
-      <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="w-full">
+      <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="w-full py-3 text-base">
         Finalizar pedido
       </ButtonLink>
       <p className="text-center text-xs text-black/40 dark:text-white/40">

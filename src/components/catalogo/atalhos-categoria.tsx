@@ -21,15 +21,17 @@ export function AtalhosCategoria({
   if (destaques.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
       {destaques.map(({ categoria, total }) => (
         <Link
           key={categoria}
           href={`/loja/${slug}?categoria=${encodeURIComponent(categoria)}`}
-          className="flex flex-col items-center gap-1.5 rounded-xl border border-black/5 bg-white p-3 text-center transition-colors hover:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+          className="group flex flex-col items-center gap-2 rounded-2xl border border-black/5 bg-[var(--surface)] p-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/10"
         >
-          <IconeSvg tipo={detectarIcone(categoria)} className="h-6 w-6 text-[var(--brand-primary)]" />
-          <span className="line-clamp-2 text-[11px] leading-tight font-medium">{categoria}</span>
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand-primary)]/15 to-[var(--brand-secondary)]/15 transition-colors group-hover:from-[var(--brand-primary)]/25 group-hover:to-[var(--brand-secondary)]/25">
+            <IconeSvg tipo={detectarIcone(categoria)} className="h-5 w-5 text-[var(--brand-primary)]" />
+          </div>
+          <span className="line-clamp-2 text-[11px] leading-tight font-semibold">{categoria}</span>
           <span className="text-[10px] text-black/40 dark:text-white/40">{total}</span>
         </Link>
       ))}

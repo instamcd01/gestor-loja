@@ -11,3 +11,8 @@ export function formatarPreco(valor: number) {
     currency: "BRL",
   });
 }
+
+export function percentualDesconto(preco: number, precoPromocional: number | null) {
+  if (precoPromocional == null || precoPromocional >= preco) return 0;
+  return Math.round((1 - precoPromocional / preco) * 100);
+}

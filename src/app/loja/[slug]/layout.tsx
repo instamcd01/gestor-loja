@@ -31,14 +31,14 @@ export default async function LojaLayout({
       }
       className="flex min-h-screen flex-col"
     >
-      <header className="border-b border-black/5 dark:border-white/10">
+      <header className="sticky top-0 z-10 border-b border-black/5 bg-[var(--surface)]/90 backdrop-blur dark:border-white/10">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4">
           {empresa.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={empresa.logo_url}
               alt={empresa.nome}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-black/5 dark:ring-white/10"
             />
           ) : (
             <div

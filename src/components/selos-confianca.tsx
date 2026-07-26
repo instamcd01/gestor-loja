@@ -27,14 +27,16 @@ export function SelosConfianca({
   if (selos.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {selos.map((selo) => (
         <div
           key={selo.titulo}
-          className="flex items-center gap-2.5 rounded-xl border border-black/5 bg-white px-3 py-2.5 dark:border-white/10 dark:bg-white/5"
+          className="flex items-center gap-3 rounded-2xl border border-black/5 bg-[var(--surface)] px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-white/10"
         >
-          <IconeSelo tipo={selo.icone} className="h-5 w-5 shrink-0 text-[var(--brand-primary)]" />
-          <span className="text-xs font-medium">{selo.titulo}</span>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10">
+            <IconeSelo tipo={selo.icone} className="h-4.5 w-4.5 text-[var(--brand-primary)]" />
+          </div>
+          <span className="text-xs font-semibold">{selo.titulo}</span>
         </div>
       ))}
     </div>
