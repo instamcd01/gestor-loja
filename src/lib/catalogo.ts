@@ -2,6 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import type { CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { extrairPeso } from "@/lib/variantes";
 
+/** Remove acentos e caixa, espelhando `unaccent(lower(...))` usado em `nome_busca` na view. */
+function normalizarBusca(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
 export type Ordenacao =
   | "relevancia"
   | "menor_preco"
@@ -46,7 +54,12 @@ export async function getProdutosCatalogo(
     .is("produto_pai_id", null);
 
   if (filtros?.busca) {
-    query = query.ilike("nome", `%${filtros.busca}%`);
+    // Cada palavra vira um ilike separado (AND implícito do PostgREST) — assim
+    // "racao salmao" bate em "Ração ... Sabor Salmão" mesmo fora de ordem/adjacência.
+    const palavras = normalizarBusca(filtros.busca).split(/\s+/).filter(Boolean);
+    for (const palavra of palavras) {
+      query = query.ilike("nome_busca", `%${palavra}%`);
+    }
   }
   if (filtros?.categoria) {
     // "Outros" é o rótulo pra categoria vazia (ver getCategoriasComContagem)
