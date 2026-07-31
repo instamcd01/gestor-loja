@@ -37,6 +37,7 @@ export default async function LojaPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{
     q?: string;
+    departamento?: string;
     categoria?: string;
     marca?: string;
     precoMin?: string;
@@ -45,15 +46,16 @@ export default async function LojaPage({
   }>;
 }) {
   const { slug } = await params;
-  const { q, categoria, marca, precoMin, precoMax, ordenar } = await searchParams;
+  const { q, departamento, categoria, marca, precoMin, precoMax, ordenar } = await searchParams;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
 
-  const filtroAtivo = !!q || !!categoria || !!marca || !!precoMin;
+  const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!precoMin;
 
   const [produtos, marcas, faixasPreco, freteGratisMinimo] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
       busca: q,
+      departamento,
       categoria,
       marca,
       precoMin: precoMin ? Number(precoMin) : undefined,
@@ -87,7 +89,7 @@ export default async function LojaPage({
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-black/50 dark:text-white/50">
           {produtos.length} produto{produtos.length === 1 ? "" : "s"}
-          {categoria ? ` em ${categoria}` : ""}
+          {categoria ? ` em ${categoria}` : departamento ? ` em ${departamento}` : ""}
         </p>
         <div className="flex items-center gap-2">
           <FiltrosDrawer marcas={marcas} marcaAtiva={marca ?? null} faixasPreco={faixasPreco} faixaAtiva={faixaAtiva} />

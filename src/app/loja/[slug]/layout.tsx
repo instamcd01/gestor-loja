@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { AccountLink } from "@/components/auth/account-link";
 import { BuscaCatalogo } from "@/components/catalogo/busca-catalogo";
 import { NavCategorias } from "@/components/loja/nav-categorias";
-import { getCategoriasComContagem, getEmpresaPorSlug } from "@/lib/catalogo";
+import { getDepartamentosComContagem, getEmpresaPorSlug } from "@/lib/catalogo";
 
 export const revalidate = 300; // dados de branding mudam raramente
 
@@ -20,7 +20,7 @@ export default async function LojaLayout({
 
   if (!empresa) notFound();
 
-  const categorias = await getCategoriasComContagem(empresa.id);
+  const departamentos = await getDepartamentosComContagem(empresa.id);
 
   const corPrimaria = empresa.cor_primaria ?? "#0087FD";
   const corSecundaria = empresa.cor_secundaria ?? "#F74D05";
@@ -74,7 +74,7 @@ export default async function LojaLayout({
           </div>
         </div>
 
-        {categorias.length > 0 && <NavCategorias categorias={categorias} slug={slug} />}
+        {departamentos.length > 0 && <NavCategorias departamentos={departamentos} slug={slug} />}
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>

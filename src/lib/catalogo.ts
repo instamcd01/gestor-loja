@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEPARTAMENTOS, departamentoDaCategoria } from "@/lib/departamentos";
 import type { CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { extrairPeso } from "@/lib/variantes";
 
@@ -37,6 +38,7 @@ export async function getProdutosCatalogo(
   empresaId: string,
   filtros?: {
     busca?: string;
+    departamento?: string;
     categoria?: string;
     marca?: string;
     precoMin?: number;
@@ -53,6 +55,15 @@ export async function getProdutosCatalogo(
     // aparecem como pills dentro do card, não como cards separados.
     .is("produto_pai_id", null);
 
+  if (filtros?.departamento) {
+    // Departamento é um agrupamento de categorias (ver departamentos.ts), não
+    // uma coluna própria — se não reconhecido, não filtra (degrada pra "todos"
+    // em vez de silenciosamente devolver zero produtos).
+    const dept = DEPARTAMENTOS.find((d) => d.nome === filtros.departamento);
+    if (dept) {
+      query = query.in("categoria", dept.categorias);
+    }
+  }
   if (filtros?.busca) {
     // Cada palavra vira um ilike separado (AND implícito do PostgREST) — assim
     // "racao salmao" bate em "Ração ... Sabor Salmão" mesmo fora de ordem/adjacência.
@@ -313,6 +324,45 @@ export async function getCategoriasComContagem(
   return [...contagem.entries()]
     .map(([categoria, total]) => ({ categoria, total }))
     .sort((a, b) => b.total - a.total);
+}
+
+export interface DepartamentoComContagem {
+  nome: string;
+  total: number;
+  categorias: { categoria: string; total: number }[];
+}
+
+/**
+ * Agrupa getCategoriasComContagem em departamentos (ver departamentos.ts) —
+ * é o que alimenta o menu de 2 níveis do site (departamento na linha
+ * principal, subcategoria como refinamento). Categoria fora do mapeamento
+ * cai num departamento "Outros" sintético, pra nunca sumir do menu.
+ */
+export async function getDepartamentosComContagem(
+  empresaId: string,
+): Promise<DepartamentoComContagem[]> {
+  const categorias = await getCategoriasComContagem(empresaId);
+
+  const porDepartamento = new Map<string, { categoria: string; total: number }[]>();
+  for (const item of categorias) {
+    if (item.categoria === "Outros") continue; // sem categoria (produto.categoria IS NULL), não é departamento
+    const dept = departamentoDaCategoria(item.categoria) ?? "Outros";
+    porDepartamento.set(dept, [...(porDepartamento.get(dept) ?? []), item]);
+  }
+
+  const emOrdem = DEPARTAMENTOS.map((d) => {
+    const itens = porDepartamento.get(d.nome) ?? [];
+    porDepartamento.delete(d.nome);
+    return { nome: d.nome, total: itens.reduce((s, i) => s + i.total, 0), categorias: itens };
+  });
+
+  const restantes = [...porDepartamento.entries()].map(([nome, itens]) => ({
+    nome,
+    total: itens.reduce((s, i) => s + i.total, 0),
+    categorias: itens,
+  }));
+
+  return [...emOrdem, ...restantes].filter((d) => d.total > 0);
 }
 
 export async function getProdutoCatalogo(
