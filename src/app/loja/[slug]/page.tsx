@@ -91,7 +91,7 @@ export default async function LojaPage({
         moderno={empresa.catalogo_modelo === "moderno"}
       />
 
-      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} />}
+      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} moderno={empresa.catalogo_modelo === "moderno"} />}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
         <p className="text-sm text-black/50 dark:text-white/50">

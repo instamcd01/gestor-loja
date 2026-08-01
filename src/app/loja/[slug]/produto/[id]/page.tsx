@@ -147,7 +147,7 @@ export default async function ProdutoPage({
               )}
             </Card>
 
-            <ClubeEmBreve nome={empresa.nome} />
+            <ClubeEmBreve nome={empresa.nome} moderno={empresa.catalogo_modelo === "moderno"} />
 
             <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-2 w-fit">
               ← Voltar ao catálogo
