@@ -40,6 +40,9 @@ yarn-error.log*
 # claude-code brainstorming companion (local mockups, not project source)
 .superpowers/
 
+# git worktrees for isolated subagent-driven implementation
+.worktrees/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
