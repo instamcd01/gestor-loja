@@ -27,6 +27,7 @@ export default async function LojaLayout({
 
   return (
     <div
+      data-modelo={empresa.catalogo_modelo}
       style={
         {
           "--brand-primary": corPrimaria,

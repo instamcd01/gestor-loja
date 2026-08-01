@@ -77,3 +77,29 @@ label:has(:focus-visible) {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* Modelo "moderno" (Bold Trusted Marketplace) — escopado via data-modelo
+   no wrapper do tenant em loja/[slug]/layout.tsx. 'classico' (padrão,
+   inclusive fora de escopo de tenant) não é afetado por este bloco. */
+[data-modelo="moderno"] {
+  --background: #f3f5f8;
+  --surface: #ffffff;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+
+  --placeholder-bg: color-mix(in srgb, var(--brand-primary) 14%, white);
+  --placeholder-radius: 9999px;
+
+  --benefit-blue-bg: #e9f2ff;
+  --benefit-blue-fg: #0068c9;
+  --benefit-green-bg: #e9f8ea;
+  --benefit-green-fg: #1f8a2c;
+  --benefit-orange-bg: #fff1e6;
+  --benefit-orange-fg: #c9560f;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-modelo="moderno"] {
+    --background: #16181c;
+    --surface: #1f2228;
+  }
+}
