@@ -84,6 +84,7 @@ label:has(:focus-visible) {
 [data-modelo="moderno"] {
   --background: #f3f5f8;
   --surface: #ffffff;
+  background: var(--background);
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
 
   --placeholder-bg: color-mix(in srgb, var(--brand-primary) 14%, white);
@@ -101,5 +102,6 @@ label:has(:focus-visible) {
   [data-modelo="moderno"] {
     --background: #16181c;
     --surface: #1f2228;
+    background: var(--background);
   }
 }
