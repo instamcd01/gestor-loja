@@ -1,3 +1,4 @@
+// requires: npm install --no-save playwright && npx playwright install chromium (deliberately not a package.json dependency, see README)
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
 

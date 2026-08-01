@@ -1,5 +1,11 @@
 import { formatarPreco } from "@/lib/utils";
 
+/**
+ * Versão honesta do bloco "Vantagens de comprar" da Petz: só mostra o que é
+ * de fato verdade pra essa empresa (frete grátis só aparece se existir zona
+ * configurada com valor mínimo; não existe "3x sem juros" aqui porque não
+ * há gateway de cartão — só Pix e pagamento na retirada).
+ */
 const paleta = {
   caminhao: { bg: "var(--benefit-blue-bg)", fg: "var(--benefit-blue-fg)" },
   loja: { bg: "var(--benefit-green-bg)", fg: "var(--benefit-green-fg)" },
@@ -36,7 +42,7 @@ export function SelosConfianca({
           return (
             <div
               key={selo.titulo}
-              className="rounded-2xl p-4"
+              className="rounded-[var(--radius-lg)] p-4"
               style={{ background: cor.bg }}
             >
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/60">

@@ -64,6 +64,7 @@ export default async function ProdutoPage({
   const percentualOff = percentualDesconto(produto.preco, produto.preco_promocional);
 
   const mensagemWhatsapp = encodeURIComponent(`Olá! Tenho interesse em: ${produto.nome}`);
+  const moderno = empresa.catalogo_modelo === "moderno";
 
   return (
     <div className="flex flex-col gap-10">
@@ -147,7 +148,7 @@ export default async function ProdutoPage({
               )}
             </Card>
 
-            <ClubeEmBreve nome={empresa.nome} moderno={empresa.catalogo_modelo === "moderno"} />
+            <ClubeEmBreve nome={empresa.nome} moderno={moderno} />
 
             <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-2 w-fit">
               ← Voltar ao catálogo
@@ -156,7 +157,7 @@ export default async function ProdutoPage({
         </div>
       </div>
 
-      <ProdutosRelacionados produtos={relacionados} slug={slug} moderno={empresa.catalogo_modelo === "moderno"} />
+      <ProdutosRelacionados produtos={relacionados} slug={slug} moderno={moderno} />
     </div>
   );
 }

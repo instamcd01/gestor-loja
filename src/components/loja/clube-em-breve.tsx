@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 export function ClubeEmBreve({ nome, moderno }: { nome: string; moderno: boolean }) {
   if (moderno) {
     return (
-      <div className="flex items-center gap-4 rounded-2xl p-5" style={{ background: "var(--benefit-orange-bg)" }}>
+      <div className="flex items-center gap-4 rounded-[var(--radius-lg)] p-5" style={{ background: "var(--benefit-orange-bg)" }}>
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60"
           style={{ color: "var(--benefit-orange-fg)" }}
@@ -19,7 +19,7 @@ export function ClubeEmBreve({ nome, moderno }: { nome: string; moderno: boolean
           <p className="text-sm font-bold" style={{ color: "var(--benefit-orange-fg)" }}>
             Um jeito novo de economizar está chegando
           </p>
-          <p className="text-xs opacity-70" style={{ color: "var(--benefit-orange-fg)" }}>
+          <p className="text-xs" style={{ color: "var(--benefit-orange-fg-secondary)" }}>
             Em breve, mais vantagens pra quem compra sempre na {nome}.
           </p>
         </div>

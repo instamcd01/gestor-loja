@@ -93,9 +93,16 @@ label:has(:focus-visible) {
   --benefit-blue-bg: #e9f2ff;
   --benefit-blue-fg: #0068c9;
   --benefit-green-bg: #e9f8ea;
-  --benefit-green-fg: #1f8a2c;
+  /* #1f8a2c original só dava 4.03:1 em cima de #e9f8ea (precisa 4.5:1 pra
+     texto normal) — escurecido até 4.97:1, sem mexer no fundo. */
+  --benefit-green-fg: #157a22;
   --benefit-orange-bg: #fff1e6;
-  --benefit-orange-fg: #c9560f;
+  /* #c9560f original só dava 3.93:1 em cima de #fff1e6 — escurecido até
+     5.15:1. Par "secundário" fica um degrau mais claro que o primário
+     (visualmente secundário) mas ainda ≥4.5:1 (4.74:1) — em vez de
+     opacity-70 no mesmo tom, que caía pra ~2.6:1. */
+  --benefit-orange-fg: #ad4709;
+  --benefit-orange-fg-secondary: #b54c0c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -103,5 +110,22 @@ label:has(:focus-visible) {
     --background: #16181c;
     --surface: #1f2228;
     background: var(--background);
+
+    /* Fundo do placeholder de produto mistura com preto em vez de branco
+       aqui — senão ficava um círculo claro flutuando sobre fundo escuro. */
+    --placeholder-bg: color-mix(in srgb, var(--brand-primary) 25%, black);
+
+    /* Cards de selo/clube usavam fundo pastel claro fixo — em dark mode
+       viravam um retângulo claro boiando sobre --background escuro. Aqui
+       o fundo escurece pro tom da própria cor e o texto clareia, mantendo
+       o mesmo par hue-a-hue do modo claro (mesmo espírito do
+       --color-success/--color-warning/--color-danger já dark-aware acima). */
+    --benefit-blue-bg: #142a40;
+    --benefit-blue-fg: #7ec2ff;
+    --benefit-green-bg: #143420;
+    --benefit-green-fg: #79dd8d;
+    --benefit-orange-bg: #3a2211;
+    --benefit-orange-fg: #ffab66;
+    --benefit-orange-fg-secondary: #e8975a;
   }
 }

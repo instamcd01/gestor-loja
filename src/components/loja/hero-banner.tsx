@@ -11,8 +11,11 @@ export function HeroBanner({
   moderno: boolean;
 }) {
   if (moderno) {
+    // `nome` não é interpolado aqui de propósito (decisão de design já
+    // aprovada nesta fase, não um esquecimento) — o headline moderno é
+    // fixo por enquanto, diferente do clássico abaixo que usa `nome`.
     return (
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[color-mix(in_srgb,var(--brand-primary)_60%,black)] px-6 py-12 text-white sm:px-10 sm:py-16">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--brand-primary)] to-[color-mix(in_srgb,var(--brand-primary)_60%,black)] px-6 py-12 text-white sm:px-10 sm:py-16">
         <div className="pointer-events-none absolute top-6 right-16 h-24 w-24 rounded-full bg-white/8" />
         <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-white/6" />
         <div className="relative flex max-w-xl flex-col gap-4">

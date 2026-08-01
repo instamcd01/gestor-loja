@@ -24,6 +24,7 @@ export default async function LojaLayout({
 
   const corPrimaria = empresa.cor_primaria ?? "#0087FD";
   const corSecundaria = empresa.cor_secundaria ?? "#F74D05";
+  const moderno = empresa.catalogo_modelo === "moderno";
 
   return (
     <div
@@ -76,7 +77,7 @@ export default async function LojaLayout({
         </div>
 
         {departamentos.length > 0 && (
-          <NavCategorias departamentos={departamentos} slug={slug} moderno={empresa.catalogo_modelo === "moderno"} />
+          <NavCategorias departamentos={departamentos} slug={slug} moderno={moderno} />
         )}
       </header>
 

@@ -369,6 +369,33 @@ quando `tipo_pagamento === 'Pix'` e o pedido ainda não está pago.
   no tamanho máximo do campo EMV) antes de entrar no payload — exigência
   do padrão, não é escolha de formatação.
 
+## Dois modelos visuais: clássico e moderno (`catalogo_modelo`)
+
+O site suporta dois templates visuais por empresa, escolhidos por
+`empresas.catalogo_modelo` (`'classico'` por padrão, ou `'moderno'`) — o
+dropdown já existe e funciona hoje no Gestor, em **Configurações >
+Catálogo Online** (`catalogo_online_screen.dart`). O valor chega em
+`data-modelo` no wrapper do tenant (`src/app/loja/[slug]/layout.tsx`) e
+`globals.css` escopa as variações de CSS (fundo, fonte Inter, tokens de
+cor dos cards de selo/clube) em `[data-modelo="moderno"]` — `'classico'`
+(o padrão, inclusive fora de escopo de tenant) não é afetado.
+
+- **Fase 1 (esta) só redesenhou home + header/nav**: `HeroBanner`,
+  `SelosConfianca`, `ClubeEmBreve`, `MarcasParceiras`, `NavCategorias` e o
+  card de produto (`ProdutoCard`/`ProdutoPlaceholder`) têm variante
+  `moderno`. Nada mais.
+- **Não recomendado ligar 'moderno' num tenant real ainda**: como
+  `data-modelo` fica no wrapper que envolve TODO o conteúdo de
+  `/loja/[slug]`, os tokens novos (fundo, fonte Inter) vazam pras 5 rotas
+  que não foram redesenhadas nesta fase — `carrinho`, `conta`, `entrar`,
+  `pedido/[id]` (confirmação/Pix) e a página de produto (que só teve o
+  `ClubeEmBreve` e o placeholder tocados, o resto do layout continua
+  estrutura clássica). Selecionar "Moderno" hoje resulta numa loja
+  parcialmente redesenhada — fundo/fonte novos com componentes de layout
+  antigo por baixo.
+- Ordem de rollout planejada (fases seguintes cobrindo as rotas
+  restantes): ver `docs/superpowers/plans/2026-08-01-redesign-visual-fase1.md`.
+
 ## O que falta (nessa ordem provável)
 
 1. ~~Identidade do cliente final~~ — **feito**, ver acima (pendente só a

@@ -3,7 +3,7 @@ export function MarcasParceiras({ marcas }: { marcas: { marca: string; total: nu
   if (top.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-[var(--surface)] px-6 py-8 text-center">
+    <div className="rounded-[var(--radius-lg)] bg-[var(--surface)] px-6 py-8 text-center">
       <h2 className="text-base font-extrabold">As melhores marcas</h2>
       <p className="mt-1 text-xs text-black/50 dark:text-white/50">
         Trabalhamos com marcas que seu pet já conhece e confia

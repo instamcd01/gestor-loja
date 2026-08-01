@@ -52,6 +52,7 @@ export default async function LojaPage({
   if (!empresa) notFound();
 
   const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!precoMin;
+  const moderno = empresa.catalogo_modelo === "moderno";
 
   const [produtos, marcas, faixasPreco, freteGratisMinimo] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
@@ -82,19 +83,19 @@ export default async function LojaPage({
         <HeroBanner
           nome={empresa.nome}
           tagline={empresa.catalogo_info_extra}
-          moderno={empresa.catalogo_modelo === "moderno"}
+          moderno={moderno}
         />
       )}
 
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}
         metodosPagamento={empresa.metodos_pagamento_ativos}
-        moderno={empresa.catalogo_modelo === "moderno"}
+        moderno={moderno}
       />
 
-      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} moderno={empresa.catalogo_modelo === "moderno"} />}
+      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} moderno={moderno} />}
 
-      {!filtroAtivo && empresa.catalogo_modelo === "moderno" && <MarcasParceiras marcas={marcas} />}
+      {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
         <p className="text-sm text-black/50 dark:text-white/50">
@@ -121,7 +122,7 @@ export default async function LojaPage({
               produto={produto}
               slug={slug}
               variantes={variantesPorPai.get(produto.id)}
-              moderno={empresa.catalogo_modelo === "moderno"}
+              moderno={moderno}
             />
           ))}
         </div>
@@ -137,7 +138,7 @@ export default async function LojaPage({
                     produto={produto}
                     slug={slug}
                     variantes={variantesPorPai.get(produto.id)}
-                    moderno={empresa.catalogo_modelo === "moderno"}
+                    moderno={moderno}
                   />
                 ))}
               </div>
