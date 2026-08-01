@@ -77,7 +77,13 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      {!filtroAtivo && <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} />}
+      {!filtroAtivo && (
+        <HeroBanner
+          nome={empresa.nome}
+          tagline={empresa.catalogo_info_extra}
+          moderno={empresa.catalogo_modelo === "moderno"}
+        />
+      )}
 
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}
@@ -86,7 +92,7 @@ export default async function LojaPage({
 
       {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} />}
 
-      <div className="flex items-center justify-between gap-3">
+      <div id="produtos" className="flex items-center justify-between gap-3">
         <p className="text-sm text-black/50 dark:text-white/50">
           {produtos.length} produto{produtos.length === 1 ? "" : "s"}
           {categoria ? ` em ${categoria}` : departamento ? ` em ${departamento}` : ""}
