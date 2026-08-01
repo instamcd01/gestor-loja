@@ -4,6 +4,7 @@ import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { HeroBanner } from "@/components/loja/hero-banner";
+import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
@@ -92,6 +93,8 @@ export default async function LojaPage({
       />
 
       {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} moderno={empresa.catalogo_modelo === "moderno"} />}
+
+      {!filtroAtivo && empresa.catalogo_modelo === "moderno" && <MarcasParceiras marcas={marcas} />}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
         <p className="text-sm text-black/50 dark:text-white/50">
