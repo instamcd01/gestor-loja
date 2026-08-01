@@ -75,7 +75,9 @@ export default async function LojaLayout({
           </div>
         </div>
 
-        {departamentos.length > 0 && <NavCategorias departamentos={departamentos} slug={slug} />}
+        {departamentos.length > 0 && (
+          <NavCategorias departamentos={departamentos} slug={slug} moderno={empresa.catalogo_modelo === "moderno"} />
+        )}
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>

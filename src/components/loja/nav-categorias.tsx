@@ -15,9 +15,11 @@ import type { DepartamentoComContagem } from "@/lib/catalogo";
 export function NavCategorias({
   departamentos,
   slug,
+  moderno,
 }: {
   departamentos: DepartamentoComContagem[];
   slug: string;
+  moderno: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,14 +36,14 @@ export function NavCategorias({
   return (
     <div className="border-t border-black/5 dark:border-white/10">
       <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
-        <Link href={destino} className={linkClasse(!departamentoAtivo && !temBusca)}>
+        <Link href={destino} className={linkClasse(!departamentoAtivo && !temBusca, moderno)}>
           Todos
         </Link>
         {departamentos.map((d) => (
           <Link
             key={d.nome}
             href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
-            className={linkClasse(departamentoAtivo === d.nome)}
+            className={linkClasse(departamentoAtivo === d.nome, moderno)}
           >
             {d.nome}
           </Link>
@@ -71,8 +73,9 @@ export function NavCategorias({
   );
 }
 
-function linkClasse(ativo: boolean) {
-  return `shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${
+function linkClasse(ativo: boolean, moderno: boolean) {
+  const pesoFonte = moderno ? "font-bold" : "font-medium";
+  return `shrink-0 border-b-2 px-3 py-2.5 text-sm ${pesoFonte} whitespace-nowrap transition-colors ${
     ativo
       ? "border-[var(--brand-primary)] text-[var(--brand-primary)]"
       : "border-transparent text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/90"
