@@ -98,10 +98,10 @@ export function ProdutoPlaceholder({ categoria }: { categoria: string | null }) 
 
   return (
     <div
-      className="flex h-full w-full items-center justify-center"
+      className="flex h-full w-full items-center justify-center rounded-[var(--placeholder-radius,0px)]"
       style={{
         background:
-          "linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 12%, transparent), color-mix(in srgb, var(--brand-secondary) 12%, transparent))",
+          "var(--placeholder-bg, linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 12%, transparent), color-mix(in srgb, var(--brand-secondary) 12%, transparent)))",
       }}
     >
       <IconeSvg
