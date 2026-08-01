@@ -156,7 +156,7 @@ export default async function ProdutoPage({
         </div>
       </div>
 
-      <ProdutosRelacionados produtos={relacionados} slug={slug} />
+      <ProdutosRelacionados produtos={relacionados} slug={slug} moderno={empresa.catalogo_modelo === "moderno"} />
     </div>
   );
 }

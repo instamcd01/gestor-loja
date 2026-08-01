@@ -121,6 +121,7 @@ export default async function LojaPage({
               produto={produto}
               slug={slug}
               variantes={variantesPorPai.get(produto.id)}
+              moderno={empresa.catalogo_modelo === "moderno"}
             />
           ))}
         </div>
@@ -136,6 +137,7 @@ export default async function LojaPage({
                     produto={produto}
                     slug={slug}
                     variantes={variantesPorPai.get(produto.id)}
+                    moderno={empresa.catalogo_modelo === "moderno"}
                   />
                 ))}
               </div>

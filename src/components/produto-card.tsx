@@ -12,10 +12,12 @@ export function ProdutoCard({
   produto,
   slug,
   variantes,
+  moderno,
 }: {
   produto: ProdutoCatalogo;
   slug: string;
   variantes?: VarianteProduto[];
+  moderno: boolean;
 }) {
   const opcoes: VarianteProduto[] = [
     {
@@ -79,7 +81,7 @@ export function ProdutoCard({
         )}
 
         <div className="mt-auto flex items-baseline gap-2 pt-1">
-          <span className="text-base font-semibold">
+          <span className={moderno ? "text-lg font-extrabold" : "text-base font-semibold"}>
             {formatarPreco(temPromocao ? selecionada.preco_promocional! : selecionada.preco)}
           </span>
           {temPromocao && (
