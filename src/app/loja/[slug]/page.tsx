@@ -88,6 +88,7 @@ export default async function LojaPage({
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}
         metodosPagamento={empresa.metodos_pagamento_ativos}
+        moderno={empresa.catalogo_modelo === "moderno"}
       />
 
       {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} />}

@@ -1,17 +1,19 @@
 import { formatarPreco } from "@/lib/utils";
 
-/**
- * Versão honesta do bloco "Vantagens de comprar" da Petz: só mostra o que é
- * de fato verdade pra essa empresa (frete grátis só aparece se existir zona
- * configurada com valor mínimo; não existe "3x sem juros" aqui porque não
- * há gateway de cartão — só Pix e pagamento na retirada).
- */
+const paleta = {
+  caminhao: { bg: "var(--benefit-blue-bg)", fg: "var(--benefit-blue-fg)" },
+  loja: { bg: "var(--benefit-green-bg)", fg: "var(--benefit-green-fg)" },
+  pix: { bg: "var(--benefit-orange-bg)", fg: "var(--benefit-orange-fg)" },
+} as const;
+
 export function SelosConfianca({
   freteGratisMinimo,
   metodosPagamento,
+  moderno,
 }: {
   freteGratisMinimo: number | null;
   metodosPagamento: string[] | null;
+  moderno: boolean;
 }) {
   const temPix = metodosPagamento?.includes("Pix") ?? false;
 
@@ -25,6 +27,30 @@ export function SelosConfianca({
   ].filter((selo): selo is { titulo: string; icone: "caminhao" | "loja" | "pix" } => !!selo);
 
   if (selos.length === 0) return null;
+
+  if (moderno) {
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {selos.map((selo) => {
+          const cor = paleta[selo.icone];
+          return (
+            <div
+              key={selo.titulo}
+              className="rounded-2xl p-4"
+              style={{ background: cor.bg }}
+            >
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/60">
+                <IconeSelo tipo={selo.icone} className="h-4.5 w-4.5" style={{ color: cor.fg }} />
+              </div>
+              <p className="text-sm font-bold" style={{ color: cor.fg }}>
+                {selo.titulo}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -43,7 +69,15 @@ export function SelosConfianca({
   );
 }
 
-function IconeSelo({ tipo, className }: { tipo: "caminhao" | "loja" | "pix"; className?: string }) {
+function IconeSelo({
+  tipo,
+  className,
+  style,
+}: {
+  tipo: "caminhao" | "loja" | "pix";
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const props = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -52,6 +86,7 @@ function IconeSelo({ tipo, className }: { tipo: "caminhao" | "loja" | "pix"; cla
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     className,
+    style,
   };
 
   switch (tipo) {
