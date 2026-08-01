@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { DEPARTAMENTOS, departamentoDaCategoria } from "@/lib/departamentos";
 import type { CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { extrairPeso } from "@/lib/variantes";
 
@@ -56,12 +55,14 @@ export async function getProdutosCatalogo(
     .is("produto_pai_id", null);
 
   if (filtros?.departamento) {
-    // Departamento é um agrupamento de categorias (ver departamentos.ts), não
-    // uma coluna própria — se não reconhecido, não filtra (degrada pra "todos"
-    // em vez de silenciosamente devolver zero produtos).
-    const dept = DEPARTAMENTOS.find((d) => d.nome === filtros.departamento);
-    if (dept) {
-      query = query.in("categoria", dept.categorias);
+    // Departamento é um agrupamento de categorias mantido no banco (tabela
+    // departamentos, editável no app Gestor), não uma coluna própria de
+    // produtos — resolve as categorias daquele departamento primeiro. Se
+    // nada for encontrado, não filtra (degrada pra "todos" em vez de
+    // silenciosamente devolver zero produtos).
+    const categoriasDoDept = await getCategoriasDoDepartamento(empresaId, filtros.departamento);
+    if (categoriasDoDept.length > 0) {
+      query = query.in("categoria", categoriasDoDept);
     }
   }
   if (filtros?.busca) {
@@ -332,37 +333,74 @@ export interface DepartamentoComContagem {
   categorias: { categoria: string; total: number }[];
 }
 
+interface LinhaDepartamentoPublico {
+  departamento_nome: string | null;
+  departamento_ordem: number | null;
+  categoria_nome: string;
+  categoria_ordem: number | null;
+}
+
 /**
- * Agrupa getCategoriasComContagem em departamentos (ver departamentos.ts) —
- * é o que alimenta o menu de 2 níveis do site (departamento na linha
- * principal, subcategoria como refinamento). Categoria fora do mapeamento
- * cai num departamento "Outros" sintético, pra nunca sumir do menu.
+ * Mapa departamento -> categorias vindo da view `catalogo_departamentos_publico`
+ * (banco, editável via app Gestor — telas de Categorias/Departamentos). Uma
+ * categoria sem departamento ainda atribuído volta com `departamento_nome:
+ * null`; quem consome isso deve tratar como "Outros", nunca descartar.
+ */
+async function getMapaDepartamentos(empresaId: string): Promise<LinhaDepartamentoPublico[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_departamentos_publico")
+    .select("departamento_nome, departamento_ordem, categoria_nome, categoria_ordem")
+    .eq("empresa_id", empresaId)
+    .order("departamento_ordem", { ascending: true, nullsFirst: false })
+    .order("categoria_ordem", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao buscar mapa de departamentos:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+async function getCategoriasDoDepartamento(empresaId: string, departamento: string): Promise<string[]> {
+  const mapa = await getMapaDepartamentos(empresaId);
+  return mapa.filter((l) => l.departamento_nome === departamento).map((l) => l.categoria_nome);
+}
+
+/**
+ * Agrupa getCategoriasComContagem (contagem real de produtos visíveis) pelo
+ * mapa de departamentos do banco — é o que alimenta o menu de 2 níveis do
+ * site (departamento na linha principal, subcategoria como refinamento).
+ * Categoria sem departamento cai num "Outros" sintético, pra nunca sumir do
+ * menu enquanto ninguém atribuir um departamento a ela no Gestor.
  */
 export async function getDepartamentosComContagem(
   empresaId: string,
 ): Promise<DepartamentoComContagem[]> {
-  const categorias = await getCategoriasComContagem(empresaId);
+  const [mapa, categorias] = await Promise.all([
+    getMapaDepartamentos(empresaId),
+    getCategoriasComContagem(empresaId),
+  ]);
 
+  const contagemPorCategoria = new Map(categorias.map((c) => [c.categoria, c.total]));
+
+  const ordemDepartamentos: string[] = [];
   const porDepartamento = new Map<string, { categoria: string; total: number }[]>();
-  for (const item of categorias) {
-    if (item.categoria === "Outros") continue; // sem categoria (produto.categoria IS NULL), não é departamento
-    const dept = departamentoDaCategoria(item.categoria) ?? "Outros";
-    porDepartamento.set(dept, [...(porDepartamento.get(dept) ?? []), item]);
+  for (const linha of mapa) {
+    const total = contagemPorCategoria.get(linha.categoria_nome) ?? 0;
+    if (total === 0) continue; // categoria mapeada mas sem produto visível agora
+    const nome = linha.departamento_nome ?? "Outros";
+    if (!porDepartamento.has(nome)) {
+      porDepartamento.set(nome, []);
+      ordemDepartamentos.push(nome);
+    }
+    porDepartamento.get(nome)!.push({ categoria: linha.categoria_nome, total });
   }
 
-  const emOrdem = DEPARTAMENTOS.map((d) => {
-    const itens = porDepartamento.get(d.nome) ?? [];
-    porDepartamento.delete(d.nome);
-    return { nome: d.nome, total: itens.reduce((s, i) => s + i.total, 0), categorias: itens };
+  return ordemDepartamentos.map((nome) => {
+    const itens = porDepartamento.get(nome)!;
+    return { nome, total: itens.reduce((s, i) => s + i.total, 0), categorias: itens };
   });
-
-  const restantes = [...porDepartamento.entries()].map(([nome, itens]) => ({
-    nome,
-    total: itens.reduce((s, i) => s + i.total, 0),
-    categorias: itens,
-  }));
-
-  return [...emOrdem, ...restantes].filter((d) => d.total > 0);
 }
 
 export async function getProdutoCatalogo(
