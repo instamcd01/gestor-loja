@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
+import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,11 +27,11 @@ import { formatarPreco } from "@/lib/utils";
 export function CarrinhoConvidado({
   slug,
   empresaId,
-  freteGratisMinimo,
+  enderecoEmpresa,
 }: {
   slug: string;
   empresaId: string;
-  freteGratisMinimo: number | null;
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
 }) {
   const itens = useSyncExternalStore(
     assinarCarrinhoConvidado,
@@ -60,9 +60,7 @@ export function CarrinhoConvidado({
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
       <h1 className="text-xl font-semibold">Seu carrinho</h1>
 
-      {freteGratisMinimo != null && total < freteGratisMinimo && (
-        <FreteGratisProgresso subtotal={total} minimo={freteGratisMinimo} />
-      )}
+      <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={total} />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (

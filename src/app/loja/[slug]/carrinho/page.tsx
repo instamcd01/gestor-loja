@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CheckoutForm } from "@/components/carrinho/checkout-form";
-import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
+import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { Card } from "@/components/ui/card";
-import { getEmpresaPorSlug, getMenorValorFreteGratis } from "@/lib/catalogo";
+import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
@@ -32,12 +32,17 @@ export default async function CarrinhoPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const freteGratisMinimo = await getMenorValorFreteGratis(empresa.id);
+  const enderecoEmpresa = {
+    endereco: empresa.endereco,
+    cidade: empresa.cidade,
+    estado: empresa.estado,
+    cep: empresa.cep,
+  };
 
   // Sem login, o carrinho vive só no navegador — telefone só é pedido
   // na hora de finalizar (ver CarrinhoConvidado e mesclarCarrinhoConvidado).
   if (!user) {
-    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} freteGratisMinimo={freteGratisMinimo} />;
+    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} enderecoEmpresa={enderecoEmpresa} />;
   }
 
   const [carrinho, enderecoSalvo, saldoCliente] = await Promise.all([
@@ -61,9 +66,7 @@ export default async function CarrinhoPage({
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
       <h1 className="text-xl font-semibold">Seu carrinho</h1>
 
-      {freteGratisMinimo != null && carrinho.valorTotal < freteGratisMinimo && (
-        <FreteGratisProgresso subtotal={carrinho.valorTotal} minimo={freteGratisMinimo} />
-      )}
+      <EstimarFreteGratis empresaId={empresa.id} enderecoEmpresa={enderecoEmpresa} subtotal={carrinho.valorTotal} />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {carrinho.itens.map((item) => (
@@ -82,12 +85,7 @@ export default async function CarrinhoPage({
         metodosPagamento={(empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
           METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
         )}
-        enderecoEmpresa={{
-          endereco: empresa.endereco,
-          cidade: empresa.cidade,
-          estado: empresa.estado,
-          cep: empresa.cep,
-        }}
+        enderecoEmpresa={enderecoEmpresa}
         subtotal={carrinho.valorTotal}
         enderecoSalvo={enderecoSalvo}
         saldoCliente={saldoCliente}

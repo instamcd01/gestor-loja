@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { calcularFrete, type ResultadoFrete } from "@/lib/frete";
+import { calcularFrete, resolverZonaPorCep, type ResultadoFrete, type ResultadoZonaPorCep } from "@/lib/frete";
 import { getEnderecoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,4 +48,12 @@ export async function obterOpcaoFrete(
   }
 
   return calcularFrete(empresaId, enderecoEmpresa, endereco, subtotal);
+}
+
+export async function estimarFreteGratisPorCep(
+  empresaId: string,
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },
+  cep: string,
+): Promise<ResultadoZonaPorCep> {
+  return resolverZonaPorCep(empresaId, enderecoEmpresa, cep);
 }

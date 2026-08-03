@@ -55,6 +55,44 @@ export type ResultadoFrete =
   | { disponivel: true; opcao: OpcaoFrete; distanciaKm: number }
   | { disponivel: false; motivo: "sem_endereco" | "fora_de_area" | "erro_distancia" };
 
+export type ResultadoZonaPorCep =
+  | { encontrada: true; zonaId: string; zonaNome: string; valorMinimoFreteGratis: number | null }
+  | { encontrada: false };
+
+/**
+ * Estimativa rápida só com CEP (sem exigir endereço completo nem login) —
+ * usada pra mostrar a barra de frete grátis antes do checkout de verdade,
+ * que exige endereço completo salvo na conta (ver obterOpcaoFrete em
+ * checkout.ts). Google Distance Matrix geocodifica CEP sozinho bem o
+ * suficiente pra decidir a faixa de distância certa.
+ */
+export async function resolverZonaPorCep(
+  empresaId: string,
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },
+  cep: string,
+): Promise<ResultadoZonaPorCep> {
+  const origem = montarEndereco(enderecoEmpresa);
+  if (!origem) return { encontrada: false };
+
+  const distanciaKm = await calcularDistanciaKm(origem, cep);
+  if (distanciaKm == null) return { encontrada: false };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .rpc("calcular_frete_site", { p_empresa_id: empresaId, p_distancia_km: distanciaKm, p_subtotal: 0 })
+    .maybeSingle();
+
+  if (!data) return { encontrada: false };
+
+  const opcao = data as OpcaoFrete;
+  return {
+    encontrada: true,
+    zonaId: opcao.zona_id,
+    zonaNome: opcao.zona_nome,
+    valorMinimoFreteGratis: opcao.valor_minimo_frete_gratis,
+  };
+}
+
 export async function calcularFrete(
   empresaId: string,
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },

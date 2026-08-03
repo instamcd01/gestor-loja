@@ -95,4 +95,5 @@ export interface OpcaoFrete {
   zona_nome: string;
   valor: number;
   frete_gratis: boolean;
+  valor_minimo_frete_gratis: number | null;
 }

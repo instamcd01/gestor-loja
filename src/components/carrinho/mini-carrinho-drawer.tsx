@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
-import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 import { formatarPreco } from "@/lib/utils";
 
@@ -33,20 +33,22 @@ export interface ItemMiniCarrinho {
  */
 export function MiniCarrinhoDrawer({
   slug,
+  empresaId,
+  enderecoEmpresa,
   itens,
   valorTotal,
   idRecemAdicionado,
   itemProcessando,
-  freteGratisMinimo,
   onAlterarQuantidade,
   onFechar,
 }: {
   slug: string;
+  empresaId: string;
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   itens: ItemMiniCarrinho[];
   valorTotal: number;
   idRecemAdicionado: string;
   itemProcessando: string | null;
-  freteGratisMinimo?: number | null;
   onAlterarQuantidade: (itemId: string, novaQuantidade: number) => void;
   onFechar: () => void;
 }) {
@@ -82,9 +84,7 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
-        {freteGratisMinimo != null && freteGratisMinimo > 0 && (
-          <FreteGratisProgresso subtotal={valorTotal} minimo={freteGratisMinimo} />
-        )}
+        <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={valorTotal} />
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {itens.map((item) => (

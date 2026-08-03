@@ -18,15 +18,15 @@ interface EstadoDrawer {
 export function AdicionarCarrinhoButton({
   slug,
   empresaId,
+  enderecoEmpresa,
   produtoId,
   produto,
-  freteGratisMinimo,
 }: {
   slug: string;
   empresaId: string;
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   produtoId: string;
   produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number };
-  freteGratisMinimo?: number | null;
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
@@ -206,11 +206,12 @@ export function AdicionarCarrinhoButton({
       {drawer && (
         <MiniCarrinhoDrawer
           slug={slug}
+          empresaId={empresaId}
+          enderecoEmpresa={enderecoEmpresa}
           itens={drawer.itens}
           valorTotal={drawer.valorTotal}
           idRecemAdicionado={drawer.idRecemAdicionado}
           itemProcessando={itemProcessando}
-          freteGratisMinimo={freteGratisMinimo}
           onAlterarQuantidade={alterarQuantidade}
           onFechar={() => setDrawer(null)}
         />
