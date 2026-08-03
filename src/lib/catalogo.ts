@@ -1,6 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
-import { extrairPeso } from "@/lib/variantes";
+import { chaveOrdenacaoRotulo, extrairPeso } from "@/lib/variantes";
+
+/**
+ * Rótulo + chave de ordenação de uma variante — prefere `variante_label`
+ * (preenchido via aprovação de sugestão no app Gestor, cobre qualquer eixo:
+ * peso/dose/sabor/apresentação) e cai pro `extrairPeso` heurístico só pra
+ * variantes legadas que ainda não passaram por essa aprovação (só cobre peso).
+ */
+function rotuloEChaveVariante(linha: { nome: string; variante_label?: string | null }): {
+  rotulo: string;
+  chave: number;
+} {
+  const rotulo = linha.variante_label || extrairPeso(linha.nome)?.rotulo || linha.nome;
+  return { rotulo, chave: chaveOrdenacaoRotulo(rotulo) };
+}
 
 /** Remove acentos e caixa, espelhando `unaccent(lower(...))` usado em `nome_busca` na view. */
 function normalizarBusca(texto: string): string {
@@ -46,13 +60,16 @@ export async function getProdutosCatalogo(
   },
 ): Promise<ProdutoCatalogo[]> {
   const supabase = await createClient();
-  let query = supabase
-    .from("catalogo_produtos_publico")
-    .select("*")
-    .eq("empresa_id", empresaId)
-    // Só pai/avulso na grade — variantes (peso/tamanho) do mesmo produto-base
-    // aparecem como pills dentro do card, não como cards separados.
-    .is("produto_pai_id", null);
+  let query = supabase.from("catalogo_produtos_publico").select("*").eq("empresa_id", empresaId);
+
+  if (filtros?.busca) {
+    // Em busca, mostra cada variante que bater como card próprio — se a
+    // pessoa está procurando/vendo por foto, agrupar dentro de "a partir de"
+    // esconderia justamente a opção que ela procurou. Fora de busca, mantém
+    // só pai/avulso na grade (variantes viram pills dentro do card).
+  } else {
+    query = query.is("produto_pai_id", null);
+  }
 
   if (filtros?.departamento) {
     // Departamento é um agrupamento de categorias mantido no banco (tabela
@@ -151,7 +168,7 @@ export async function getVariantesEmLote(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional, produto_pai_id")
+    .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label")
     .eq("empresa_id", empresaId)
     .not("produto_pai_id", "is", null);
 
@@ -160,27 +177,24 @@ export async function getVariantesEmLote(
     return porPai;
   }
 
-  // gramas guardado à parte pra ordenar — extrairPeso() exige um espaço
-  // antes do número, então não dá pra re-extrair de um rótulo já cortado
-  // tipo "20kg" (sem espaço); precisa vir do nome completo, uma vez só.
-  const comGramas: { paiId: string; variante: VarianteProduto; gramas: number }[] = [];
+  const comChave: { paiId: string; variante: VarianteProduto; chave: number }[] = [];
   for (const linha of data ?? []) {
     if (!linha.produto_pai_id || !paiIdsSet.has(linha.produto_pai_id)) continue;
-    const peso = extrairPeso(linha.nome);
-    comGramas.push({
+    const { rotulo, chave } = rotuloEChaveVariante(linha);
+    comChave.push({
       paiId: linha.produto_pai_id,
-      gramas: peso?.gramas ?? 0,
+      chave,
       variante: {
         id: linha.id,
-        rotulo: peso?.rotulo ?? linha.nome,
+        rotulo,
         preco: linha.preco,
         preco_promocional: linha.preco_promocional,
       },
     });
   }
 
-  comGramas.sort((a, b) => a.gramas - b.gramas);
-  for (const { paiId, variante } of comGramas) {
+  comChave.sort((a, b) => a.chave - b.chave || a.variante.rotulo.localeCompare(b.variante.rotulo));
+  for (const { paiId, variante } of comChave) {
     const lista = porPai.get(paiId) ?? [];
     lista.push(variante);
     porPai.set(paiId, lista);
@@ -202,7 +216,7 @@ export async function getVariantesDoProduto(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional")
+    .select("id, nome, preco, preco_promocional, variante_label")
     .eq("empresa_id", empresaId)
     .or(`id.eq.${paiId},produto_pai_id.eq.${paiId}`);
 
@@ -214,18 +228,18 @@ export async function getVariantesDoProduto(
 
   return data
     .map((linha) => {
-      const peso = extrairPeso(linha.nome);
+      const { rotulo, chave } = rotuloEChaveVariante(linha);
       return {
-        gramas: peso?.gramas ?? 0,
+        chave,
         variante: {
           id: linha.id,
-          rotulo: peso?.rotulo ?? linha.nome,
+          rotulo,
           preco: linha.preco,
           preco_promocional: linha.preco_promocional,
         } satisfies VarianteProduto,
       };
     })
-    .sort((a, b) => a.gramas - b.gramas)
+    .sort((a, b) => a.chave - b.chave || a.variante.rotulo.localeCompare(b.variante.rotulo))
     .map(({ variante }) => variante);
 }
 

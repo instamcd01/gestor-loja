@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
-import { formatarPreco, percentualDesconto } from "@/lib/utils";
+import { formatarPreco, percentualDesconto, precoEfetivo } from "@/lib/utils";
 import { extrairPeso } from "@/lib/variantes";
 
 export function ProdutoCard({
@@ -22,7 +22,7 @@ export function ProdutoCard({
   const opcoes: VarianteProduto[] = [
     {
       id: produto.id,
-      rotulo: extrairPeso(produto.nome)?.rotulo ?? produto.unidade_medida ?? "",
+      rotulo: produto.variante_label || extrairPeso(produto.nome)?.rotulo || produto.unidade_medida || "",
       preco: produto.preco,
       preco_promocional: produto.preco_promocional,
     },
@@ -30,7 +30,14 @@ export function ProdutoCard({
   ];
   const temVariantes = (variantes?.length ?? 0) > 0;
 
-  const [ativa, setAtiva] = useState(0);
+  // Mostra por padrão a opção mais barata (não a primeira arbitrária) — o
+  // preço exibido no card sempre reflete "a partir de" quando há variantes.
+  const [ativa, setAtiva] = useState(() =>
+    opcoes.reduce(
+      (menorIdx, opcao, i) => (precoEfetivo(opcao) < precoEfetivo(opcoes[menorIdx]) ? i : menorIdx),
+      0,
+    ),
+  );
   const selecionada = opcoes[ativa];
   const temPromocao =
     selecionada.preco_promocional != null && selecionada.preco_promocional < selecionada.preco;

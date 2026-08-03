@@ -13,17 +13,19 @@ export function SeletorVariante({
   slug,
   variantes,
   idAtual,
+  rotulo = "Escolha o tamanho",
 }: {
   slug: string;
   variantes: VarianteProduto[];
   idAtual: string;
+  rotulo?: string;
 }) {
   const router = useRouter();
 
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-medium uppercase tracking-wide text-black/40 dark:text-white/40">
-        Escolha o tamanho
+        {rotulo}
       </span>
       <div className="flex flex-wrap gap-2">
         {variantes.map((variante) => (

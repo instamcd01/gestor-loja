@@ -44,6 +44,10 @@ export interface ProdutoCatalogo {
   destaque: boolean;
   produto_pai_id: string | null;
   imagem_url_secundaria: string | null;
+  /** Eixo da variante ("peso", "dose", "sabor"...) — null se o produto não faz parte de uma família. */
+  tipo_variacao: string | null;
+  /** Valor deste produto dentro do eixo (ex: "3kg", "250mg", "Frango"). */
+  variante_label: string | null;
 }
 
 /** Uma variante (peso/tamanho) de um produto-pai, pra montar as pills de seleção. */

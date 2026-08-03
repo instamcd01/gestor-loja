@@ -16,6 +16,7 @@ import {
   getVariantesDoProduto,
 } from "@/lib/catalogo";
 import { formatarPreco, percentualDesconto } from "@/lib/utils";
+import { rotuloSeletorVariante } from "@/lib/variantes";
 
 export const revalidate = 60;
 
@@ -114,7 +115,12 @@ export default async function ProdutoPage({
             </div>
 
             {variantes.length > 0 && (
-              <SeletorVariante slug={slug} variantes={variantes} idAtual={produto.id} />
+              <SeletorVariante
+                slug={slug}
+                variantes={variantes}
+                idAtual={produto.id}
+                rotulo={rotuloSeletorVariante(produto.tipo_variacao)}
+              />
             )}
 
             {produto.descricao && (

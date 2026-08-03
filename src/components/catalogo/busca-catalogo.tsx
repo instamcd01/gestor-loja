@@ -19,15 +19,22 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
   const [valor, setValor] = useState(qAtual);
   const primeiraRenderizacao = useRef(true);
 
-  // Ajusta o campo quando `q` muda por fora (ex: limpar busca ao trocar de
-  // categoria pelo nav) — durante a renderização, não num efeito, seguindo
-  // o padrão recomendado pelo React pra "resetar estado quando uma prop
-  // muda" (evita o cascading-render que um useEffect com setState causaria).
-  const [qSincronizado, setQSincronizado] = useState(qAtual);
-  if (qAtual !== qSincronizado) {
-    setQSincronizado(qAtual);
-    setValor(qAtual);
-  }
+  // Guarda o último valor que ESTE componente mandou pra URL — não o
+  // último `q` visto. Sem essa distinção, se a resposta do servidor
+  // demorar mais que o debounce, sincronizar o campo sempre que `q` muda
+  // confundia "minha própria busca chegando atrasada" com "mudou por
+  // fora" e resetava o campo no meio da digitação (o "bugando" ao digitar
+  // rápido). Só sincroniza de fato quando `q` muda por um motivo que não
+  // foi este componente (ex: limpar busca ao trocar de categoria pelo nav).
+  // Num efeito, não durante a renderização — o projeto usa uma regra de
+  // lint que proíbe ler/escrever ref no corpo do componente.
+  const ultimoValorEnviado = useRef(qAtual);
+  useEffect(() => {
+    if (qAtual !== ultimoValorEnviado.current) {
+      ultimoValorEnviado.current = qAtual;
+      setValor(qAtual);
+    }
+  }, [qAtual]);
 
   useEffect(() => {
     if (primeiraRenderizacao.current) {
@@ -36,9 +43,11 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
     }
 
     const timeout = setTimeout(() => {
+      const valorFinal = valor.trim();
+      ultimoValorEnviado.current = valorFinal;
       const params = new URLSearchParams(pathname === destino ? searchParams : undefined);
-      if (valor.trim()) {
-        params.set("q", valor.trim());
+      if (valorFinal) {
+        params.set("q", valorFinal);
       } else {
         params.delete("q");
       }
