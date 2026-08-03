@@ -10,6 +10,8 @@
  * está salvo aqui (mesmo princípio já usado em finalizar_pedido_site).
  */
 
+import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
+
 export type ItemCarrinhoConvidado = {
   produtoId: string;
   nome: string;
@@ -69,6 +71,7 @@ export function obterSnapshotCarrinhoConvidado(empresaId: string): ItemCarrinhoC
 function salvarCarrinhoConvidado(empresaId: string, itens: ItemCarrinhoConvidado[]) {
   window.localStorage.setItem(chave(empresaId), JSON.stringify(itens));
   notificarOuvintes();
+  notificarCarrinhoAtualizado();
 }
 
 export function adicionarItemConvidado(

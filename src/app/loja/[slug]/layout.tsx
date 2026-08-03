@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountLink } from "@/components/auth/account-link";
 import { BuscaCatalogo } from "@/components/catalogo/busca-catalogo";
+import { CarrinhoLink } from "@/components/carrinho/carrinho-link";
 import { NavCategorias } from "@/components/loja/nav-categorias";
 import { getDepartamentosComContagem, getEmpresaPorSlug } from "@/lib/catalogo";
 
@@ -64,9 +65,7 @@ export default async function LojaLayout({
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-4">
-              <Link href={`/loja/${slug}/carrinho`} className="text-sm font-medium hover:underline">
-                Carrinho
-              </Link>
+              <CarrinhoLink slug={slug} empresaId={empresa.id} />
               <AccountLink slug={slug} />
             </div>
           </div>

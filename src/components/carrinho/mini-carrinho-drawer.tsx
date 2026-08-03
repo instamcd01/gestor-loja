@@ -2,6 +2,7 @@
 
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 import { formatarPreco } from "@/lib/utils";
 
@@ -26,12 +27,18 @@ export function MiniCarrinhoDrawer({
   itens,
   valorTotal,
   idRecemAdicionado,
+  itemProcessando,
+  freteGratisMinimo,
+  onAlterarQuantidade,
   onFechar,
 }: {
   slug: string;
   itens: ItemMiniCarrinho[];
   valorTotal: number;
   idRecemAdicionado: string;
+  itemProcessando: string | null;
+  freteGratisMinimo?: number | null;
+  onAlterarQuantidade: (itemId: string, novaQuantidade: number) => void;
   onFechar: () => void;
 }) {
   const painelRef = useDrawerA11y(true, onFechar);
@@ -65,6 +72,10 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
+        {freteGratisMinimo != null && freteGratisMinimo > 0 && (
+          <FreteGratisProgresso subtotal={valorTotal} minimo={freteGratisMinimo} />
+        )}
+
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {itens.map((item) => (
             <div
@@ -73,7 +84,7 @@ export function MiniCarrinhoDrawer({
                 item.id === idRecemAdicionado
                   ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/5"
                   : "border-black/5 dark:border-white/10"
-              }`}
+              } ${itemProcessando === item.id ? "opacity-50" : ""}`}
             >
               <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
                 <ProdutoImagem
@@ -85,9 +96,28 @@ export function MiniCarrinhoDrawer({
               </div>
               <div className="flex-1">
                 <p className="line-clamp-2 text-sm font-medium">{item.nome}</p>
-                <p className="text-xs text-black/50 dark:text-white/50">
-                  {item.quantidade}x {formatarPreco(item.preco)}
-                </p>
+                <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={itemProcessando === item.id}
+                  onClick={() => onAlterarQuantidade(item.id, item.quantidade - 1)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
+                  aria-label={item.quantidade === 1 ? "Remover" : "Diminuir quantidade"}
+                >
+                  {item.quantidade === 1 ? "×" : "−"}
+                </button>
+                <span className="w-5 text-center text-sm">{item.quantidade}</span>
+                <button
+                  type="button"
+                  disabled={itemProcessando === item.id}
+                  onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
+                  aria-label="Aumentar quantidade"
+                >
+                  +
+                </button>
               </div>
             </div>
           ))}

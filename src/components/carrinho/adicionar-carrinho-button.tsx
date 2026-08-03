@@ -3,29 +3,36 @@
 import { useEffect, useState } from "react";
 import { type ItemMiniCarrinho, MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
 import { Button } from "@/components/ui/button";
-import { adicionarAoCarrinho, getCarrinho } from "@/lib/carrinho";
-import { adicionarItemConvidado } from "@/lib/carrinho-convidado";
+import { adicionarAoCarrinho, atualizarQuantidade, getCarrinho } from "@/lib/carrinho";
+import { adicionarItemConvidado, atualizarItemConvidado } from "@/lib/carrinho-convidado";
+import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
 import { createClient } from "@/lib/supabase/client";
+
+interface EstadoDrawer {
+  carrinhoId: string | null; // null = carrinho de convidado (sem linha no banco ainda)
+  itens: ItemMiniCarrinho[];
+  valorTotal: number;
+  idRecemAdicionado: string;
+}
 
 export function AdicionarCarrinhoButton({
   slug,
   empresaId,
   produtoId,
   produto,
+  freteGratisMinimo,
 }: {
   slug: string;
   empresaId: string;
   produtoId: string;
   produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number };
+  freteGratisMinimo?: number | null;
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(false);
-  const [carrinhoDrawer, setCarrinhoDrawer] = useState<{
-    itens: ItemMiniCarrinho[];
-    valorTotal: number;
-    idRecemAdicionado: string;
-  } | null>(null);
+  const [drawer, setDrawer] = useState<EstadoDrawer | null>(null);
+  const [itemProcessando, setItemProcessando] = useState<string | null>(null);
 
   // Mesmo motivo do AccountLink: a página de produto é ISR compartilhada
   // entre visitantes, então o estado de login é resolvido no browser, não
@@ -56,7 +63,9 @@ export function AdicionarCarrinhoButton({
         quantidade,
       });
       setCarregando(false);
-      setCarrinhoDrawer({
+      setQuantidade(1);
+      setDrawer({
+        carrinhoId: null,
         itens: itensConvidado.map((item) => ({
           id: item.produtoId,
           nome: item.nome,
@@ -84,7 +93,10 @@ export function AdicionarCarrinhoButton({
     // produtos tinham sumido.
     const carrinho = await getCarrinho(empresaId);
     setCarregando(false);
-    setCarrinhoDrawer({
+    setQuantidade(1);
+    notificarCarrinhoAtualizado();
+    setDrawer({
+      carrinhoId: carrinho.id,
       itens: carrinho.itens.map((item) => ({
         id: item.id,
         nome: item.produto?.nome ?? "Produto",
@@ -96,6 +108,63 @@ export function AdicionarCarrinhoButton({
       valorTotal: carrinho.valorTotal,
       idRecemAdicionado: carrinho.itens.find((item) => item.produto_id === produtoId)?.id ?? "",
     });
+  }
+
+  // Editar quantidade (ou remover, quando novaQuantidade <= 0) direto na
+  // gaveta — sem isso, corrigir um engano de quantidade exigia ir até a
+  // página do carrinho. A gaveta não faz parte da árvore de Server
+  // Components da página do carrinho, então o `revalidatePath` de dentro
+  // de `atualizarQuantidade` não atualiza esse estado local sozinho — por
+  // isso busca o carrinho de novo depois de alterar, igual ao fluxo de
+  // adicionar.
+  async function alterarQuantidade(itemId: string, novaQuantidade: number) {
+    if (!drawer) return;
+    setItemProcessando(itemId);
+
+    if (drawer.carrinhoId === null) {
+      const itensConvidado = atualizarItemConvidado(empresaId, itemId, novaQuantidade);
+      setDrawer(
+        itensConvidado.length === 0
+          ? null
+          : {
+              carrinhoId: null,
+              itens: itensConvidado.map((item) => ({
+                id: item.produtoId,
+                nome: item.nome,
+                imagemUrl: item.imagemUrl,
+                categoria: item.categoria,
+                preco: item.preco,
+                quantidade: item.quantidade,
+              })),
+              valorTotal: itensConvidado.reduce((soma, item) => soma + item.preco * item.quantidade, 0),
+              idRecemAdicionado: drawer.idRecemAdicionado,
+            },
+      );
+      setItemProcessando(null);
+      return;
+    }
+
+    await atualizarQuantidade(slug, drawer.carrinhoId, itemId, novaQuantidade);
+    const carrinho = await getCarrinho(empresaId);
+    notificarCarrinhoAtualizado();
+    setDrawer(
+      carrinho.itens.length === 0
+        ? null
+        : {
+            carrinhoId: carrinho.id,
+            itens: carrinho.itens.map((item) => ({
+              id: item.id,
+              nome: item.produto?.nome ?? "Produto",
+              imagemUrl: item.produto?.imagem_url ?? null,
+              categoria: item.produto?.categoria ?? null,
+              preco: item.preco_unitario,
+              quantidade: item.quantidade,
+            })),
+            valorTotal: carrinho.valorTotal,
+            idRecemAdicionado: drawer.idRecemAdicionado,
+          },
+    );
+    setItemProcessando(null);
   }
 
   return (
@@ -134,13 +203,16 @@ export function AdicionarCarrinhoButton({
         <p className="text-sm text-[var(--color-danger)]">Não foi possível adicionar. Tente de novo.</p>
       )}
 
-      {carrinhoDrawer && (
+      {drawer && (
         <MiniCarrinhoDrawer
           slug={slug}
-          itens={carrinhoDrawer.itens}
-          valorTotal={carrinhoDrawer.valorTotal}
-          idRecemAdicionado={carrinhoDrawer.idRecemAdicionado}
-          onFechar={() => setCarrinhoDrawer(null)}
+          itens={drawer.itens}
+          valorTotal={drawer.valorTotal}
+          idRecemAdicionado={drawer.idRecemAdicionado}
+          itemProcessando={itemProcessando}
+          freteGratisMinimo={freteGratisMinimo}
+          onAlterarQuantidade={alterarQuantidade}
+          onFechar={() => setDrawer(null)}
         />
       )}
     </div>

@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import {
   getEmpresaPorSlug,
+  getMenorValorFreteGratis,
   getProdutoCatalogo,
   getProdutosCatalogo,
   getVariantesDoProduto,
@@ -25,17 +26,19 @@ async function carregar(slug: string, id: string) {
   if (!empresa) return null;
   const produto = await getProdutoCatalogo(empresa.id, id);
   if (!produto) return null;
-  const [variantes, relacionados] = await Promise.all([
+  const [variantes, relacionados, freteGratisMinimo] = await Promise.all([
     getVariantesDoProduto(empresa.id, produto),
     produto.categoria
       ? getProdutosCatalogo(empresa.id, { categoria: produto.categoria })
       : Promise.resolve([]),
+    getMenorValorFreteGratis(empresa.id),
   ]);
   return {
     empresa,
     produto,
     variantes,
     relacionados: relacionados.filter((p) => p.id !== produto.id).slice(0, 8),
+    freteGratisMinimo,
   };
 }
 
@@ -58,7 +61,7 @@ export default async function ProdutoPage({
   const { slug, id } = await params;
   const dados = await carregar(slug, id);
   if (!dados) notFound();
-  const { produto, variantes, relacionados, empresa } = dados;
+  const { produto, variantes, relacionados, empresa, freteGratisMinimo } = dados;
 
   const temPromocao =
     produto.preco_promocional != null && produto.preco_promocional < produto.preco;
@@ -140,6 +143,7 @@ export default async function ProdutoPage({
                   categoria: produto.categoria,
                   preco: temPromocao ? produto.preco_promocional! : produto.preco,
                 }}
+                freteGratisMinimo={freteGratisMinimo}
               />
 
               {empresa.whatsapp_catalogo && (

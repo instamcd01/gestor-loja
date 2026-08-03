@@ -138,6 +138,25 @@ export async function atualizarQuantidade(
   revalidatePath(`/loja/${slug}/carrinho`);
 }
 
+/** Soma de quantidades no carrinho ativo — usado só pro badge do cabeçalho, não busca os itens inteiros. */
+export async function getContagemCarrinho(empresaId: string): Promise<number> {
+  const supabase = await createClient();
+  const clienteId = await getClienteId(supabase, empresaId);
+  if (!clienteId) return 0;
+
+  const { data: carrinho } = await supabase
+    .from("carrinho")
+    .select("id")
+    .eq("empresa_id", empresaId)
+    .eq("cliente_id", clienteId)
+    .eq("status", "ativo")
+    .maybeSingle();
+  if (!carrinho) return 0;
+
+  const { data: itens } = await supabase.from("carrinho_itens").select("quantidade").eq("carrinho_id", carrinho.id);
+  return (itens ?? []).reduce((soma, item) => soma + item.quantidade, 0);
+}
+
 export async function getCarrinho(empresaId: string): Promise<Carrinho> {
   const supabase = await createClient();
   const clienteId = await getClienteId(supabase, empresaId);
