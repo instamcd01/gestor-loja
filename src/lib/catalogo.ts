@@ -147,60 +147,92 @@ function descontoPercentual(produto: ProdutoCatalogo): number {
 }
 
 /**
- * Variantes (peso/tamanho) de todos os produtos-pai da empresa, pra montar
- * as pills sem N+1. Deliberadamente NÃO filtra por `.in("produto_pai_id",
- * paiIds)` — com o catálogo inteiro sem filtro (500+ produtos), a lista de
- * ids nesse IN estourava o limite de tamanho da URL da requisição e a busca
- * falhava com "TypeError: fetch failed" (visto ao testar de verdade no
- * navegador, não no build). Como só existem variantes mesmo (linhas com
- * produto_pai_id preenchido) pra uma fração do catálogo, trazer todas de
- * uma vez pra empresa e filtrar em memória é mais barato e não tem esse
- * limite.
+ * Pra cada produto pedido (pai OU filho — a grade de busca mostra os dois
+ * soltos, ver getProdutosCatalogo), devolve as OUTRAS opções da mesma
+ * família (nunca inclui ele mesmo). Bug real corrigido aqui: a versão
+ * antiga só agrupava filhos por `produto_pai_id`, então um card de FILHO
+ * nunca sabia quem eram os irmãos dele (nem o próprio pai) — só o card do
+ * pai mostrava as pills. Ex. real: busca por "Quatree Gourmet" trazia 3
+ * pesos soltos, só o de 3kg (o pai) mostrava as outras opções.
+ *
+ * Busca em duas etapas pra continuar sem `.in(paiIds)` no catálogo inteiro
+ * (List muito grande já estourou o limite de tamanho de URL antes, ver
+ * commit anterior): 1) todos os filhos da empresa sem filtro de id (só
+ * essa lista é potencialmente grande, mas não tem outro jeito de saber
+ * quem é filho de quem sem trazer todos); 2) só as âncoras realmente
+ * referenciadas por eles, que é uma lista pequena (uma por família).
  */
 export async function getVariantesEmLote(
   empresaId: string,
-  paiIds: string[],
+  produtos: Pick<ProdutoCatalogo, "id" | "produto_pai_id">[],
 ): Promise<Map<string, VarianteProduto[]>> {
-  const porPai = new Map<string, VarianteProduto[]>();
-  if (paiIds.length === 0) return porPai;
-  const paiIdsSet = new Set(paiIds);
+  const resultado = new Map<string, VarianteProduto[]>();
+  if (produtos.length === 0) return resultado;
+
+  const familiaDoProduto = new Map<string, string>();
+  for (const p of produtos) {
+    familiaDoProduto.set(p.id, p.produto_pai_id ?? p.id);
+  }
+  const familiasPedidas = new Set(familiaDoProduto.values());
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: filhos, error: erroFilhos } = await supabase
     .from("catalogo_produtos_publico")
     .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label")
     .eq("empresa_id", empresaId)
     .not("produto_pai_id", "is", null);
 
-  if (error) {
-    console.error("Erro ao buscar variantes:", error.message);
-    return porPai;
+  if (erroFilhos) {
+    console.error("Erro ao buscar variantes:", erroFilhos.message);
+    return resultado;
   }
 
-  const comChave: { paiId: string; variante: VarianteProduto; chave: number }[] = [];
-  for (const linha of data ?? []) {
-    if (!linha.produto_pai_id || !paiIdsSet.has(linha.produto_pai_id)) continue;
+  const ancorasReferenciadas = [
+    ...new Set((filhos ?? []).map((f) => f.produto_pai_id).filter((id): id is string => !!id)),
+  ].filter((id) => familiasPedidas.has(id));
+
+  const { data: ancoras, error: erroAncoras } =
+    ancorasReferenciadas.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("catalogo_produtos_publico")
+          .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label")
+          .in("id", ancorasReferenciadas);
+
+  if (erroAncoras) {
+    console.error("Erro ao buscar âncoras de variante:", erroAncoras.message);
+    return resultado;
+  }
+
+  const membrosPorFamilia = new Map<string, { rotulo: string; chave: number; variante: VarianteProduto }[]>();
+  for (const linha of [...(ancoras ?? []), ...(filhos ?? [])]) {
+    const familiaId = linha.produto_pai_id ?? linha.id;
+    if (!familiasPedidas.has(familiaId)) continue;
     const { rotulo, chave } = rotuloEChaveVariante(linha);
-    comChave.push({
-      paiId: linha.produto_pai_id,
+    const item = {
+      rotulo,
       chave,
-      variante: {
-        id: linha.id,
-        rotulo,
-        preco: linha.preco,
-        preco_promocional: linha.preco_promocional,
-      },
-    });
+      variante: { id: linha.id, rotulo, preco: linha.preco, preco_promocional: linha.preco_promocional },
+    };
+    const lista = membrosPorFamilia.get(familiaId) ?? [];
+    lista.push(item);
+    membrosPorFamilia.set(familiaId, lista);
+  }
+  for (const membros of membrosPorFamilia.values()) {
+    membros.sort((a, b) => a.chave - b.chave || a.rotulo.localeCompare(b.rotulo));
   }
 
-  comChave.sort((a, b) => a.chave - b.chave || a.variante.rotulo.localeCompare(b.variante.rotulo));
-  for (const { paiId, variante } of comChave) {
-    const lista = porPai.get(paiId) ?? [];
-    lista.push(variante);
-    porPai.set(paiId, lista);
+  for (const p of produtos) {
+    const familiaId = familiaDoProduto.get(p.id)!;
+    const membros = membrosPorFamilia.get(familiaId);
+    if (!membros) continue;
+    resultado.set(
+      p.id,
+      membros.filter((m) => m.variante.id !== p.id).map((m) => m.variante),
+    );
   }
 
-  return porPai;
+  return resultado;
 }
 
 /**

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
-import { formatarPreco, percentualDesconto, precoEfetivo } from "@/lib/utils";
+import { formatarPreco, percentualDesconto } from "@/lib/utils";
 import { extrairPeso } from "@/lib/variantes";
 
 export function ProdutoCard({
@@ -30,14 +30,13 @@ export function ProdutoCard({
   ];
   const temVariantes = (variantes?.length ?? 0) > 0;
 
-  // Mostra por padrão a opção mais barata (não a primeira arbitrária) — o
-  // preço exibido no card sempre reflete "a partir de" quando há variantes.
-  const [ativa, setAtiva] = useState(() =>
-    opcoes.reduce(
-      (menorIdx, opcao, i) => (precoEfetivo(opcao) < precoEfetivo(opcoes[menorIdx]) ? i : menorIdx),
-      0,
-    ),
-  );
+  // Mostra por padrão a própria opção do card (índice 0 — sempre "eu mesmo",
+  // ver `opcoes` acima), não a mais barata da família. Em busca, a mesma
+  // família aparece como vários cards soltos (um por variante) — se todos
+  // pulassem pra mostrar a opção mais barata, todos mostrariam o mesmo
+  // preço/pill em vez de cada um representar honestamente o produto que
+  // ele é. No catálogo agrupado, "eu mesmo" já é o produto-pai escolhido.
+  const [ativa, setAtiva] = useState(0);
   const selecionada = opcoes[ativa];
   const temPromocao =
     selecionada.preco_promocional != null && selecionada.preco_promocional < selecionada.preco;

@@ -69,10 +69,7 @@ export default async function LojaPage({
     getMenorValorFreteGratis(empresa.id),
   ]);
 
-  const variantesPorPai = await getVariantesEmLote(
-    empresa.id,
-    produtos.map((p) => p.id),
-  );
+  const variantesPorPai = await getVariantesEmLote(empresa.id, produtos);
 
   const faixaAtiva =
     precoMin != null ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined } : null;
