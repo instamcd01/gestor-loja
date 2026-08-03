@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { calcularFrete, resolverZonaPorCep, type ResultadoFrete, type ResultadoZonaPorCep } from "@/lib/frete";
-import { getEnderecoCliente } from "@/lib/cliente";
+import { calcularFrete, type ResultadoFrete } from "@/lib/frete";
+import { geocodificarEndereco, geocodificarReverso } from "@/lib/geocoding";
 import { createClient } from "@/lib/supabase/server";
+import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
 
 export type ResultadoCheckout = { ok: false; erro: string };
 
@@ -36,24 +37,28 @@ export async function finalizarPedido(
   redirect(`/loja/${slug}/pedido/${pedidoId}`);
 }
 
-export async function obterOpcaoFrete(
+/**
+ * Calcula o frete a partir de um endereço já resolvido (com lat/lng
+ * confirmados via CapturarEndereco) — não lê mais o endereço salvo na
+ * conta diretamente, quem chama decide a origem (conta, estimativa
+ * pré-carrinho salva no navegador, ou o que acabou de ser confirmado).
+ */
+export async function calcularFretePorEndereco(
   empresaId: string,
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },
+  endereco: EnderecoCliente,
   subtotal: number,
 ): Promise<ResultadoFrete> {
-  const endereco = await getEnderecoCliente(empresaId);
-
-  if (!endereco || !endereco.endereco || !endereco.cep) {
+  if (!endereco.endereco || !endereco.cep) {
     return { disponivel: false, motivo: "sem_endereco" };
   }
-
   return calcularFrete(empresaId, enderecoEmpresa, endereco, subtotal);
 }
 
-export async function estimarFreteGratisPorCep(
-  empresaId: string,
-  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },
-  cep: string,
-): Promise<ResultadoZonaPorCep> {
-  return resolverZonaPorCep(empresaId, enderecoEmpresa, cep);
+export async function buscarEnderecoCandidatos(query: string): Promise<CandidatoEndereco[]> {
+  return geocodificarEndereco(query);
+}
+
+export async function buscarEnderecoPorLocalizacao(lat: number, lng: number): Promise<CandidatoEndereco | null> {
+  return geocodificarReverso(lat, lng);
 }

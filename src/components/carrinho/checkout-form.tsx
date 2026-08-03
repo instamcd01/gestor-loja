@@ -1,24 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { finalizarPedido, obterOpcaoFrete } from "@/lib/checkout";
+import { calcularFretePorEndereco, finalizarPedido } from "@/lib/checkout";
 import { salvarEndereco } from "@/lib/cliente";
+import {
+  assinarEnderecoEstimado,
+  obterSnapshotEnderecoEstimado,
+  obterSnapshotServidorEnderecoEstimado,
+} from "@/lib/endereco-estimado";
 import type { EnderecoCliente } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
-
-const ENDERECO_VAZIO: EnderecoCliente = {
-  endereco: "",
-  numero: "",
-  bairro: "",
-  cidade: "",
-  estado: "",
-  cep: "",
-  complemento: "",
-};
 
 type TipoEntrega = "retirada" | "entrega";
 
@@ -39,11 +35,24 @@ export function CheckoutForm({
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
 }) {
+  // Se o cliente já resolveu o endereço na estimativa pré-carrinho (ver
+  // EstimarFreteGratis), reaproveita em vez de pedir de novo — só usada
+  // quando a conta ainda não tem um endereço salvo.
+  const enderecoEstimado = useSyncExternalStore(
+    assinarEnderecoEstimado,
+    () => obterSnapshotEnderecoEstimado(empresaId),
+    obterSnapshotServidorEnderecoEstimado,
+  );
+
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   const [observacoes, setObservacoes] = useState("");
-  const [endereco, setEndereco] = useState<EnderecoCliente>(enderecoSalvo ?? ENDERECO_VAZIO);
-  const [frete, setFrete] = useState<Awaited<ReturnType<typeof obterOpcaoFrete>> | null>(null);
+  // Confirmado nessa sessão > salvo na conta > estimado no navegador antes
+  // do login — derivado a cada render (não useState) pra reagir sozinho
+  // quando o useSyncExternalStore acima resolve depois da hidratação.
+  const [enderecoConfirmado, setEnderecoConfirmado] = useState<EnderecoCliente | null>(null);
+  const endereco = enderecoConfirmado ?? enderecoSalvo ?? enderecoEstimado?.endereco ?? null;
+  const [frete, setFrete] = useState<Awaited<ReturnType<typeof calcularFretePorEndereco>> | null>(null);
   const [calculando, setCalculando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -56,30 +65,19 @@ export function CheckoutForm({
     setErro(null);
   }
 
-  function campoPreenchido(campo: keyof EnderecoCliente) {
-    return (endereco[campo] ?? "").trim().length > 0;
-  }
-
-  const enderecoCompleto =
-    campoPreenchido("endereco") &&
-    campoPreenchido("numero") &&
-    campoPreenchido("bairro") &&
-    campoPreenchido("cidade") &&
-    campoPreenchido("estado") &&
-    campoPreenchido("cep");
-
-  async function calcularFreteAgora() {
+  async function confirmarEnderecoECalcularFrete(novoEndereco: EnderecoCliente) {
+    setEnderecoConfirmado(novoEndereco);
     setCalculando(true);
     setErro(null);
 
-    const salvo = await salvarEndereco(empresaId, endereco);
+    const salvo = await salvarEndereco(empresaId, novoEndereco);
     if (!salvo.ok) {
       setCalculando(false);
       setErro(salvo.erro);
       return;
     }
 
-    const resultado = await obterOpcaoFrete(empresaId, enderecoEmpresa, subtotal);
+    const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, novoEndereco, subtotal);
     setCalculando(false);
     setFrete(resultado);
   }
@@ -140,57 +138,11 @@ export function CheckoutForm({
 
       {tipoEntrega === "entrega" && (
         <Card className="flex flex-col gap-3 p-4">
-          <div className="grid grid-cols-3 gap-2">
-            <Input
-              placeholder="Rua"
-              value={endereco.endereco ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, endereco: e.target.value })}
-              className="col-span-2"
-            />
-            <Input
-              placeholder="Número"
-              value={endereco.numero ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, numero: e.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              placeholder="Bairro"
-              value={endereco.bairro ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, bairro: e.target.value })}
-            />
-            <Input
-              placeholder="Complemento (opcional)"
-              value={endereco.complemento ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, complemento: e.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <Input
-              placeholder="Cidade"
-              value={endereco.cidade ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, cidade: e.target.value })}
-            />
-            <Input
-              placeholder="UF"
-              maxLength={2}
-              value={endereco.estado ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, estado: e.target.value.toUpperCase() })}
-            />
-            <Input
-              placeholder="CEP"
-              value={endereco.cep ?? ""}
-              onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })}
-            />
-          </div>
+          <CapturarEndereco valorInicial={endereco} onResolvido={confirmarEnderecoECalcularFrete} />
 
-          <Button
-            variant="secondary"
-            onClick={calcularFreteAgora}
-            disabled={!enderecoCompleto || calculando}
-          >
-            {calculando ? "Calculando..." : "Calcular frete"}
-          </Button>
+          {calculando && (
+            <p className="text-sm text-black/50 dark:text-white/50">Calculando frete...</p>
+          )}
 
           {frete && frete.disponivel && (
             <p className="text-sm font-medium text-[var(--color-success)]">

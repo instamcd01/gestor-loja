@@ -88,6 +88,21 @@ export interface EnderecoCliente {
   estado: string | null;
   cep: string | null;
   complemento: string | null;
+  /** Coordenadas confirmadas (geocodificação ou geolocalização do navegador) — quando presentes, usadas no cálculo de distância em vez do texto do endereço, mais preciso pra ruas longas/numéricas. */
+  lat: number | null;
+  lng: number | null;
+}
+
+/** Um resultado possível ao geocodificar um endereço digitado — pode haver mais de um quando o nome se repete (ruas numéricas, bairros com nomes iguais em cidades diferentes etc). */
+export interface CandidatoEndereco {
+  formattedAddress: string;
+  lat: number;
+  lng: number;
+  endereco: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
 }
 
 export interface OpcaoFrete {

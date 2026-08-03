@@ -12,12 +12,15 @@ export async function getEnderecoCliente(empresaId: string): Promise<EnderecoCli
 
   const { data } = await supabase
     .from("clientes")
-    .select("endereco, numero, bairro, cidade, estado, cep, complemento")
+    .select("endereco, numero, bairro, cidade, estado, cep, complemento, latitude, longitude")
     .eq("empresa_id", empresaId)
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  return data;
+  if (!data) return null;
+
+  const { latitude, longitude, ...resto } = data;
+  return { ...resto, lat: latitude, lng: longitude };
 }
 
 /** Saldo/crédito de loja do cliente logado — mesmo campo que o atendente usa no app. */
@@ -55,6 +58,8 @@ export async function salvarEndereco(
     p_estado: endereco.estado,
     p_cep: endereco.cep,
     p_complemento: endereco.complemento,
+    p_latitude: endereco.lat,
+    p_longitude: endereco.lng,
   });
 
   if (error) return { ok: false, erro: error.message };
