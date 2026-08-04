@@ -44,10 +44,12 @@ export default function WppSignupPage() {
         const code = response?.authResponse?.code;
         if (code) {
           addLog("Trocando o code pelo token no servidor...");
+          const redirectUri = window.location.origin + window.location.pathname;
+          addLog("redirect_uri usado: " + redirectUri);
           fetch("/api/wpp-signup-exchange", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({ code, redirectUri }),
           })
             .then((r) => r.json())
             .then((data) => addLog("Resposta da troca: " + JSON.stringify(data, null, 2)))

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "WHATSAPP_APP_SECRET não configurado" }, { status: 500 });
   }
 
-  const { code } = await req.json();
+  const { code, redirectUri } = await req.json();
   if (!code) {
     return NextResponse.json({ error: "code ausente" }, { status: 400 });
   }
@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
   url.searchParams.set("client_id", "792354710007372");
   url.searchParams.set("client_secret", appSecret);
   url.searchParams.set("code", code);
-  // Code emitido via FB.login() (SDK do JS, sem redirect real) — a troca
-  // exige redirect_uri vazio, senão a Meta rejeita com error_subcode 36008.
-  url.searchParams.set("redirect_uri", "");
+  // FB.login() usa implicitamente a URL da página como redirect_uri —
+  // precisa bater exatamente, senão a Meta rejeita com error_subcode 36008.
+  url.searchParams.set("redirect_uri", redirectUri ?? "");
 
   const resposta = await fetch(url);
   const dados = await resposta.json();
