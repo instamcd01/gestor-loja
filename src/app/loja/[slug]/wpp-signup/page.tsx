@@ -39,8 +39,20 @@ export default function WppSignupPage() {
 
   function launchSignup() {
     (window as any).FB.login(
-      function (response: unknown) {
+      function (response: any) {
         addLog("Resposta do login: " + JSON.stringify(response, null, 2));
+        const code = response?.authResponse?.code;
+        if (code) {
+          addLog("Trocando o code pelo token no servidor...");
+          fetch("/api/wpp-signup-exchange", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          })
+            .then((r) => r.json())
+            .then((data) => addLog("Resposta da troca: " + JSON.stringify(data, null, 2)))
+            .catch((err) => addLog("Erro na troca: " + String(err)));
+        }
       },
       {
         config_id: "1806146204132974",
