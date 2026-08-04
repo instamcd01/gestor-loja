@@ -21,6 +21,9 @@ export async function POST(req: NextRequest) {
   url.searchParams.set("client_id", "792354710007372");
   url.searchParams.set("client_secret", appSecret);
   url.searchParams.set("code", code);
+  // Code emitido via FB.login() (SDK do JS, sem redirect real) — a troca
+  // exige redirect_uri vazio, senão a Meta rejeita com error_subcode 36008.
+  url.searchParams.set("redirect_uri", "");
 
   const resposta = await fetch(url);
   const dados = await resposta.json();
