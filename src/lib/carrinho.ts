@@ -24,14 +24,53 @@ async function getClienteId(
   return data?.id ?? null;
 }
 
-async function recalcularTotal(supabase: SupabaseClient, carrinhoId: string) {
-  const { data: itens } = await supabase
+/**
+ * Busca os itens do carrinho (com produto) e recalcula o total a partir
+ * deles — nunca confia no valor_total armazenado — e salva de volta.
+ * Chamada só depois de mutar carrinho_itens (adicionar/atualizar), pra
+ * devolver o carrinho fresco na mesma ida ao servidor em vez de o cliente
+ * ter que buscar tudo de novo numa segunda chamada (era o maior custo de
+ * latência do fluxo de adicionar/remover: cada clique fazia a mutação e
+ * DEPOIS um getCarrinho inteiro separado).
+ */
+async function recarregarCarrinho(supabase: SupabaseClient, carrinhoId: string): Promise<Carrinho> {
+  const { data: itensRaw } = await supabase
     .from("carrinho_itens")
-    .select("subtotal")
-    .eq("carrinho_id", carrinhoId);
+    .select("id, produto_id, quantidade, preco_unitario, subtotal")
+    .eq("carrinho_id", carrinhoId)
+    .order("created_at", { ascending: true });
 
-  const total = (itens ?? []).reduce((soma, item) => soma + Number(item.subtotal), 0);
-  await supabase.from("carrinho").update({ valor_total: total }).eq("id", carrinhoId);
+  const itensBrutos = itensRaw ?? [];
+  const valorTotal = itensBrutos.reduce((soma, item) => soma + Number(item.subtotal), 0);
+  const atualizarTotal = supabase.from("carrinho").update({ valor_total: valorTotal }).eq("id", carrinhoId);
+
+  if (itensBrutos.length === 0) {
+    await atualizarTotal;
+    return { id: carrinhoId, itens: [], valorTotal: 0 };
+  }
+
+  // Busca de produtos e gravação do total não dependem uma da outra —
+  // dispara as duas juntas em vez de esperar uma pra começar a outra.
+  const [{ data: produtos }] = await Promise.all([
+    supabase
+      .from("catalogo_produtos_publico")
+      .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel")
+      .in(
+        "id",
+        itensBrutos.map((i) => i.produto_id),
+      ),
+    atualizarTotal,
+  ]);
+
+  const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
+  return {
+    id: carrinhoId,
+    valorTotal,
+    itens: itensBrutos.map((item) => ({
+      ...item,
+      produto: produtosPorId.get(item.produto_id) ?? null,
+    })),
+  };
 }
 
 async function getOrCriarCarrinho(
@@ -60,7 +99,7 @@ async function getOrCriarCarrinho(
 }
 
 export type ResultadoCarrinho =
-  | { ok: true; limitado: boolean; disponivel: number }
+  | { ok: true; limitado: boolean; disponivel: number; carrinho: Carrinho }
   | { ok: false; erro: "login_necessario" | "produto_invalido" | "sem_estoque"; disponivel?: number };
 
 export async function adicionarAoCarrinho(
@@ -70,15 +109,20 @@ export async function adicionarAoCarrinho(
   quantidade: number,
 ): Promise<ResultadoCarrinho> {
   const supabase = await createClient();
-  const clienteId = await getClienteId(supabase, empresaId);
-  if (!clienteId) return { ok: false, erro: "login_necessario" };
 
-  const { data: produto } = await supabase
-    .from("catalogo_produtos_publico")
-    .select("preco, preco_promocional, estoque_disponivel")
-    .eq("id", produtoId)
-    .eq("empresa_id", empresaId)
-    .maybeSingle();
+  // clienteId e o produto não dependem um do outro — busca os dois ao
+  // mesmo tempo em vez de esperar o primeiro terminar pra começar o
+  // segundo (metade do tempo total dessa etapa).
+  const [clienteId, { data: produto }] = await Promise.all([
+    getClienteId(supabase, empresaId),
+    supabase
+      .from("catalogo_produtos_publico")
+      .select("preco, preco_promocional, estoque_disponivel")
+      .eq("id", produtoId)
+      .eq("empresa_id", empresaId)
+      .maybeSingle(),
+  ]);
+  if (!clienteId) return { ok: false, erro: "login_necessario" };
   if (!produto) return { ok: false, erro: "produto_invalido" };
 
   const preco = produto.preco_promocional ?? produto.preco;
@@ -115,9 +159,9 @@ export async function adicionarAoCarrinho(
     });
   }
 
-  await recalcularTotal(supabase, carrinhoId);
+  const carrinho = await recarregarCarrinho(supabase, carrinhoId);
   revalidatePath(`/loja/${slug}/carrinho`);
-  return { ok: true, limitado, disponivel: produto.estoque_disponivel };
+  return { ok: true, limitado, disponivel: produto.estoque_disponivel, carrinho };
 }
 
 export async function atualizarQuantidade(
@@ -125,7 +169,7 @@ export async function atualizarQuantidade(
   carrinhoId: string,
   itemId: string,
   quantidade: number,
-) {
+): Promise<Carrinho> {
   const supabase = await createClient();
 
   if (quantidade <= 0) {
@@ -155,15 +199,16 @@ export async function atualizarQuantidade(
     }
   }
 
-  await recalcularTotal(supabase, carrinhoId);
+  const carrinho = await recarregarCarrinho(supabase, carrinhoId);
   revalidatePath(`/loja/${slug}/carrinho`);
+  return carrinho;
 }
 
 /** Mesma ação do ícone "Esvaziar carrinho" no app (carrinho_screen.dart) — remove todos os itens do carrinho ativo. */
 export async function limparCarrinho(slug: string, carrinhoId: string) {
   const supabase = await createClient();
   await supabase.from("carrinho_itens").delete().eq("carrinho_id", carrinhoId);
-  await recalcularTotal(supabase, carrinhoId);
+  await supabase.from("carrinho").update({ valor_total: 0 }).eq("id", carrinhoId);
   revalidatePath(`/loja/${slug}/carrinho`);
 }
 
@@ -193,7 +238,7 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
 
   const { data: carrinho } = await supabase
     .from("carrinho")
-    .select("id, valor_total")
+    .select("id")
     .eq("empresa_id", empresaId)
     .eq("cliente_id", clienteId)
     .eq("status", "ativo")
@@ -219,10 +264,11 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
     );
 
   const produtosPorId = new Map((produtos ?? []).map((p) => [p.id, p]));
+  const valorTotal = itens.reduce((soma, item) => soma + Number(item.subtotal), 0);
 
   return {
     id: carrinho.id,
-    valorTotal: carrinho.valor_total,
+    valorTotal,
     itens: itens.map((item) => ({
       ...item,
       produto: produtosPorId.get(item.produto_id) ?? null,

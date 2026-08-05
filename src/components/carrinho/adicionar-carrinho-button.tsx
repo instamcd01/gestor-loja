@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { type ItemMiniCarrinho, MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
 import { Button } from "@/components/ui/button";
-import { adicionarAoCarrinho, atualizarQuantidade, getCarrinho } from "@/lib/carrinho";
+import { adicionarAoCarrinho, atualizarQuantidade } from "@/lib/carrinho";
 import { adicionarItemConvidado, atualizarItemConvidado } from "@/lib/carrinho-convidado";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
 import { createClient } from "@/lib/supabase/client";
@@ -101,11 +101,10 @@ export function AdicionarCarrinhoButton({
       setErro(`Só tinha ${resultado.disponivel} em estoque — ajustamos a quantidade.`);
     }
 
-    // Busca o carrinho completo (não só o item que acabou de entrar) pra
-    // gaveta de confirmação mostrar tudo que já está lá — antes só
-    // mostrava o item novo, dando a falsa impressão de que os outros
-    // produtos tinham sumido.
-    const carrinho = await getCarrinho(empresaId);
+    // adicionarAoCarrinho já devolve o carrinho inteiro (não só o item
+    // que acabou de entrar), pra gaveta mostrar tudo que já está lá sem
+    // precisar de uma segunda ida ao servidor só pra buscar de novo.
+    const carrinho = resultado.carrinho;
     setCarregando(false);
     setQuantidade(1);
     notificarCarrinhoAtualizado();
@@ -127,11 +126,11 @@ export function AdicionarCarrinhoButton({
 
   // Editar quantidade (ou remover, quando novaQuantidade <= 0) direto na
   // gaveta — sem isso, corrigir um engano de quantidade exigia ir até a
-  // página do carrinho. A gaveta não faz parte da árvore de Server
-  // Components da página do carrinho, então o `revalidatePath` de dentro
-  // de `atualizarQuantidade` não atualiza esse estado local sozinho — por
-  // isso busca o carrinho de novo depois de alterar, igual ao fluxo de
-  // adicionar.
+  // página do carrinho. atualizarQuantidade já devolve o carrinho fresco
+  // (a gaveta não faz parte da árvore de Server Components da página do
+  // carrinho, então o `revalidatePath` de dentro dela não atualiza esse
+  // estado local sozinho) — usa o retorno direto em vez de buscar tudo
+  // de novo numa segunda chamada.
   async function alterarQuantidade(itemId: string, novaQuantidade: number) {
     if (!drawer) return;
     setItemProcessando(itemId);
@@ -160,8 +159,7 @@ export function AdicionarCarrinhoButton({
       return;
     }
 
-    await atualizarQuantidade(slug, drawer.carrinhoId, itemId, novaQuantidade);
-    const carrinho = await getCarrinho(empresaId);
+    const carrinho = await atualizarQuantidade(slug, drawer.carrinhoId, itemId, novaQuantidade);
     notificarCarrinhoAtualizado();
     setDrawer(
       carrinho.itens.length === 0

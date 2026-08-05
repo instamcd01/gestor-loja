@@ -130,6 +130,22 @@ export function CheckoutForm({
     setFrete(resultado);
   }
 
+  // O cliente pode já ter confirmado o endereço antes de chegar aqui (na
+  // gaveta, via EstimarFreteGratis, ou porque a conta já tem endereço
+  // salvo) — nesse caso o frete calcula sozinho, sem esperar ele clicar
+  // "Confirmar endereço" de novo dentro do CapturarEndereco. Só dispara
+  // uma vez (a mesma regra do CarrinhoProvider.valorEntregaCalculado no
+  // app não recalcula frete a cada mudança de subtotal, só a decisão de
+  // "é grátis?", já reavaliada localmente em entregaGratisAgora abaixo).
+  const autoConfirmado = useRef(false);
+  useEffect(() => {
+    if (!autoConfirmado.current && endereco && !frete && !calculando) {
+      autoConfirmado.current = true;
+      confirmarEnderecoECalcularFrete(endereco);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endereco]);
+
   const freteResolvido = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao : null;
   // frete_gratis veio do subtotal de quando o endereço foi confirmado —
   // se o cliente mudou quantidade depois (item-carrinho-row, acima nesta
@@ -185,7 +201,7 @@ export function CheckoutForm({
         <div>
           <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
           <div className="flex gap-2">
-            {(["retirada", "entrega"] as const).map((opcao) => (
+            {(["entrega", "retirada"] as const).map((opcao) => (
               <button
                 key={opcao}
                 type="button"
