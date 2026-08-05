@@ -17,7 +17,11 @@ export async function getEnderecoCliente(empresaId: string): Promise<EnderecoCli
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  if (!data) return null;
+  // Linha do cliente existe desde o cadastro, mas o endereço só é
+  // preenchido no primeiro checkout com entrega — sem lat/lng ainda não
+  // há endereço confirmado, e retornar um objeto todo-null aqui faz o
+  // "??" do checkout-form ignorar o endereço estimado salvo no navegador.
+  if (!data || data.latitude == null || data.longitude == null) return null;
 
   const { latitude, longitude, ...resto } = data;
   return { ...resto, lat: latitude, lng: longitude };
