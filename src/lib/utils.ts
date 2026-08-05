@@ -39,12 +39,25 @@ export function precoEfetivo(item: { preco: number; preco_promocional: number | 
     : item.preco;
 }
 
-/** Mesma normalização/formato de linkWhatsApp no app Gestor (lib/utils/telefone_utils.dart). */
+/**
+ * Mesma normalização/formato de linkWhatsApp no app Gestor
+ * (lib/utils/telefone_utils.dart), que sempre força o "55" — lá isso é
+ * seguro porque todo telefone de cliente/loja é brasileiro. Aqui adiciona
+ * uma saída: um "+" no início do texto (ex: "+1 555 154 1583", número de
+ * teste da Meta pra Cloud API) marca "já é internacional, não mexe",
+ * pra não quebrar quando não for número do Brasil.
+ */
 export function linkWhatsApp(telefone: string, mensagem?: string): string {
+  const jaInternacional = telefone.trim().startsWith("+");
   let digitos = telefone.replace(/\D/g, "");
-  if ((digitos.length === 12 || digitos.length === 13) && digitos.startsWith("55")) {
-    digitos = digitos.slice(2);
+
+  if (!jaInternacional) {
+    if ((digitos.length === 12 || digitos.length === 13) && digitos.startsWith("55")) {
+      digitos = digitos.slice(2);
+    }
+    digitos = `55${digitos}`;
   }
-  const base = `https://wa.me/55${digitos}`;
+
+  const base = `https://wa.me/${digitos}`;
   return mensagem ? `${base}?text=${encodeURIComponent(mensagem)}` : base;
 }
