@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type ItemMiniCarrinho, MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
 import { Button } from "@/components/ui/button";
 import { adicionarAoCarrinho, atualizarQuantidade } from "@/lib/carrinho";
 import { adicionarItemConvidado, atualizarItemConvidado } from "@/lib/carrinho-convidado";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
 import { createClient } from "@/lib/supabase/client";
+import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 interface EstadoDrawer {
   carrinhoId: string | null; // null = carrinho de convidado (sem linha no banco ainda)
@@ -32,7 +33,11 @@ export function AdicionarCarrinhoButton({
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<EstadoDrawer | null>(null);
-  const [itemProcessando, setItemProcessando] = useState<string | null>(null);
+  const agendarSync = useDebounceQuantidade();
+  // Só a resposta da requisição mais recente pode atualizar a UI — sem
+  // isso, a resposta de um clique mais antigo podia chegar depois e
+  // sobrescrever um estado já mais novo.
+  const ultimaRequisicao = useRef(0);
 
   // Mesmo motivo do AccountLink: a página de produto é ISR compartilhada
   // entre visitantes, então o estado de login é resolvido no browser, não
@@ -126,14 +131,12 @@ export function AdicionarCarrinhoButton({
 
   // Editar quantidade (ou remover, quando novaQuantidade <= 0) direto na
   // gaveta — sem isso, corrigir um engano de quantidade exigia ir até a
-  // página do carrinho. atualizarQuantidade já devolve o carrinho fresco
-  // (a gaveta não faz parte da árvore de Server Components da página do
-  // carrinho, então o `revalidatePath` de dentro dela não atualiza esse
-  // estado local sozinho) — usa o retorno direto em vez de buscar tudo
-  // de novo numa segunda chamada.
-  async function alterarQuantidade(itemId: string, novaQuantidade: number) {
+  // página do carrinho. A UI muda na hora (otimista); a sincronização com
+  // o servidor só dispara ~450ms depois do último clique no mesmo item
+  // (agrupa cliques rápidos numa chamada só) — antes cada clique esperava
+  // a ida ao servidor terminar antes da UI mudar, sensivelmente mais lento.
+  function alterarQuantidade(itemId: string, novaQuantidade: number) {
     if (!drawer) return;
-    setItemProcessando(itemId);
 
     if (drawer.carrinhoId === null) {
       const itensConvidado = atualizarItemConvidado(empresaId, itemId, novaQuantidade);
@@ -155,31 +158,54 @@ export function AdicionarCarrinhoButton({
               idRecemAdicionado: drawer.idRecemAdicionado,
             },
       );
-      setItemProcessando(null);
       return;
     }
 
-    const carrinho = await atualizarQuantidade(slug, drawer.carrinhoId, itemId, novaQuantidade);
-    notificarCarrinhoAtualizado();
+    const carrinhoId = drawer.carrinhoId;
+    const item = drawer.itens.find((i) => i.id === itemId);
+    if (!item) return;
+    const quantidadeFinal = novaQuantidade <= 0 ? 0 : Math.min(novaQuantidade, item.estoqueDisponivel);
+
+    const itensNovos =
+      quantidadeFinal <= 0
+        ? drawer.itens.filter((i) => i.id !== itemId)
+        : drawer.itens.map((i) => (i.id === itemId ? { ...i, quantidade: quantidadeFinal } : i));
     setDrawer(
-      carrinho.itens.length === 0
+      itensNovos.length === 0
         ? null
         : {
-            carrinhoId: carrinho.id,
-            itens: carrinho.itens.map((item) => ({
-              id: item.id,
-              nome: item.produto?.nome ?? "Produto",
-              imagemUrl: item.produto?.imagem_url ?? null,
-              categoria: item.produto?.categoria ?? null,
-              preco: item.preco_unitario,
-              quantidade: item.quantidade,
-              estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
-            })),
-            valorTotal: carrinho.valorTotal,
-            idRecemAdicionado: drawer.idRecemAdicionado,
+            ...drawer,
+            itens: itensNovos,
+            valorTotal: itensNovos.reduce((soma, i) => soma + i.preco * i.quantidade, 0),
           },
     );
-    setItemProcessando(null);
+    notificarCarrinhoAtualizado();
+
+    agendarSync(itemId, async () => {
+      const minhaRequisicao = ++ultimaRequisicao.current;
+      const carrinho = await atualizarQuantidade(slug, carrinhoId, itemId, novaQuantidade);
+      if (minhaRequisicao !== ultimaRequisicao.current) return;
+      notificarCarrinhoAtualizado();
+      setDrawer((atual) => {
+        if (!atual || atual.carrinhoId !== carrinhoId) return atual;
+        return carrinho.itens.length === 0
+          ? null
+          : {
+              carrinhoId: carrinho.id,
+              itens: carrinho.itens.map((item) => ({
+                id: item.id,
+                nome: item.produto?.nome ?? "Produto",
+                imagemUrl: item.produto?.imagem_url ?? null,
+                categoria: item.produto?.categoria ?? null,
+                preco: item.preco_unitario,
+                quantidade: item.quantidade,
+                estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
+              })),
+              valorTotal: carrinho.valorTotal,
+              idRecemAdicionado: atual.idRecemAdicionado,
+            };
+      });
+    });
   }
 
   return (
@@ -233,7 +259,6 @@ export function AdicionarCarrinhoButton({
           itens={drawer.itens}
           valorTotal={drawer.valorTotal}
           idRecemAdicionado={drawer.idRecemAdicionado}
-          itemProcessando={itemProcessando}
           onAlterarQuantidade={alterarQuantidade}
           onFechar={() => setDrawer(null)}
         />

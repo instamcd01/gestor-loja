@@ -1,30 +1,18 @@
 "use client";
 
-import { useTransition } from "react";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ItemCarrinho } from "@/lib/types";
-import { atualizarQuantidade } from "@/lib/carrinho";
 import { formatarPreco } from "@/lib/utils";
 
 export function ItemCarrinhoRow({
-  slug,
-  carrinhoId,
   item,
+  onAlterarQuantidade,
 }: {
-  slug: string;
-  carrinhoId: string;
   item: ItemCarrinho;
+  onAlterarQuantidade: (itemId: string, novaQuantidade: number) => void;
 }) {
-  const [pending, startTransition] = useTransition();
-
-  function mudar(novaQuantidade: number) {
-    startTransition(() => {
-      atualizarQuantidade(slug, carrinhoId, item.id, novaQuantidade);
-    });
-  }
-
   return (
-    <div className={`flex items-center gap-4 py-4 ${pending ? "opacity-50" : ""}`}>
+    <div className="flex items-center gap-4 py-4">
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
         <ProdutoImagem
           src={item.produto?.imagem_url ?? null}
@@ -44,8 +32,7 @@ export function ItemCarrinhoRow({
       <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
         <button
           type="button"
-          onClick={() => mudar(item.quantidade - 1)}
-          disabled={pending}
+          onClick={() => onAlterarQuantidade(item.id, item.quantidade - 1)}
           className="px-3 py-1.5 text-lg leading-none"
           aria-label="Diminuir quantidade"
         >
@@ -54,8 +41,8 @@ export function ItemCarrinhoRow({
         <span className="w-6 text-center text-sm">{item.quantidade}</span>
         <button
           type="button"
-          onClick={() => mudar(item.quantidade + 1)}
-          disabled={pending || item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
+          onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
+          disabled={item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
           className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
           aria-label="Aumentar quantidade"
         >
