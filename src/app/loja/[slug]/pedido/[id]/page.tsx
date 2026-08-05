@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { PixPagamento } from "@/components/pedido/pix-pagamento";
+import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { gerarPixCopiaECola } from "@/lib/pix";
@@ -102,29 +103,14 @@ export default async function PedidoPage({
           </div>
         ))}
 
-        <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-sm dark:border-white/10">
-          <span className="text-black/50 dark:text-white/50">
-            {temEntrega ? `Entrega (${metadata.entregaSelecionada})` : "Retirada na loja"}
-          </span>
-          <span>
-            {temEntrega
-              ? (pedido.valor_entrega ?? 0) === 0
-                ? "Grátis"
-                : formatarPreco(pedido.valor_entrega ?? 0)
-              : "—"}
-          </span>
-        </div>
-
-        {metadata.saldoAplicado != null && metadata.saldoAplicado > 0 && (
-          <div className="flex justify-between text-sm text-[var(--color-success)]">
-            <span>Saldo aplicado</span>
-            <span>-{formatarPreco(metadata.saldoAplicado)}</span>
-          </div>
-        )}
-
-        <div className="flex justify-between border-t border-black/10 pt-2 text-sm font-semibold dark:border-white/10">
-          <span>Total</span>
-          <span>{formatarPreco(pedido.valor_total ?? 0)}</span>
+        <div className="mt-2 border-t border-black/10 pt-2 dark:border-white/10">
+          <ResumoTotais
+            subtotal={pedido.valor_produtos ?? 0}
+            entregaLabel={temEntrega ? `Entrega (${metadata.entregaSelecionada})` : "Retirada na loja"}
+            entregaValor={temEntrega ? (pedido.valor_entrega ?? 0) : null}
+            saldoAplicado={metadata.saldoAplicado}
+            total={pedido.valor_total ?? 0}
+          />
         </div>
 
         <p className="mt-1 text-xs text-black/50 dark:text-white/50">

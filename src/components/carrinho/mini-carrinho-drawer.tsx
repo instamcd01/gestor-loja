@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
+import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
+import {
+  assinarEnderecoEstimado,
+  obterSnapshotEnderecoEstimado,
+  obterSnapshotServidorEnderecoEstimado,
+} from "@/lib/endereco-estimado";
 import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 import { formatarPreco } from "@/lib/utils";
 
@@ -54,6 +60,22 @@ export function MiniCarrinhoDrawer({
 }) {
   const painelRef = useDrawerA11y(true, onFechar);
   const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
+
+  const estimado = useSyncExternalStore(
+    assinarEnderecoEstimado,
+    () => obterSnapshotEnderecoEstimado(empresaId),
+    obterSnapshotServidorEnderecoEstimado,
+  );
+  // Mesma regra do CarrinhoProvider.valorEntregaCalculado no app: zero
+  // quando o subtotal atual já bate o mínimo da zona, mesmo que a
+  // estimativa salva tenha sido calculada com um subtotal menor.
+  const entregaGratis =
+    !!estimado && (estimado.freteGratis || (estimado.valorMinimoFreteGratis != null && valorTotal >= estimado.valorMinimoFreteGratis));
+  const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
+  const faltaParaFreteGratis =
+    estimado?.valorMinimoFreteGratis != null && !entregaGratis
+      ? estimado.valorMinimoFreteGratis - valorTotal
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -160,9 +182,14 @@ export function MiniCarrinhoDrawer({
           ))}
         </div>
 
-        <div className="flex items-center justify-between border-t border-black/5 pt-3 text-sm font-medium dark:border-white/10">
-          <span>Total</span>
-          <span>{formatarPreco(valorTotal)}</span>
+        <div className="border-t border-black/5 pt-3 dark:border-white/10">
+          <ResumoTotais
+            subtotal={valorTotal}
+            entregaLabel="Entrega"
+            entregaValor={entregaValor}
+            faltaParaFreteGratis={faltaParaFreteGratis}
+            total={valorTotal + (entregaValor ?? 0)}
+          />
         </div>
 
         <div className="flex flex-col gap-2">

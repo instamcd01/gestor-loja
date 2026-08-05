@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
+import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,11 @@ import {
   obterSnapshotCarrinhoConvidado,
   obterSnapshotServidorCarrinhoConvidado,
 } from "@/lib/carrinho-convidado";
+import {
+  assinarEnderecoEstimado,
+  obterSnapshotEnderecoEstimado,
+  obterSnapshotServidorEnderecoEstimado,
+} from "@/lib/endereco-estimado";
 import { formatarPreco } from "@/lib/utils";
 
 /**
@@ -38,6 +44,11 @@ export function CarrinhoConvidado({
     () => obterSnapshotCarrinhoConvidado(empresaId),
     obterSnapshotServidorCarrinhoConvidado,
   );
+  const estimado = useSyncExternalStore(
+    assinarEnderecoEstimado,
+    () => obterSnapshotEnderecoEstimado(empresaId),
+    obterSnapshotServidorEnderecoEstimado,
+  );
 
   function mudarQuantidade(produtoId: string, quantidade: number) {
     atualizarItemConvidado(empresaId, produtoId, quantidade);
@@ -55,6 +66,12 @@ export function CarrinhoConvidado({
   }
 
   const total = itens.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
+
+  const entregaGratis =
+    !!estimado && (estimado.freteGratis || (estimado.valorMinimoFreteGratis != null && total >= estimado.valorMinimoFreteGratis));
+  const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
+  const faltaParaFreteGratis =
+    estimado?.valorMinimoFreteGratis != null && !entregaGratis ? estimado.valorMinimoFreteGratis - total : null;
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
@@ -106,9 +123,14 @@ export function CarrinhoConvidado({
         ))}
       </Card>
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-base font-medium">Total</span>
-        <span className="text-xl font-bold">{formatarPreco(total)}</span>
+      <div className="px-1">
+        <ResumoTotais
+          subtotal={total}
+          entregaLabel="Entrega"
+          entregaValor={entregaValor}
+          faltaParaFreteGratis={faltaParaFreteGratis}
+          total={total + (entregaValor ?? 0)}
+        />
       </div>
 
       <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="w-full py-3 text-base">

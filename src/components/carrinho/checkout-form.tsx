@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
+import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,10 +83,24 @@ export function CheckoutForm({
     setFrete(resultado);
   }
 
-  const valorEntrega = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao.valor : 0;
+  const freteResolvido = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao : null;
+  // frete_gratis veio do subtotal de quando o endereço foi confirmado —
+  // se o cliente mudou quantidade depois (item-carrinho-row, acima nesta
+  // mesma página), reavalia contra o subtotal atual em vez de confiar no
+  // flag congelado (mesma regra do CarrinhoProvider.valorEntregaCalculado
+  // no app: grátis quando subtotal >= mínimo da zona).
+  const entregaGratisAgora =
+    !!freteResolvido &&
+    (freteResolvido.frete_gratis ||
+      (freteResolvido.valor_minimo_frete_gratis != null && subtotal >= freteResolvido.valor_minimo_frete_gratis));
+  const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : freteResolvido.valor) : 0;
   const valorAntesDoSaldo = subtotal + valorEntrega;
   const saldoAplicado = usarSaldo ? Math.min(saldoCliente, valorAntesDoSaldo) : 0;
   const valorFinal = valorAntesDoSaldo - saldoAplicado;
+  const faltaParaFreteGratis =
+    freteResolvido && !entregaGratisAgora && freteResolvido.valor_minimo_frete_gratis != null
+      ? freteResolvido.valor_minimo_frete_gratis - subtotal
+      : null;
 
   const trocoPara = Number.parseFloat(trocoParaTexto.replace(",", "."));
   const trocoValido = Number.isFinite(trocoPara) && trocoPara > 0;
@@ -238,29 +253,15 @@ export function CheckoutForm({
         />
       </div>
 
-      <Card className="flex flex-col gap-1.5 p-4 text-sm">
-        <div className="flex justify-between">
-          <span className="text-black/50 dark:text-white/50">Valor dos produtos</span>
-          <span>{formatarPreco(subtotal)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-black/50 dark:text-white/50">
-            {tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
-          </span>
-          <span>
-            {tipoEntrega === "entrega" ? (valorEntrega === 0 ? "Grátis" : formatarPreco(valorEntrega)) : "—"}
-          </span>
-        </div>
-        {saldoAplicado > 0 && (
-          <div className="flex justify-between text-[var(--color-success)]">
-            <span>Saldo aplicado</span>
-            <span>-{formatarPreco(saldoAplicado)}</span>
-          </div>
-        )}
-        <div className="mt-1.5 flex justify-between border-t border-black/10 pt-2 text-base font-semibold dark:border-white/10">
-          <span>Total</span>
-          <span>{formatarPreco(valorFinal)}</span>
-        </div>
+      <Card className="p-4">
+        <ResumoTotais
+          subtotal={subtotal}
+          entregaLabel={tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
+          entregaValor={tipoEntrega === "entrega" ? (freteResolvido ? valorEntrega : null) : null}
+          faltaParaFreteGratis={faltaParaFreteGratis}
+          saldoAplicado={saldoAplicado}
+          total={valorFinal}
+        />
       </Card>
 
       {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
