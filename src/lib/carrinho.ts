@@ -73,31 +73,6 @@ async function recarregarCarrinho(supabase: SupabaseClient, carrinhoId: string):
   };
 }
 
-async function getOrCriarCarrinho(
-  supabase: SupabaseClient,
-  empresaId: string,
-  clienteId: string,
-): Promise<string> {
-  const { data: existente } = await supabase
-    .from("carrinho")
-    .select("id")
-    .eq("empresa_id", empresaId)
-    .eq("cliente_id", clienteId)
-    .eq("status", "ativo")
-    .maybeSingle();
-
-  if (existente) return existente.id;
-
-  const { data: novo, error } = await supabase
-    .from("carrinho")
-    .insert({ empresa_id: empresaId, cliente_id: clienteId, status: "ativo", origem: "site_proprio", valor_total: 0 })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return novo.id;
-}
-
 export type ResultadoCarrinho =
   | { ok: true; limitado: boolean; disponivel: number; carrinho: Carrinho }
   | { ok: false; erro: "login_necessario" | "produto_invalido" }
@@ -116,59 +91,48 @@ export async function adicionarAoCarrinho(
 ): Promise<ResultadoCarrinho> {
   const supabase = await createClient();
 
-  // clienteId e o produto não dependem um do outro — busca os dois ao
-  // mesmo tempo em vez de esperar o primeiro terminar pra começar o
-  // segundo (metade do tempo total dessa etapa).
-  const [clienteId, { data: produto }] = await Promise.all([
-    getClienteId(supabase, empresaId),
-    supabase
-      .from("catalogo_produtos_publico")
-      .select("preco, preco_promocional, estoque_disponivel")
-      .eq("id", produtoId)
-      .eq("empresa_id", empresaId)
-      .maybeSingle(),
-  ]);
-  if (!clienteId) return { ok: false, erro: "login_necessario" };
-  if (!produto) return { ok: false, erro: "produto_invalido" };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, erro: "login_necessario" };
 
-  const preco = produto.preco_promocional ?? produto.preco;
-  const carrinhoId = await getOrCriarCarrinho(supabase, empresaId, clienteId);
+  // RPC atômica (adicionar_ao_carrinho_site) em vez de ler a quantidade
+  // atual e depois escrever em chamadas separadas — dois cliques rápidos
+  // no "+" podiam ler a mesma quantidade e ambos escreverem o mesmo
+  // resultado, perdendo uma unidade (INSERT ... ON CONFLICT DO UPDATE
+  // referenciando carrinho_itens.quantidade dentro da própria expressão
+  // é resolvido atomicamente pelo Postgres mesmo com chamadas concorrentes).
+  const { data, error } = await supabase
+    .rpc("adicionar_ao_carrinho_site", {
+      p_empresa_id: empresaId,
+      p_produto_id: produtoId,
+      p_quantidade: quantidade,
+    })
+    .maybeSingle<{
+      id_carrinho: string;
+      quantidade_antes: number;
+      quantidade_final: number;
+      estoque_disponivel: number;
+    }>();
 
-  const { data: existente } = await supabase
-    .from("carrinho_itens")
-    .select("id, quantidade")
-    .eq("carrinho_id", carrinhoId)
-    .eq("produto_id", produtoId)
-    .maybeSingle();
+  if (error || !data) {
+    return { ok: false, erro: "produto_invalido" };
+  }
 
-  const quantidadeAtual = existente?.quantidade ?? 0;
-  if (quantidadeAtual >= produto.estoque_disponivel) {
+  const { id_carrinho: carrinhoId, quantidade_antes: antes, quantidade_final: final, estoque_disponivel: disponivel } = data;
+
+  if (final === antes) {
+    // Nada mudou — já estava no limite do estoque (ou o produto não tem
+    // estoque nenhum). Devolve o carrinho mesmo assim: quem chama precisa
+    // dele pra abrir a gaveta com o que já está lá, não um dead-end.
     const carrinho = await recarregarCarrinho(supabase, carrinhoId);
-    return { ok: false, erro: "sem_estoque", disponivel: produto.estoque_disponivel, carrinho };
+    return { ok: false, erro: "sem_estoque", disponivel, carrinho };
   }
 
-  const quantidadeDesejada = quantidadeAtual + quantidade;
-  const novaQuantidade = Math.min(quantidadeDesejada, produto.estoque_disponivel);
-  const limitado = novaQuantidade < quantidadeDesejada;
-
-  if (existente) {
-    await supabase
-      .from("carrinho_itens")
-      .update({ quantidade: novaQuantidade, subtotal: novaQuantidade * preco })
-      .eq("id", existente.id);
-  } else {
-    await supabase.from("carrinho_itens").insert({
-      carrinho_id: carrinhoId,
-      produto_id: produtoId,
-      quantidade: novaQuantidade,
-      preco_unitario: preco,
-      subtotal: preco * novaQuantidade,
-    });
-  }
-
+  const limitado = final - antes < quantidade;
   const carrinho = await recarregarCarrinho(supabase, carrinhoId);
   revalidatePath(`/loja/${slug}/carrinho`);
-  return { ok: true, limitado, disponivel: produto.estoque_disponivel, carrinho };
+  return { ok: true, limitado, disponivel, carrinho };
 }
 
 export async function atualizarQuantidade(
