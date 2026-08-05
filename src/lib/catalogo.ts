@@ -54,6 +54,8 @@ export async function getProdutosCatalogo(
     departamento?: string;
     categoria?: string;
     marca?: string;
+    especie?: string;
+    fase?: string;
     precoMin?: number;
     precoMax?: number;
     ordenar?: Ordenacao;
@@ -99,7 +101,19 @@ export async function getProdutosCatalogo(
         : query.eq("categoria", filtros.categoria);
   }
   if (filtros?.marca) {
-    query = query.eq("marca", filtros.marca);
+    // "Marca" aqui é a marca/fabricante de verdade (Vetnil, Ourofino,
+    // Agener União...), coluna `fabricante` — não `produtos.marca`, que
+    // nesse banco historicamente guarda o FORNECEDOR/distribuidora
+    // (Tecnew, Seropec...), não a marca reconhecida pelo cliente.
+    query = query.eq("fabricante", filtros.marca);
+  }
+  if (filtros?.especie) {
+    // ilike substring: "Cães e Gatos" precisa bater tanto no filtro
+    // "Cães" quanto no "Gatos", não só em correspondência exata.
+    query = query.ilike("especie", `%${filtros.especie}%`);
+  }
+  if (filtros?.fase) {
+    query = query.ilike("fase", `%${filtros.fase}%`);
   }
   if (filtros?.precoMin != null) {
     query = query.gte("preco", filtros.precoMin);
@@ -314,16 +328,24 @@ export async function getFaixasPrecoComContagem(empresaId: string): Promise<Faix
   })).filter((faixa) => faixa.total > 0);
 }
 
+/**
+ * "Marca" pro cliente é a marca/fabricante de verdade (Vetnil, Ourofino,
+ * Agener União...) — lê `fabricante`, não `produtos.marca`, que nesse
+ * banco historicamente guarda o FORNECEDOR/distribuidora (Tecnew,
+ * Seropec, Pet2Pet...), não uma marca que o cliente reconheceria (ver
+ * [[gestor_padrao_nome_produto]]). Mantém o nome da função/formato de
+ * retorno (`marca`) porque é assim que a UI já trata o conceito.
+ */
 export async function getMarcasComContagem(
   empresaId: string,
 ): Promise<{ marca: string; total: number }[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("marca")
+    .select("fabricante")
     .eq("empresa_id", empresaId)
     .is("produto_pai_id", null)
-    .not("marca", "is", null);
+    .not("fabricante", "is", null);
 
   if (error) {
     console.error("Erro ao buscar marcas com contagem:", error.message);
@@ -331,14 +353,70 @@ export async function getMarcasComContagem(
   }
 
   const contagem = new Map<string, number>();
-  for (const { marca } of data ?? []) {
-    if (!marca) continue;
-    contagem.set(marca, (contagem.get(marca) ?? 0) + 1);
+  for (const { fabricante } of data ?? []) {
+    if (!fabricante) continue;
+    contagem.set(fabricante, (contagem.get(fabricante) ?? 0) + 1);
   }
 
   return [...contagem.entries()]
     .map(([marca, total]) => ({ marca, total }))
     .sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Espécie/fase são texto livre no banco ("Cães", "Cães e Gatos", "Cães
+ * Geriátricos", "Adultos", "Sênior +7"...) — em vez de listar cada
+ * variação como filtro próprio (péssima UX, dezenas de opções quase
+ * iguais), usa um conjunto fixo de rótulos que o cliente reconhece e
+ * conta via substring (ilike), a mesma lógica do filtro em getProdutosCatalogo.
+ */
+const ESPECIES_FILTRO = ["Cães", "Gatos"];
+const FASES_FILTRO = ["Filhotes", "Adultos", "Sênior", "Castrados"];
+
+export async function getEspeciesComContagem(
+  empresaId: string,
+): Promise<{ especie: string; total: number }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("especie")
+    .eq("empresa_id", empresaId)
+    .is("produto_pai_id", null)
+    .not("especie", "is", null);
+
+  if (error) {
+    console.error("Erro ao buscar espécies com contagem:", error.message);
+    return [];
+  }
+
+  const valores = (data ?? []).map((linha) => linha.especie ?? "");
+  return ESPECIES_FILTRO.map((especie) => ({
+    especie,
+    total: valores.filter((v) => v.toLowerCase().includes(especie.toLowerCase())).length,
+  })).filter((linha) => linha.total > 0);
+}
+
+export async function getFasesComContagem(
+  empresaId: string,
+): Promise<{ fase: string; total: number }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("fase")
+    .eq("empresa_id", empresaId)
+    .is("produto_pai_id", null)
+    .not("fase", "is", null);
+
+  if (error) {
+    console.error("Erro ao buscar fases com contagem:", error.message);
+    return [];
+  }
+
+  const valores = (data ?? []).map((linha) => linha.fase ?? "");
+  return FASES_FILTRO.map((fase) => ({
+    fase,
+    total: valores.filter((v) => v.toLowerCase().includes(fase.toLowerCase())).length,
+  })).filter((linha) => linha.total > 0);
 }
 
 /**

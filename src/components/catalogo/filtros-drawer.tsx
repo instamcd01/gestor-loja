@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { FiltroEspecie } from "@/components/catalogo/filtro-especie";
+import { FiltroFase } from "@/components/catalogo/filtro-fase";
 import { FiltroMarca } from "@/components/catalogo/filtro-marca";
 import { FiltroPreco } from "@/components/catalogo/filtro-preco";
 import type { FaixaPreco } from "@/lib/catalogo";
@@ -9,19 +11,28 @@ import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 export function FiltrosDrawer({
   marcas,
   marcaAtiva,
+  especies,
+  especieAtiva,
+  fases,
+  faseAtiva,
   faixasPreco,
   faixaAtiva,
 }: {
   marcas: { marca: string; total: number }[];
   marcaAtiva: string | null;
+  especies: { especie: string; total: number }[];
+  especieAtiva: string | null;
+  fases: { fase: string; total: number }[];
+  faseAtiva: string | null;
   faixasPreco: FaixaPreco[];
   faixaAtiva: { min?: number; max?: number } | null;
 }) {
   const [aberto, setAberto] = useState(false);
-  const ativos = (marcaAtiva ? 1 : 0) + (faixaAtiva ? 1 : 0);
+  const ativos =
+    (marcaAtiva ? 1 : 0) + (especieAtiva ? 1 : 0) + (faseAtiva ? 1 : 0) + (faixaAtiva ? 1 : 0);
   const painelRef = useDrawerA11y(aberto, () => setAberto(false));
 
-  if (marcas.length <= 1 && faixasPreco.length <= 1) return null;
+  if (marcas.length <= 1 && especies.length <= 1 && fases.length <= 1 && faixasPreco.length <= 1) return null;
 
   return (
     <>
@@ -66,6 +77,8 @@ export function FiltrosDrawer({
               </button>
             </div>
 
+            {especies.length > 1 && <FiltroEspecie especies={especies} especieAtiva={especieAtiva} />}
+            {fases.length > 1 && <FiltroFase fases={fases} faseAtiva={faseAtiva} />}
             {marcas.length > 1 && <FiltroMarca marcas={marcas} marcaAtiva={marcaAtiva} />}
             {faixasPreco.length > 1 && <FiltroPreco faixas={faixasPreco} faixaAtiva={faixaAtiva} />}
 

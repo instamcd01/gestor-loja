@@ -9,7 +9,9 @@ import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
   getEmpresaPorSlug,
+  getEspeciesComContagem,
   getFaixasPrecoComContagem,
+  getFasesComContagem,
   getMarcasComContagem,
   getMenorValorFreteGratis,
   getProdutosCatalogo,
@@ -41,30 +43,36 @@ export default async function LojaPage({
     departamento?: string;
     categoria?: string;
     marca?: string;
+    especie?: string;
+    fase?: string;
     precoMin?: string;
     precoMax?: string;
     ordenar?: Ordenacao;
   }>;
 }) {
   const { slug } = await params;
-  const { q, departamento, categoria, marca, precoMin, precoMax, ordenar } = await searchParams;
+  const { q, departamento, categoria, marca, especie, fase, precoMin, precoMax, ordenar } = await searchParams;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
 
-  const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!precoMin;
+  const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
   const moderno = empresa.catalogo_modelo === "moderno";
 
-  const [produtos, marcas, faixasPreco, freteGratisMinimo] = await Promise.all([
+  const [produtos, marcas, especies, fases, faixasPreco, freteGratisMinimo] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
       busca: q,
       departamento,
       categoria,
       marca,
+      especie,
+      fase,
       precoMin: precoMin ? Number(precoMin) : undefined,
       precoMax: precoMax ? Number(precoMax) : undefined,
       ordenar,
     }),
     getMarcasComContagem(empresa.id),
+    getEspeciesComContagem(empresa.id),
+    getFasesComContagem(empresa.id),
     getFaixasPrecoComContagem(empresa.id),
     getMenorValorFreteGratis(empresa.id),
   ]);
@@ -100,7 +108,16 @@ export default async function LojaPage({
           {categoria ? ` em ${categoria}` : departamento ? ` em ${departamento}` : ""}
         </p>
         <div className="flex items-center gap-2">
-          <FiltrosDrawer marcas={marcas} marcaAtiva={marca ?? null} faixasPreco={faixasPreco} faixaAtiva={faixaAtiva} />
+          <FiltrosDrawer
+            marcas={marcas}
+            marcaAtiva={marca ?? null}
+            especies={especies}
+            especieAtiva={especie ?? null}
+            fases={fases}
+            faseAtiva={fase ?? null}
+            faixasPreco={faixasPreco}
+            faixaAtiva={faixaAtiva}
+          />
           <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
         </div>
       </div>
