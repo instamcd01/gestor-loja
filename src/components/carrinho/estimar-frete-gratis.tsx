@@ -66,6 +66,8 @@ export function EstimarFreteGratis({
       valor: resultado.opcao.valor,
       freteGratis: resultado.opcao.frete_gratis,
       valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
+      estimativaMinMin: resultado.opcao.estimativa_min_min,
+      estimativaMinMax: resultado.opcao.estimativa_min_max,
     };
     salvarEnderecoEstimado(empresaId, novo);
   }
@@ -86,6 +88,11 @@ export function EstimarFreteGratis({
             Trocar endereço
           </button>
         </div>
+        {estimado.estimativaMinMin != null && estimado.estimativaMinMax != null && (
+          <p className="text-xs text-black/50 dark:text-white/50">
+            🕐 Entrega estimada em {estimado.estimativaMinMin}–{estimado.estimativaMinMax} min
+          </p>
+        )}
       </div>
     );
   }

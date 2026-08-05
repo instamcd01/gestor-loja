@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { gerarPixCopiaECola } from "@/lib/pix";
 import { createClient } from "@/lib/supabase/server";
-import { formatarPreco } from "@/lib/utils";
+import { formatarHora, formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,7 @@ export default async function PedidoPage({
   const { data: pedido } = await supabase
     .from("pedidos")
     .select(
-      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata",
+      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata, previsao_entrega_inicio, previsao_entrega_fim",
     )
     .eq("id", id)
     .eq("empresa_id", empresa.id)
@@ -91,6 +91,15 @@ export default async function PedidoPage({
         <p className="mt-1 text-sm text-black/50 dark:text-white/50">
           {STATUS_LABEL[pedido.status] ?? pedido.status}
         </p>
+        {temEntrega &&
+          pedido.status !== "cancelado" &&
+          pedido.previsao_entrega_inicio &&
+          pedido.previsao_entrega_fim && (
+            <p className="mt-1 text-sm font-medium text-[var(--brand-primary)]">
+              🕐 Previsão de entrega: {formatarHora(pedido.previsao_entrega_inicio)}–
+              {formatarHora(pedido.previsao_entrega_fim)}
+            </p>
+          )}
       </div>
 
       <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">

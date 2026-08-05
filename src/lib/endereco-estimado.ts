@@ -21,6 +21,8 @@ export interface EnderecoEstimado {
   valor: number;
   freteGratis: boolean;
   valorMinimoFreteGratis: number | null;
+  estimativaMinMin: number | null;
+  estimativaMinMax: number | null;
 }
 
 function chave(empresaId: string) {

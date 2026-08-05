@@ -124,4 +124,7 @@ export interface OpcaoFrete {
   valor: number;
   frete_gratis: boolean;
   valor_minimo_frete_gratis: number | null;
+  /** Faixa configurada na zona (Configuração de Entrega no app) — mesma usada na venda presencial pra gravar a previsão do pedido. */
+  estimativa_min_min: number | null;
+  estimativa_min_max: number | null;
 }

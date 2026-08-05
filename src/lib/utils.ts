@@ -27,6 +27,14 @@ export function formatarPreco(valor: number) {
   });
 }
 
+export function formatarHora(iso: string) {
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
 export function percentualDesconto(preco: number, precoPromocional: number | null) {
   if (precoPromocional == null || precoPromocional >= preco) return 0;
   return Math.round((1 - precoPromocional / preco) * 100);
