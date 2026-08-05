@@ -8,7 +8,6 @@ import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
-import { formatarPreco } from "@/lib/utils";
 
 // "Link de Pagamento" e "Outros" só fazem sentido com um atendente
 // mediando (gerar/enviar link, decidir o que é "outros") — no
@@ -73,11 +72,6 @@ export default async function CarrinhoPage({
           <ItemCarrinhoRow key={item.id} slug={slug} carrinhoId={carrinho.id!} item={item} />
         ))}
       </Card>
-
-      <div className="flex items-center justify-between px-1">
-        <span className="text-base font-medium">Subtotal</span>
-        <span className="text-xl font-bold">{formatarPreco(carrinho.valorTotal)}</span>
-      </div>
 
       <CheckoutForm
         slug={slug}

@@ -77,7 +77,12 @@ export function CarrinhoConvidado({
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
       <h1 className="text-xl font-semibold">Seu carrinho</h1>
 
-      <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={total} />
+      <EstimarFreteGratis
+        empresaId={empresaId}
+        enderecoEmpresa={enderecoEmpresa}
+        subtotal={total}
+        mostrarProgresso={false}
+      />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (
