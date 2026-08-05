@@ -26,11 +26,11 @@ export function AdicionarCarrinhoButton({
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   produtoId: string;
-  produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number };
+  produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number; estoqueDisponivel: number };
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<EstadoDrawer | null>(null);
   const [itemProcessando, setItemProcessando] = useState<string | null>(null);
 
@@ -49,11 +49,16 @@ export function AdicionarCarrinhoButton({
 
   async function adicionar() {
     setCarregando(true);
-    setErro(false);
+    setErro(null);
 
     // Sem login, o carrinho fica só no navegador — login só é pedido na
     // hora de finalizar o pedido (ver mesclarCarrinhoConvidado).
     if (!logado) {
+      if (quantidade > produto.estoqueDisponivel) {
+        setCarregando(false);
+        setErro(`Só temos ${produto.estoqueDisponivel} em estoque.`);
+        return;
+      }
       const itensConvidado = adicionarItemConvidado(empresaId, {
         produtoId,
         nome: produto.nome,
@@ -61,6 +66,7 @@ export function AdicionarCarrinhoButton({
         categoria: produto.categoria,
         preco: produto.preco,
         quantidade,
+        estoqueDisponivel: produto.estoqueDisponivel,
       });
       setCarregando(false);
       setQuantidade(1);
@@ -73,6 +79,7 @@ export function AdicionarCarrinhoButton({
           categoria: item.categoria,
           preco: item.preco,
           quantidade: item.quantidade,
+          estoqueDisponivel: item.estoqueDisponivel,
         })),
         valorTotal: itensConvidado.reduce((soma, item) => soma + item.preco * item.quantidade, 0),
         idRecemAdicionado: produtoId,
@@ -83,8 +90,15 @@ export function AdicionarCarrinhoButton({
     const resultado = await adicionarAoCarrinho(slug, empresaId, produtoId, quantidade);
     if (!resultado.ok) {
       setCarregando(false);
-      setErro(true);
+      setErro(
+        resultado.erro === "sem_estoque"
+          ? `Só temos ${resultado.disponivel} em estoque.`
+          : "Não foi possível adicionar. Tente de novo.",
+      );
       return;
+    }
+    if (resultado.limitado) {
+      setErro(`Só tinha ${resultado.disponivel} em estoque — ajustamos a quantidade.`);
     }
 
     // Busca o carrinho completo (não só o item que acabou de entrar) pra
@@ -104,6 +118,7 @@ export function AdicionarCarrinhoButton({
         categoria: item.produto?.categoria ?? null,
         preco: item.preco_unitario,
         quantidade: item.quantidade,
+        estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
       })),
       valorTotal: carrinho.valorTotal,
       idRecemAdicionado: carrinho.itens.find((item) => item.produto_id === produtoId)?.id ?? "",
@@ -135,6 +150,7 @@ export function AdicionarCarrinhoButton({
                 categoria: item.categoria,
                 preco: item.preco,
                 quantidade: item.quantidade,
+                estoqueDisponivel: item.estoqueDisponivel,
               })),
               valorTotal: itensConvidado.reduce((soma, item) => soma + item.preco * item.quantidade, 0),
               idRecemAdicionado: drawer.idRecemAdicionado,
@@ -159,6 +175,7 @@ export function AdicionarCarrinhoButton({
               categoria: item.produto?.categoria ?? null,
               preco: item.preco_unitario,
               quantidade: item.quantidade,
+              estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
             })),
             valorTotal: carrinho.valorTotal,
             idRecemAdicionado: drawer.idRecemAdicionado,
@@ -182,8 +199,9 @@ export function AdicionarCarrinhoButton({
           <span className="w-8 text-center text-sm">{quantidade}</span>
           <button
             type="button"
-            onClick={() => setQuantidade((q) => q + 1)}
-            className="px-3 py-2 text-lg leading-none"
+            disabled={quantidade >= produto.estoqueDisponivel}
+            onClick={() => setQuantidade((q) => Math.min(produto.estoqueDisponivel, q + 1))}
+            className="px-3 py-2 text-lg leading-none disabled:opacity-30"
             aria-label="Aumentar quantidade"
           >
             +
@@ -192,16 +210,22 @@ export function AdicionarCarrinhoButton({
 
         <Button
           onClick={adicionar}
-          disabled={carregando || logado === null}
+          disabled={carregando || logado === null || produto.estoqueDisponivel === 0}
           className="flex-1 py-3 text-base"
         >
-          {carregando ? "Adicionando..." : "Adicionar ao carrinho"}
+          {produto.estoqueDisponivel === 0
+            ? "Sem estoque"
+            : carregando
+              ? "Adicionando..."
+              : "Adicionar ao carrinho"}
         </Button>
       </div>
 
-      {erro && (
-        <p className="text-sm text-[var(--color-danger)]">Não foi possível adicionar. Tente de novo.</p>
+      {produto.estoqueDisponivel > 0 && produto.estoqueDisponivel <= 5 && (
+        <p className="text-xs text-black/50 dark:text-white/50">Só restam {produto.estoqueDisponivel} em estoque.</p>
       )}
+
+      {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
       {drawer && (
         <MiniCarrinhoDrawer

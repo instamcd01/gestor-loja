@@ -70,7 +70,8 @@ export function CarrinhoConvidado({
   const total = itens.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
 
   const entregaGratis =
-    !!estimado && (estimado.freteGratis || (estimado.valorMinimoFreteGratis != null && total >= estimado.valorMinimoFreteGratis));
+    !!estimado &&
+    (estimado.valorMinimoFreteGratis != null ? total >= estimado.valorMinimoFreteGratis : estimado.freteGratis);
   const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
   const faltaParaFreteGratis =
     estimado?.valorMinimoFreteGratis != null && !entregaGratis ? estimado.valorMinimoFreteGratis - total : null;
@@ -114,7 +115,8 @@ export function CarrinhoConvidado({
               <button
                 type="button"
                 onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
-                className="px-3 py-1.5 text-lg leading-none"
+                disabled={item.quantidade >= item.estoqueDisponivel}
+                className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
                 aria-label="Aumentar quantidade"
               >
                 +

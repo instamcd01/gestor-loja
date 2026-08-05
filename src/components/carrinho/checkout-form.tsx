@@ -119,8 +119,9 @@ export function CheckoutForm({
   // no app: grátis quando subtotal >= mínimo da zona).
   const entregaGratisAgora =
     !!freteResolvido &&
-    (freteResolvido.frete_gratis ||
-      (freteResolvido.valor_minimo_frete_gratis != null && subtotal >= freteResolvido.valor_minimo_frete_gratis));
+    (freteResolvido.valor_minimo_frete_gratis != null
+      ? subtotal >= freteResolvido.valor_minimo_frete_gratis
+      : freteResolvido.frete_gratis);
   const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : freteResolvido.valor) : 0;
   const descontoCupom = cupomAplicado?.valorDesconto ?? 0;
   const valorAntesDoSaldo = Math.max(0, subtotal + valorEntrega - descontoCupom);
@@ -191,7 +192,7 @@ export function CheckoutForm({
 
           {frete && frete.disponivel && (
             <p className="text-sm font-medium text-[var(--color-success)]">
-              {frete.opcao.frete_gratis
+              {entregaGratisAgora
                 ? "Frete grátis!"
                 : `Frete (${frete.opcao.zona_nome}): ${formatarPreco(frete.opcao.valor)}`}
             </p>

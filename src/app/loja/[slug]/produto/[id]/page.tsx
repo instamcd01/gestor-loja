@@ -145,6 +145,7 @@ export default async function ProdutoPage({
                   imagemUrl: produto.imagem_url,
                   categoria: produto.categoria,
                   preco: temPromocao ? produto.preco_promocional! : produto.preco,
+                  estoqueDisponivel: produto.estoque_disponivel,
                 }}
               />
 

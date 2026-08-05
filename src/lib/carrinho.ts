@@ -59,7 +59,9 @@ async function getOrCriarCarrinho(
   return novo.id;
 }
 
-export type ResultadoCarrinho = { ok: true } | { ok: false; erro: "login_necessario" | "produto_invalido" };
+export type ResultadoCarrinho =
+  | { ok: true; limitado: boolean; disponivel: number }
+  | { ok: false; erro: "login_necessario" | "produto_invalido" | "sem_estoque"; disponivel?: number };
 
 export async function adicionarAoCarrinho(
   slug: string,
@@ -73,7 +75,7 @@ export async function adicionarAoCarrinho(
 
   const { data: produto } = await supabase
     .from("catalogo_produtos_publico")
-    .select("preco, preco_promocional")
+    .select("preco, preco_promocional, estoque_disponivel")
     .eq("id", produtoId)
     .eq("empresa_id", empresaId)
     .maybeSingle();
@@ -89,8 +91,16 @@ export async function adicionarAoCarrinho(
     .eq("produto_id", produtoId)
     .maybeSingle();
 
+  const quantidadeAtual = existente?.quantidade ?? 0;
+  if (quantidadeAtual >= produto.estoque_disponivel) {
+    return { ok: false, erro: "sem_estoque", disponivel: produto.estoque_disponivel };
+  }
+
+  const quantidadeDesejada = quantidadeAtual + quantidade;
+  const novaQuantidade = Math.min(quantidadeDesejada, produto.estoque_disponivel);
+  const limitado = novaQuantidade < quantidadeDesejada;
+
   if (existente) {
-    const novaQuantidade = existente.quantidade + quantidade;
     await supabase
       .from("carrinho_itens")
       .update({ quantidade: novaQuantidade, subtotal: novaQuantidade * preco })
@@ -99,15 +109,15 @@ export async function adicionarAoCarrinho(
     await supabase.from("carrinho_itens").insert({
       carrinho_id: carrinhoId,
       produto_id: produtoId,
-      quantidade,
+      quantidade: novaQuantidade,
       preco_unitario: preco,
-      subtotal: preco * quantidade,
+      subtotal: preco * novaQuantidade,
     });
   }
 
   await recalcularTotal(supabase, carrinhoId);
   revalidatePath(`/loja/${slug}/carrinho`);
-  return { ok: true };
+  return { ok: true, limitado, disponivel: produto.estoque_disponivel };
 }
 
 export async function atualizarQuantidade(
@@ -123,13 +133,24 @@ export async function atualizarQuantidade(
   } else {
     const { data: item } = await supabase
       .from("carrinho_itens")
-      .select("preco_unitario")
+      .select("preco_unitario, produto_id")
       .eq("id", itemId)
       .single();
     if (item) {
+      // Nunca deixa a quantidade passar do estoque real, mesmo que o
+      // clique de "+" tenha chegado depois de outra aba/pessoa já ter
+      // levado o resto — mesma trava que finalizar_pedido_site aplica
+      // no fim, só que já aqui, pro cliente ver o limite na hora.
+      const { data: produto } = await supabase
+        .from("catalogo_produtos_publico")
+        .select("estoque_disponivel")
+        .eq("id", item.produto_id)
+        .maybeSingle();
+      const quantidadeFinal = produto ? Math.min(quantidade, produto.estoque_disponivel) : quantidade;
+
       await supabase
         .from("carrinho_itens")
-        .update({ quantidade, subtotal: quantidade * item.preco_unitario })
+        .update({ quantidade: quantidadeFinal, subtotal: quantidadeFinal * item.preco_unitario })
         .eq("id", itemId);
     }
   }
@@ -191,7 +212,7 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
 
   const { data: produtos } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, imagem_url, categoria, subcategoria, fabricante")
+    .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel")
     .in(
       "id",
       itens.map((i) => i.produto_id),

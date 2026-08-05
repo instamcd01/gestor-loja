@@ -48,6 +48,8 @@ export interface ProdutoCatalogo {
   tipo_variacao: string | null;
   /** Valor deste produto dentro do eixo (ex: "3kg", "250mg", "Frango"). */
   variante_label: string | null;
+  /** Soma do estoque real (view já filtra produto com 0) — usado pra limitar a quantidade no carrinho. */
+  estoque_disponivel: number;
 }
 
 /** Uma variante (peso/tamanho) de um produto-pai, pra montar as pills de seleção. */
@@ -77,6 +79,7 @@ export interface ItemCarrinho {
     categoria: string | null;
     subcategoria: string | null;
     fabricante: string | null;
+    estoque_disponivel: number;
   } | null;
 }
 

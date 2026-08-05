@@ -19,6 +19,8 @@ export type ItemCarrinhoConvidado = {
   categoria: string | null;
   preco: number;
   quantidade: number;
+  /** Estoque no momento em que foi adicionado — usado só pra limitar o stepper aqui no navegador; revalidado de verdade contra o catálogo ao logar (mesclarCarrinhoConvidado) e de novo no checkout. */
+  estoqueDisponivel: number;
 };
 
 function chave(empresaId: string) {
@@ -81,9 +83,9 @@ export function adicionarItemConvidado(
   const itens = lerCarrinhoConvidado(empresaId);
   const existente = itens.find((i) => i.produtoId === item.produtoId);
   if (existente) {
-    existente.quantidade += item.quantidade;
+    existente.quantidade = Math.min(existente.quantidade + item.quantidade, existente.estoqueDisponivel);
   } else {
-    itens.push(item);
+    itens.push({ ...item, quantidade: Math.min(item.quantidade, item.estoqueDisponivel) });
   }
   salvarCarrinhoConvidado(empresaId, itens);
   return itens;
@@ -95,7 +97,7 @@ export function atualizarItemConvidado(empresaId: string, produtoId: string, qua
     itens = itens.filter((i) => i.produtoId !== produtoId);
   } else {
     const item = itens.find((i) => i.produtoId === produtoId);
-    if (item) item.quantidade = quantidade;
+    if (item) item.quantidade = Math.min(quantidade, item.estoqueDisponivel);
   }
   salvarCarrinhoConvidado(empresaId, itens);
   return itens;

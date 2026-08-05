@@ -28,6 +28,7 @@ export interface ItemMiniCarrinho {
   categoria: string | null;
   preco: number;
   quantidade: number;
+  estoqueDisponivel: number;
 }
 
 /**
@@ -70,7 +71,10 @@ export function MiniCarrinhoDrawer({
   // quando o subtotal atual já bate o mínimo da zona, mesmo que a
   // estimativa salva tenha sido calculada com um subtotal menor.
   const entregaGratis =
-    !!estimado && (estimado.freteGratis || (estimado.valorMinimoFreteGratis != null && valorTotal >= estimado.valorMinimoFreteGratis));
+    !!estimado &&
+    (estimado.valorMinimoFreteGratis != null
+      ? valorTotal >= estimado.valorMinimoFreteGratis
+      : estimado.freteGratis);
   const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
   const faltaParaFreteGratis =
     estimado?.valorMinimoFreteGratis != null && !entregaGratis
@@ -169,7 +173,7 @@ export function MiniCarrinhoDrawer({
                   <span className="w-5 text-center text-sm">{item.quantidade}</span>
                   <button
                     type="button"
-                    disabled={itemProcessando === item.id}
+                    disabled={itemProcessando === item.id || item.quantidade >= item.estoqueDisponivel}
                     onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
                     aria-label="Aumentar quantidade"

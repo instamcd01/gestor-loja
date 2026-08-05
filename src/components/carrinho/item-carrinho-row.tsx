@@ -55,8 +55,8 @@ export function ItemCarrinhoRow({
         <button
           type="button"
           onClick={() => mudar(item.quantidade + 1)}
-          disabled={pending}
-          className="px-3 py-1.5 text-lg leading-none"
+          disabled={pending || item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
+          className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
           aria-label="Aumentar quantidade"
         >
           +
