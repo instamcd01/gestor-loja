@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
+import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import {
   assinarCarrinhoConvidado,
   atualizarItemConvidado,
+  limparCarrinhoConvidado,
   obterSnapshotCarrinhoConvidado,
   obterSnapshotServidorCarrinhoConvidado,
 } from "@/lib/carrinho-convidado";
@@ -75,7 +77,10 @@ export function CarrinhoConvidado({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
-      <h1 className="text-xl font-semibold">Seu carrinho</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Seu carrinho</h1>
+        <LimparCarrinhoButton onConfirmar={() => limparCarrinhoConvidado(empresaId)} />
+      </div>
 
       <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={total} />
 

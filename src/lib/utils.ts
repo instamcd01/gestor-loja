@@ -38,3 +38,13 @@ export function precoEfetivo(item: { preco: number; preco_promocional: number | 
     ? item.preco_promocional
     : item.preco;
 }
+
+/** Mesma normalização/formato de linkWhatsApp no app Gestor (lib/utils/telefone_utils.dart). */
+export function linkWhatsApp(telefone: string, mensagem?: string): string {
+  let digitos = telefone.replace(/\D/g, "");
+  if ((digitos.length === 12 || digitos.length === 13) && digitos.startsWith("55")) {
+    digitos = digitos.slice(2);
+  }
+  const base = `https://wa.me/55${digitos}`;
+  return mensagem ? `${base}?text=${encodeURIComponent(mensagem)}` : base;
+}

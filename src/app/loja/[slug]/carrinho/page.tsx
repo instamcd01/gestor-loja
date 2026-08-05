@@ -3,9 +3,10 @@ import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
+import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
 import { Card } from "@/components/ui/card";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
-import { getCarrinho } from "@/lib/carrinho";
+import { getCarrinho, limparCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,7 +64,10 @@ export default async function CarrinhoPage({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
-      <h1 className="text-xl font-semibold">Seu carrinho</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Seu carrinho</h1>
+        <LimparCarrinhoButton onConfirmar={limparCarrinho.bind(null, slug, carrinho.id!)} />
+      </div>
 
       <EstimarFreteGratis empresaId={empresa.id} enderecoEmpresa={enderecoEmpresa} subtotal={carrinho.valorTotal} />
 

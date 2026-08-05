@@ -138,6 +138,14 @@ export async function atualizarQuantidade(
   revalidatePath(`/loja/${slug}/carrinho`);
 }
 
+/** Mesma ação do ícone "Esvaziar carrinho" no app (carrinho_screen.dart) — remove todos os itens do carrinho ativo. */
+export async function limparCarrinho(slug: string, carrinhoId: string) {
+  const supabase = await createClient();
+  await supabase.from("carrinho_itens").delete().eq("carrinho_id", carrinhoId);
+  await recalcularTotal(supabase, carrinhoId);
+  revalidatePath(`/loja/${slug}/carrinho`);
+}
+
 /** Soma de quantidades no carrinho ativo — usado só pro badge do cabeçalho, não busca os itens inteiros. */
 export async function getContagemCarrinho(empresaId: string): Promise<number> {
   const supabase = await createClient();
