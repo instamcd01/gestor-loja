@@ -4,9 +4,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
+import { SeletorAgendamento } from "@/components/carrinho/seletor-agendamento";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { JanelaHorarioAgendamento } from "@/lib/agendamento";
 import { calcularFretePorEndereco, finalizarPedido } from "@/lib/checkout";
 import { salvarEndereco } from "@/lib/cliente";
 import { validarCupom } from "@/lib/cupom";
@@ -15,7 +17,7 @@ import {
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
 } from "@/lib/endereco-estimado";
-import type { EnderecoCliente, ItemCarrinho } from "@/lib/types";
+import type { EmpresaCatalogo, EnderecoCliente, ItemCarrinho } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
 
 type TipoEntrega = "retirada" | "entrega";
@@ -26,6 +28,7 @@ export function CheckoutForm({
   metodosPagamento,
   aceitaRetirada,
   enderecoEmpresa,
+  horarioFuncionamento,
   subtotal,
   itens,
   enderecoSalvo,
@@ -37,6 +40,7 @@ export function CheckoutForm({
   metodosPagamento: string[];
   aceitaRetirada: boolean;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   subtotal: number;
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
@@ -87,6 +91,7 @@ export function CheckoutForm({
   const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; valorDesconto: number } | null>(null);
   const [validandoCupom, setValidandoCupom] = useState(false);
   const [erroCupom, setErroCupom] = useState<string | null>(null);
+  const [janelaAgendamento, setJanelaAgendamento] = useState<JanelaHorarioAgendamento | null>(null);
 
   async function aplicarCupom() {
     if (!cupomTexto.trim()) return;
@@ -222,6 +227,7 @@ export function CheckoutForm({
       saldoAplicado,
       tipoPagamento === "Dinheiro" && trocoValido ? trocoPara : null,
       cupomAplicado?.codigo ?? null,
+      janelaAgendamento ? { inicio: janelaAgendamento.inicio, fim: janelaAgendamento.fim } : null,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -284,6 +290,12 @@ export function CheckoutForm({
           )}
         </Card>
       )}
+
+      <SeletorAgendamento
+        horarioFuncionamento={horarioFuncionamento}
+        janela={janelaAgendamento}
+        onMudarJanela={setJanelaAgendamento}
+      />
 
       {saldoCliente > 0 && (
         <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">

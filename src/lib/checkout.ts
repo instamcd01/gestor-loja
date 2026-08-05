@@ -18,6 +18,7 @@ export async function finalizarPedido(
   saldoUsado: number,
   trocoPara: number | null,
   cupomCodigo: string | null,
+  agendamento: { inicio: string; fim: string } | null,
 ): Promise<ResultadoCheckout> {
   const supabase = await createClient();
 
@@ -30,7 +31,10 @@ export async function finalizarPedido(
 
   // O RPC revalida o cupom de verdade (validar_cupom) antes de aplicar —
   // o valor de desconto mostrado no checkout é só preview, nunca é
-  // enviado/confiado aqui, só o código.
+  // enviado/confiado aqui, só o código. O agendamento também é
+  // revalidado lá (precisa ser no futuro, janela coerente) — o site só
+  // oferece horários dentro do expediente, mas quem decide se aceita é
+  // sempre o servidor, nunca confia cegamente no que o navegador manda.
   const { data: pedidoId, error } = await supabase.rpc("finalizar_pedido_site", {
     p_empresa_id: empresaId,
     p_tipo_pagamento: tipoPagamento,
@@ -40,6 +44,8 @@ export async function finalizarPedido(
     p_saldo_usado: saldoUsado,
     p_troco_para: trocoPara,
     p_cupom_codigo: cupomLimitado,
+    p_agendado_inicio: agendamento?.inicio ?? null,
+    p_agendado_fim: agendamento?.fim ?? null,
   });
 
   if (error) {

@@ -8,7 +8,7 @@ import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-butt
 import { Card } from "@/components/ui/card";
 import { atualizarQuantidade, limparCarrinho } from "@/lib/carrinho";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
-import type { Carrinho, EnderecoCliente } from "@/lib/types";
+import type { Carrinho, EmpresaCatalogo, EnderecoCliente } from "@/lib/types";
 import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 /**
@@ -26,6 +26,7 @@ export function CarrinhoLogado({
   metodosPagamento,
   aceitaRetirada,
   enderecoEmpresa,
+  horarioFuncionamento,
   enderecoSalvo,
   saldoCliente,
   carrinhoInicial,
@@ -35,6 +36,7 @@ export function CarrinhoLogado({
   metodosPagamento: string[];
   aceitaRetirada: boolean;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
   carrinhoInicial: Carrinho;
@@ -115,6 +117,7 @@ export function CarrinhoLogado({
         metodosPagamento={metodosPagamento}
         aceitaRetirada={aceitaRetirada}
         enderecoEmpresa={enderecoEmpresa}
+        horarioFuncionamento={horarioFuncionamento}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
