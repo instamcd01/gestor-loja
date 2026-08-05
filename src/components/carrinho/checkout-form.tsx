@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
@@ -24,6 +24,7 @@ export function CheckoutForm({
   slug,
   empresaId,
   metodosPagamento,
+  aceitaRetirada,
   enderecoEmpresa,
   subtotal,
   itens,
@@ -33,6 +34,7 @@ export function CheckoutForm({
   slug: string;
   empresaId: string;
   metodosPagamento: string[];
+  aceitaRetirada: boolean;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   subtotal: number;
   itens: ItemCarrinho[];
@@ -48,7 +50,16 @@ export function CheckoutForm({
     obterSnapshotServidorEnderecoEstimado,
   );
 
-  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("retirada");
+  // Cliente que já tem endereço salvo (ou loja que não aceita retirada)
+  // provavelmente quer entrega — só cai pra retirada por padrão quando
+  // não há indício nenhum de endereço ainda.
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>(() =>
+    !aceitaRetirada || enderecoSalvo ? "entrega" : "retirada",
+  );
+  // true assim que o cliente escolhe manualmente — depois disso o efeito
+  // abaixo (endereço resolvido tarde, ex: estimativa pré-carrinho só
+  // chega depois da hidratação) para de tentar mudar a seleção sozinho.
+  const escolhaManual = useRef(false);
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   const [observacoes, setObservacoes] = useState("");
   // Confirmado nessa sessão > salvo na conta > estimado no navegador antes
@@ -56,6 +67,13 @@ export function CheckoutForm({
   // quando o useSyncExternalStore acima resolve depois da hidratação.
   const [enderecoConfirmado, setEnderecoConfirmado] = useState<EnderecoCliente | null>(null);
   const endereco = enderecoConfirmado ?? enderecoSalvo ?? enderecoEstimado?.endereco ?? null;
+
+  useEffect(() => {
+    if (!escolhaManual.current && endereco && tipoEntrega === "retirada") {
+      setTipoEntrega("entrega");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endereco]);
   const [frete, setFrete] = useState<Awaited<ReturnType<typeof calcularFretePorEndereco>> | null>(null);
   const [calculando, setCalculando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -89,6 +107,7 @@ export function CheckoutForm({
   }
 
   function mudarTipoEntrega(novo: TipoEntrega) {
+    escolhaManual.current = true;
     setTipoEntrega(novo);
     setFrete(null);
     setErro(null);
@@ -162,25 +181,27 @@ export function CheckoutForm({
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
-      <div>
-        <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
-        <div className="flex gap-2">
-          {(["retirada", "entrega"] as const).map((opcao) => (
-            <button
-              key={opcao}
-              type="button"
-              onClick={() => mudarTipoEntrega(opcao)}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                tipoEntrega === opcao
-                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
-                  : "border-black/10 dark:border-white/10"
-              }`}
-            >
-              {opcao === "retirada" ? "Retirar na loja" : "Entrega"}
-            </button>
-          ))}
+      {aceitaRetirada && (
+        <div>
+          <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
+          <div className="flex gap-2">
+            {(["retirada", "entrega"] as const).map((opcao) => (
+              <button
+                key={opcao}
+                type="button"
+                onClick={() => mudarTipoEntrega(opcao)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  tipoEntrega === opcao
+                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
+                    : "border-black/10 dark:border-white/10"
+                }`}
+              >
+                {opcao === "retirada" ? "Retirar na loja" : "Entrega"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {tipoEntrega === "entrega" && (
         <Card className="flex flex-col gap-3 p-4">

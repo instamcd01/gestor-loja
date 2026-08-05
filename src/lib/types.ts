@@ -26,6 +26,7 @@ export interface EmpresaCatalogo {
   estado: string | null;
   cep: string | null;
   chave_pix: string | null;
+  aceita_retirada: boolean;
 }
 
 export interface ProdutoCatalogo {

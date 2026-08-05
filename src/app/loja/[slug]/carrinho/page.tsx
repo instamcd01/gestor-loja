@@ -83,6 +83,7 @@ export default async function CarrinhoPage({
         metodosPagamento={(empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
           METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
         )}
+        aceitaRetirada={empresa.aceita_retirada}
         enderecoEmpresa={enderecoEmpresa}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
