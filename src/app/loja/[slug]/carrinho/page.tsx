@@ -75,7 +75,7 @@ export default async function CarrinhoPage({
       </Card>
 
       <div className="flex items-center justify-between px-1">
-        <span className="text-base font-medium">Total</span>
+        <span className="text-base font-medium">Subtotal</span>
         <span className="text-xl font-bold">{formatarPreco(carrinho.valorTotal)}</span>
       </div>
 

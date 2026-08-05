@@ -44,9 +44,16 @@ export default async function PedidoPage({
 
   if (!pedido) notFound();
 
-  const metadata = (pedido.metadata ?? {}) as { saldoAplicado?: number; trocoPara?: number };
+  const metadata = (pedido.metadata ?? {}) as {
+    saldoAplicado?: number;
+    trocoPara?: number;
+    entregaSelecionada?: string;
+  };
   const troco =
     metadata.trocoPara != null ? metadata.trocoPara - (pedido.valor_total ?? 0) : null;
+  // entregaSelecionada só existe em pedidos de entrega (ver finalizar_pedido_site) —
+  // sem ela, é retirada, e valor_entrega=0 não deve aparecer como "frete grátis".
+  const temEntrega = !!metadata.entregaSelecionada;
 
   const { data: itens } = await supabase
     .from("itens_pedido")
@@ -95,6 +102,19 @@ export default async function PedidoPage({
           </div>
         ))}
 
+        <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-sm dark:border-white/10">
+          <span className="text-black/50 dark:text-white/50">
+            {temEntrega ? `Entrega (${metadata.entregaSelecionada})` : "Retirada na loja"}
+          </span>
+          <span>
+            {temEntrega
+              ? (pedido.valor_entrega ?? 0) === 0
+                ? "Grátis"
+                : formatarPreco(pedido.valor_entrega ?? 0)
+              : "—"}
+          </span>
+        </div>
+
         {metadata.saldoAplicado != null && metadata.saldoAplicado > 0 && (
           <div className="flex justify-between text-sm text-[var(--color-success)]">
             <span>Saldo aplicado</span>
@@ -102,7 +122,7 @@ export default async function PedidoPage({
           </div>
         )}
 
-        <div className="mt-2 flex justify-between border-t border-black/10 pt-2 text-sm font-semibold dark:border-white/10">
+        <div className="flex justify-between border-t border-black/10 pt-2 text-sm font-semibold dark:border-white/10">
           <span>Total</span>
           <span>{formatarPreco(pedido.valor_total ?? 0)}</span>
         </div>

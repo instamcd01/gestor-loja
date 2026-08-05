@@ -244,8 +244,12 @@ export function CheckoutForm({
           <span>{formatarPreco(subtotal)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-black/50 dark:text-white/50">Entrega</span>
-          <span>{valorEntrega === 0 ? "Grátis" : formatarPreco(valorEntrega)}</span>
+          <span className="text-black/50 dark:text-white/50">
+            {tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
+          </span>
+          <span>
+            {tipoEntrega === "entrega" ? (valorEntrega === 0 ? "Grátis" : formatarPreco(valorEntrega)) : "—"}
+          </span>
         </div>
         {saldoAplicado > 0 && (
           <div className="flex justify-between text-[var(--color-success)]">
