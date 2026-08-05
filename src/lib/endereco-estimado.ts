@@ -18,6 +18,8 @@ export interface EnderecoEstimado {
   endereco: EnderecoCliente;
   zonaId: string;
   zonaNome: string;
+  valor: number;
+  freteGratis: boolean;
   valorMinimoFreteGratis: number | null;
 }
 

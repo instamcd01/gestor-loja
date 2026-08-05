@@ -13,6 +13,7 @@ import {
   type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { EnderecoCliente } from "@/lib/types";
+import { formatarPreco } from "@/lib/utils";
 
 /**
  * Pede o endereço antes de afirmar "frete grátis" — sem saber onde o
@@ -55,16 +56,37 @@ export function EstimarFreteGratis({
       endereco,
       zonaId: resultado.opcao.zona_id,
       zonaNome: resultado.opcao.zona_nome,
+      valor: resultado.opcao.valor,
+      freteGratis: resultado.opcao.frete_gratis,
       valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
     };
     salvarEnderecoEstimado(empresaId, novo);
   }
 
   if (estimado) {
-    if (estimado.valorMinimoFreteGratis == null) return null;
+    // estimado.freteGratis foi calculado com subtotal=0 no momento da
+    // resolução do endereço (ver resolverEndereco) — pra refletir o
+    // carrinho atual sem precisar recalcular no servidor a cada item
+    // adicionado, deriva de novo aqui com o subtotal ao vivo, mesma regra
+    // de limiar que FreteGratisProgresso já assume.
+    const gratisAgora =
+      estimado.freteGratis || (estimado.valorMinimoFreteGratis != null && subtotal >= estimado.valorMinimoFreteGratis);
+
     return (
-      <div className="flex flex-col gap-1">
-        <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-medium">
+          {gratisAgora ? (
+            <span className="font-semibold text-[var(--color-success)]">Frete grátis!</span>
+          ) : (
+            <>
+              Frete pro seu endereço ({estimado.zonaNome}):{" "}
+              <span className="font-semibold text-[var(--brand-primary)]">{formatarPreco(estimado.valor)}</span>
+            </>
+          )}
+        </p>
+        {!gratisAgora && estimado.valorMinimoFreteGratis != null && (
+          <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
+        )}
         <button
           type="button"
           onClick={() => limparEnderecoEstimado(empresaId)}
