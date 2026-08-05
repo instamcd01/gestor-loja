@@ -109,6 +109,33 @@ export function CheckoutForm({
     setErroCupom(null);
   }
 
+  // O desconto calculado por aplicarCupom() ficava congelado mesmo que o
+  // cliente mudasse a quantidade de algo no carrinho depois de aplicar —
+  // mesma classe do bug do frete grátis (valor calculado uma vez, nunca
+  // reavaliado contra o carrinho atual). finalizar_pedido_site sempre
+  // revalida o cupom de verdade no servidor, então nunca é cobrado errado
+  // — mas o total mostrado no botão de confirmar ficava inconsistente
+  // com o que ia ser cobrado de fato. Debounced (junto com o resto do
+  // carrinho) pra não validar de novo a cada clique de +/- em sequência.
+  useEffect(() => {
+    if (!cupomAplicado) return;
+    const codigo = cupomAplicado.codigo;
+    const timer = setTimeout(async () => {
+      const resultado = await validarCupom(empresaId, codigo, itens, subtotal);
+      if (!resultado.valido) {
+        setCupomAplicado((atual) => (atual?.codigo === codigo ? null : atual));
+        setCupomTexto((atual) => (atual === codigo ? "" : atual));
+        setErroCupom(resultado.motivo);
+        return;
+      }
+      setCupomAplicado((atual) =>
+        atual?.codigo === codigo ? { codigo, valorDesconto: resultado.valorDesconto } : atual,
+      );
+    }, 450);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal]);
+
   function mudarTipoEntrega(novo: TipoEntrega) {
     escolhaManual.current = true;
     setTipoEntrega(novo);

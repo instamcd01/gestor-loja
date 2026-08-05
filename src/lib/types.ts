@@ -57,6 +57,7 @@ export interface ProdutoCatalogo {
 /** Uma variante (peso/tamanho) de um produto-pai, pra montar as pills de seleção. */
 export interface VarianteProduto {
   id: string;
+  nome: string;
   rotulo: string;
   preco: number;
   preco_promocional: number | null;

@@ -28,6 +28,7 @@ export function ProdutoCard({
   const opcoes: VarianteProduto[] = [
     {
       id: produto.id,
+      nome: produto.nome,
       rotulo: produto.variante_label || extrairPeso(produto.nome)?.rotulo || produto.unidade_medida || "",
       preco: produto.preco,
       preco_promocional: produto.preco_promocional,
@@ -59,7 +60,7 @@ export function ProdutoCard({
     e.preventDefault();
     e.stopPropagation();
     await carrinhoRapido.adicionar(selecionada.id, 1, {
-      nome: produto.nome,
+      nome: selecionada.nome,
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
       preco: temPromocao ? selecionada.preco_promocional! : selecionada.preco,

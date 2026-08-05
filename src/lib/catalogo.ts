@@ -228,6 +228,7 @@ export async function getVariantesEmLote(
       chave,
       variante: {
         id: linha.id,
+        nome: linha.nome,
         rotulo,
         preco: linha.preco,
         preco_promocional: linha.preco_promocional,
@@ -285,6 +286,7 @@ export async function getVariantesDoProduto(
         chave,
         variante: {
           id: linha.id,
+          nome: linha.nome,
           rotulo,
           preco: linha.preco,
           preco_promocional: linha.preco_promocional,
