@@ -1,9 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
+import { IconeLixeira } from "@/components/icone-lixeira";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,6 +52,8 @@ export function CarrinhoConvidado({
     () => obterSnapshotEnderecoEstimado(empresaId),
     obterSnapshotServidorEnderecoEstimado,
   );
+
+  const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
 
   function mudarQuantidade(produtoId: string, quantidade: number) {
     atualizarItemConvidado(empresaId, produtoId, quantidade);
@@ -102,30 +105,59 @@ export function CarrinhoConvidado({
               <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)} cada</p>
             </div>
 
-            <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => mudarQuantidade(item.produtoId, item.quantidade - 1)}
-                className="px-3 py-1.5 text-lg leading-none"
-                aria-label="Diminuir quantidade"
-              >
-                −
-              </button>
-              <span className="w-6 text-center text-sm">{item.quantidade}</span>
-              <button
-                type="button"
-                onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
-                disabled={item.quantidade >= item.estoqueDisponivel}
-                className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
-                aria-label="Aumentar quantidade"
-              >
-                +
-              </button>
-            </div>
+            {confirmandoRemocaoId === item.produtoId ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-black/60 dark:text-white/60">Remover?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmandoRemocaoId(null);
+                    mudarQuantidade(item.produtoId, 0);
+                  }}
+                  className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
+                >
+                  Sim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoRemocaoId(null)}
+                  className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
+                >
+                  Não
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      item.quantidade === 1
+                        ? setConfirmandoRemocaoId(item.produtoId)
+                        : mudarQuantidade(item.produtoId, item.quantidade - 1)
+                    }
+                    className="flex h-7 w-7 items-center justify-center px-3 py-1.5 text-lg leading-none"
+                    aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+                  >
+                    {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+                  </button>
+                  <span className="w-6 text-center text-sm">{item.quantidade}</span>
+                  <button
+                    type="button"
+                    onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
+                    disabled={item.quantidade >= item.estoqueDisponivel}
+                    className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
+                    aria-label="Aumentar quantidade"
+                  >
+                    +
+                  </button>
+                </div>
 
-            <span className="w-20 text-right text-sm font-semibold">
-              {formatarPreco(item.preco * item.quantidade)}
-            </span>
+                <span className="w-20 text-right text-sm font-semibold">
+                  {formatarPreco(item.preco * item.quantidade)}
+                </span>
+              </>
+            )}
           </div>
         ))}
       </Card>
