@@ -40,7 +40,7 @@ export function CarrinhoLogado({
   carrinhoInicial: Carrinho;
 }) {
   const [carrinho, setCarrinho] = useState(carrinhoInicial);
-  const agendarSync = useDebounceQuantidade();
+  const { agendar: agendarSync, flushTudo } = useDebounceQuantidade();
   // Só a resposta da requisição mais recente pode atualizar a UI — sem
   // isso, a resposta de um item que demorou mais podia chegar depois e
   // sobrescrever um estado já mais novo (de outro item alterado nesse meio-tempo).
@@ -119,6 +119,7 @@ export function CarrinhoLogado({
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
         saldoCliente={saldoCliente}
+        aoConfirmarAntes={flushTudo}
       />
     </div>
   );

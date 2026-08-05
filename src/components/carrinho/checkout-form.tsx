@@ -30,6 +30,7 @@ export function CheckoutForm({
   itens,
   enderecoSalvo,
   saldoCliente,
+  aoConfirmarAntes,
 }: {
   slug: string;
   empresaId: string;
@@ -40,6 +41,8 @@ export function CheckoutForm({
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
+  /** Garante que qualquer alteração de quantidade ainda pendente (dentro da janela de debounce) chegue no banco antes de finalizar — senão o pedido podia sair com uma quantidade desatualizada. */
+  aoConfirmarAntes: () => Promise<void>;
 }) {
   // Se o cliente já resolveu o endereço na estimativa pré-carrinho (ver
   // EstimarFreteGratis), reaproveita em vez de pedir de novo — só usada
@@ -174,6 +177,12 @@ export function CheckoutForm({
   async function confirmar() {
     setConfirmando(true);
     setErro(null);
+
+    // Garante que qualquer mudança de quantidade feita nos últimos
+    // instantes (ainda dentro da janela de debounce) já esteja salva no
+    // banco antes de ler o carrinho pra montar o pedido — senão o pedido
+    // podia sair com uma quantidade desatualizada.
+    await aoConfirmarAntes();
 
     const zonaId = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao.zona_id : null;
     const resultado = await finalizarPedido(

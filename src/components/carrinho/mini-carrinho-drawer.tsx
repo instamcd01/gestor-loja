@@ -1,10 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ProdutoImagem } from "@/components/produto-imagem";
-import { ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   assinarEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
@@ -46,6 +47,7 @@ export function MiniCarrinhoDrawer({
   valorTotal,
   idRecemAdicionado,
   onAlterarQuantidade,
+  onAntesDeNavegar,
   onFechar,
 }: {
   slug: string;
@@ -55,10 +57,20 @@ export function MiniCarrinhoDrawer({
   valorTotal: number;
   idRecemAdicionado: string;
   onAlterarQuantidade: (itemId: string, novaQuantidade: number) => void;
+  /** Garante que qualquer alteração de quantidade ainda pendente (dentro da janela de debounce) chegue no banco antes de sair da gaveta — sem isso, ir pro carrinho logo depois de mexer na quantidade podia mostrar o valor antigo lá. */
+  onAntesDeNavegar: () => Promise<void>;
   onFechar: () => void;
 }) {
   const painelRef = useDrawerA11y(true, onFechar);
+  const router = useRouter();
   const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
+  const [indoParaCarrinho, setIndoParaCarrinho] = useState(false);
+
+  async function irParaCarrinho() {
+    setIndoParaCarrinho(true);
+    await onAntesDeNavegar();
+    router.push(`/loja/${slug}/carrinho`);
+  }
 
   const estimado = useSyncExternalStore(
     assinarEnderecoEstimado,
@@ -194,9 +206,9 @@ export function MiniCarrinhoDrawer({
         </div>
 
         <div className="flex flex-col gap-2">
-          <ButtonLink href={`/loja/${slug}/carrinho`} className="w-full">
-            Ir para o carrinho
-          </ButtonLink>
+          <Button onClick={irParaCarrinho} disabled={indoParaCarrinho} className="w-full">
+            {indoParaCarrinho ? "Abrindo carrinho..." : "Ir para o carrinho"}
+          </Button>
           <button
             type="button"
             onClick={onFechar}

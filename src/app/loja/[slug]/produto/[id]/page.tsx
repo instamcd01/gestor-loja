@@ -140,6 +140,7 @@ export default async function ProdutoPage({
                   cep: empresa.cep,
                 }}
                 produtoId={produto.id}
+                mostrarEstoqueBaixo={empresa.mostrar_estoque_baixo}
                 produto={{
                   nome: produto.nome,
                   imagemUrl: produto.imagem_url,

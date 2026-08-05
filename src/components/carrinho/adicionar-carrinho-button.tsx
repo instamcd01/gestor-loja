@@ -21,19 +21,22 @@ export function AdicionarCarrinhoButton({
   empresaId,
   enderecoEmpresa,
   produtoId,
+  mostrarEstoqueBaixo,
   produto,
 }: {
   slug: string;
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   produtoId: string;
+  /** Configurável em Configurações > Catálogo Online no app — desligado por padrão, revelar estoque baixo de cada item pode passar imagem de loja pequena. */
+  mostrarEstoqueBaixo: boolean;
   produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number; estoqueDisponivel: number };
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<EstadoDrawer | null>(null);
-  const agendarSync = useDebounceQuantidade();
+  const { agendar: agendarSync, flushTudo } = useDebounceQuantidade();
   // Só a resposta da requisição mais recente pode atualizar a UI — sem
   // isso, a resposta de um clique mais antigo podia chegar depois e
   // sobrescrever um estado já mais novo.
@@ -245,7 +248,7 @@ export function AdicionarCarrinhoButton({
         </Button>
       </div>
 
-      {produto.estoqueDisponivel > 0 && produto.estoqueDisponivel <= 5 && (
+      {mostrarEstoqueBaixo && produto.estoqueDisponivel > 0 && produto.estoqueDisponivel <= 5 && (
         <p className="text-xs text-black/50 dark:text-white/50">Só restam {produto.estoqueDisponivel} em estoque.</p>
       )}
 
@@ -260,6 +263,7 @@ export function AdicionarCarrinhoButton({
           valorTotal={drawer.valorTotal}
           idRecemAdicionado={drawer.idRecemAdicionado}
           onAlterarQuantidade={alterarQuantidade}
+          onAntesDeNavegar={flushTudo}
           onFechar={() => setDrawer(null)}
         />
       )}
