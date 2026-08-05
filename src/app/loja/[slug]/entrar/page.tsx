@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import { DevLoginButton } from "@/components/auth/dev-login-button";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
@@ -37,7 +36,6 @@ export default async function EntrarPage({
         <Card className="p-6">
           <LoginForm empresaId={empresa.id} slug={slug} rotaPosLogin={rotaPosLogin} />
         </Card>
-        <DevLoginButton slug={slug} empresaId={empresa.id} rotaPosLogin={rotaPosLogin} />
       </div>
 
       <div className="relative hidden overflow-hidden rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] p-8 text-white md:flex md:flex-col md:justify-center md:gap-5">

@@ -45,7 +45,7 @@ export async function validarCupom(
   const { data, error } = await supabase
     .rpc("validar_cupom", {
       p_empresa_id: empresaId,
-      p_codigo: codigo,
+      p_codigo: codigo.trim().slice(0, 40),
       p_cliente_id: cliente?.id ?? null,
       p_subtotal: subtotal,
       p_itens: itensPayload,

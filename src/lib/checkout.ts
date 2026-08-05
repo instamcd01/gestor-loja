@@ -21,6 +21,13 @@ export async function finalizarPedido(
 ): Promise<ResultadoCheckout> {
   const supabase = await createClient();
 
+  // Server Action é chamável direto (não só pelo clique no botão), sem
+  // limite de tamanho embutido no Postgres pra esses campos de texto
+  // livre — trunca antes de mandar, tanto pra evitar armazenamento sem
+  // controle quanto payload gigante numa chamada direta.
+  const observacoesLimitadas = observacoes.trim().slice(0, 1000) || null;
+  const cupomLimitado = cupomCodigo?.trim().slice(0, 40) || null;
+
   // O RPC revalida o cupom de verdade (validar_cupom) antes de aplicar —
   // o valor de desconto mostrado no checkout é só preview, nunca é
   // enviado/confiado aqui, só o código.
@@ -29,10 +36,10 @@ export async function finalizarPedido(
     p_tipo_pagamento: tipoPagamento,
     p_tipo_entrega: tipoEntrega,
     p_zona_id: zonaId,
-    p_observacoes: observacoes.trim() || null,
+    p_observacoes: observacoesLimitadas,
     p_saldo_usado: saldoUsado,
     p_troco_para: trocoPara,
-    p_cupom_codigo: cupomCodigo,
+    p_cupom_codigo: cupomLimitado,
   });
 
   if (error) {
@@ -61,7 +68,9 @@ export async function calcularFretePorEndereco(
 }
 
 export async function buscarEnderecoCandidatos(query: string): Promise<CandidatoEndereco[]> {
-  return geocodificarEndereco(query);
+  // Vai pra API paga do Google (Geocoding) — trunca antes, uma string
+  // gigante numa chamada direta à Server Action não vira custo maior.
+  return geocodificarEndereco(query.trim().slice(0, 300));
 }
 
 export async function buscarEnderecoPorLocalizacao(lat: number, lng: number): Promise<CandidatoEndereco | null> {
