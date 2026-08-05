@@ -276,11 +276,6 @@ export function CheckoutForm({
                 : `Frete (${frete.opcao.zona_nome}): ${formatarPreco(frete.opcao.valor)}`}
             </p>
           )}
-          {frete && frete.disponivel && frete.opcao.estimativa_min_min != null && frete.opcao.estimativa_min_max != null && (
-            <p className="text-xs text-black/50 dark:text-white/50">
-              Entrega estimada em {frete.opcao.estimativa_min_min}–{frete.opcao.estimativa_min_max} min
-            </p>
-          )}
           {frete && !frete.disponivel && (
             <p className="text-sm text-[var(--color-danger)]">
               {frete.motivo === "fora_de_area"
@@ -295,6 +290,11 @@ export function CheckoutForm({
         horarioFuncionamento={horarioFuncionamento}
         janela={janelaAgendamento}
         onMudarJanela={setJanelaAgendamento}
+        estimativa={
+          freteResolvido && freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null
+            ? { min: freteResolvido.estimativa_min_min, max: freteResolvido.estimativa_min_max }
+            : null
+        }
       />
 
       {saldoCliente > 0 && (

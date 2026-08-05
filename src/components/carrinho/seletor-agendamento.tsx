@@ -29,10 +29,13 @@ export function SeletorAgendamento({
   horarioFuncionamento,
   janela,
   onMudarJanela,
+  estimativa,
 }: {
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   janela: JanelaHorarioAgendamento | null;
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
+  /** Estimativa da zona de entrega (min–max em minutos) — null pra retirada, ou entrega sem frete resolvido ainda. Mostrada como legenda de "Quero agora", já que é o que esse horário representa. */
+  estimativa?: { min: number; max: number } | null;
 }) {
   const opcoesData = useMemo(() => gerarOpcoesData(horarioFuncionamento), [horarioFuncionamento]);
   const [agendando, setAgendando] = useState(false);
@@ -51,17 +54,24 @@ export function SeletorAgendamento({
   return (
     <div>
       <p className="mb-2 text-sm font-semibold">Quando?</p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setAgendando(false);
-            onMudarJanela(null);
-          }}
-          className={pill(!agendando)}
-        >
-          Quero agora
-        </button>
+      <div className="flex items-start gap-2">
+        <div className="flex flex-1 flex-col items-start gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              setAgendando(false);
+              onMudarJanela(null);
+            }}
+            className={`w-full ${pill(!agendando)}`}
+          >
+            Quero agora
+          </button>
+          {estimativa && (
+            <p className="px-1 text-xs text-black/50 dark:text-white/50">
+              Entrega estimada em {estimativa.min}–{estimativa.max} min
+            </p>
+          )}
+        </div>
         <button type="button" onClick={() => setAgendando(true)} className={pill(agendando)}>
           Agendar
         </button>
