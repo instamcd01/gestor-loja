@@ -136,7 +136,7 @@ export function CarrinhoConvidado({
                         ? setConfirmandoRemocaoId(item.produtoId)
                         : mudarQuantidade(item.produtoId, item.quantidade - 1)
                     }
-                    className="flex h-7 w-7 items-center justify-center px-3 py-1.5 text-lg leading-none"
+                    className="flex h-7 w-7 items-center justify-center text-lg leading-none"
                     aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
                   >
                     {item.quantidade === 1 ? <IconeLixeira /> : "−"}
@@ -146,7 +146,7 @@ export function CarrinhoConvidado({
                     type="button"
                     onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
                     disabled={item.quantidade >= item.estoqueDisponivel}
-                    className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
+                    className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
                     aria-label="Aumentar quantidade"
                   >
                     +

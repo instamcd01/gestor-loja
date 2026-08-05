@@ -64,7 +64,7 @@ export function ItemCarrinhoRow({
                   ? setConfirmandoRemocao(true)
                   : onAlterarQuantidade(item.id, item.quantidade - 1)
               }
-              className="flex h-7 w-7 items-center justify-center px-3 py-1.5 text-lg leading-none"
+              className="flex h-7 w-7 items-center justify-center text-lg leading-none"
               aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
             >
               {item.quantidade === 1 ? <IconeLixeira /> : "−"}
@@ -74,7 +74,7 @@ export function ItemCarrinhoRow({
               type="button"
               onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
               disabled={item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
-              className="px-3 py-1.5 text-lg leading-none disabled:opacity-30"
+              className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
               aria-label="Aumentar quantidade"
             >
               +
