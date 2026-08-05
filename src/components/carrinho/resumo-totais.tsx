@@ -15,6 +15,7 @@ export function ResumoTotais({
   entregaLabel,
   entregaValor,
   faltaParaFreteGratis,
+  descontoCupom,
   saldoAplicado,
   total,
 }: {
@@ -25,6 +26,7 @@ export function ResumoTotais({
   entregaValor: number | null;
   /** Só exibido quando > 0 — mesma regra do app, não mostra nada se não houver mínimo configurado. */
   faltaParaFreteGratis?: number | null;
+  descontoCupom?: number;
   saldoAplicado?: number;
   total: number;
 }) {
@@ -46,6 +48,13 @@ export function ResumoTotais({
         <p className="text-xs text-[var(--color-danger)]">
           Faltam {formatarPreco(faltaParaFreteGratis)} pra frete grátis
         </p>
+      )}
+
+      {!!descontoCupom && descontoCupom > 0 && (
+        <div className="flex justify-between text-[var(--color-success)]">
+          <span>Cupom de desconto</span>
+          <span>-{formatarPreco(descontoCupom)}</span>
+        </div>
       )}
 
       {!!saldoAplicado && saldoAplicado > 0 && (

@@ -17,9 +17,13 @@ export async function finalizarPedido(
   observacoes: string,
   saldoUsado: number,
   trocoPara: number | null,
+  cupomCodigo: string | null,
 ): Promise<ResultadoCheckout> {
   const supabase = await createClient();
 
+  // O RPC revalida o cupom de verdade (validar_cupom) antes de aplicar —
+  // o valor de desconto mostrado no checkout é só preview, nunca é
+  // enviado/confiado aqui, só o código.
   const { data: pedidoId, error } = await supabase.rpc("finalizar_pedido_site", {
     p_empresa_id: empresaId,
     p_tipo_pagamento: tipoPagamento,
@@ -28,6 +32,7 @@ export async function finalizarPedido(
     p_observacoes: observacoes.trim() || null,
     p_saldo_usado: saldoUsado,
     p_troco_para: trocoPara,
+    p_cupom_codigo: cupomCodigo,
   });
 
   if (error) {

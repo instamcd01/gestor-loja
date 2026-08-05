@@ -71,7 +71,13 @@ export interface ItemCarrinho {
   quantidade: number;
   preco_unitario: number;
   subtotal: number;
-  produto: { nome: string; imagem_url: string | null; categoria: string | null } | null;
+  produto: {
+    nome: string;
+    imagem_url: string | null;
+    categoria: string | null;
+    subcategoria: string | null;
+    fabricante: string | null;
+  } | null;
 }
 
 export interface Carrinho {

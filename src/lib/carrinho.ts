@@ -191,7 +191,7 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
 
   const { data: produtos } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, imagem_url, categoria")
+    .select("id, nome, imagem_url, categoria, subcategoria, fabricante")
     .in(
       "id",
       itens.map((i) => i.produto_id),

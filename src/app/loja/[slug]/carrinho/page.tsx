@@ -85,6 +85,7 @@ export default async function CarrinhoPage({
         )}
         enderecoEmpresa={enderecoEmpresa}
         subtotal={carrinho.valorTotal}
+        itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
         saldoCliente={saldoCliente}
       />

@@ -37,7 +37,7 @@ export default async function PedidoPage({
   const { data: pedido } = await supabase
     .from("pedidos")
     .select(
-      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, valor_total, observacoes, created_at, metadata",
+      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata",
     )
     .eq("id", id)
     .eq("empresa_id", empresa.id)
@@ -108,6 +108,7 @@ export default async function PedidoPage({
             subtotal={pedido.valor_produtos ?? 0}
             entregaLabel={temEntrega ? `Entrega (${metadata.entregaSelecionada})` : "Retirada na loja"}
             entregaValor={temEntrega ? (pedido.valor_entrega ?? 0) : null}
+            descontoCupom={pedido.desconto ?? 0}
             saldoAplicado={metadata.saldoAplicado}
             total={pedido.valor_total ?? 0}
           />

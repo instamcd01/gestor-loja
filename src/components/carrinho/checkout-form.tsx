@@ -9,12 +9,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { calcularFretePorEndereco, finalizarPedido } from "@/lib/checkout";
 import { salvarEndereco } from "@/lib/cliente";
+import { validarCupom } from "@/lib/cupom";
 import {
   assinarEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
 } from "@/lib/endereco-estimado";
-import type { EnderecoCliente } from "@/lib/types";
+import type { EnderecoCliente, ItemCarrinho } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
 
 type TipoEntrega = "retirada" | "entrega";
@@ -25,6 +26,7 @@ export function CheckoutForm({
   metodosPagamento,
   enderecoEmpresa,
   subtotal,
+  itens,
   enderecoSalvo,
   saldoCliente,
 }: {
@@ -33,6 +35,7 @@ export function CheckoutForm({
   metodosPagamento: string[];
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   subtotal: number;
+  itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
 }) {
@@ -59,6 +62,31 @@ export function CheckoutForm({
   const [erro, setErro] = useState<string | null>(null);
   const [usarSaldo, setUsarSaldo] = useState(false);
   const [trocoParaTexto, setTrocoParaTexto] = useState("");
+  const [cupomTexto, setCupomTexto] = useState("");
+  const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; valorDesconto: number } | null>(null);
+  const [validandoCupom, setValidandoCupom] = useState(false);
+  const [erroCupom, setErroCupom] = useState<string | null>(null);
+
+  async function aplicarCupom() {
+    if (!cupomTexto.trim()) return;
+    setValidandoCupom(true);
+    setErroCupom(null);
+
+    const resultado = await validarCupom(empresaId, cupomTexto.trim(), itens, subtotal);
+    setValidandoCupom(false);
+
+    if (!resultado.valido) {
+      setErroCupom(resultado.motivo);
+      return;
+    }
+    setCupomAplicado({ codigo: cupomTexto.trim(), valorDesconto: resultado.valorDesconto });
+  }
+
+  function removerCupom() {
+    setCupomAplicado(null);
+    setCupomTexto("");
+    setErroCupom(null);
+  }
 
   function mudarTipoEntrega(novo: TipoEntrega) {
     setTipoEntrega(novo);
@@ -94,7 +122,8 @@ export function CheckoutForm({
     (freteResolvido.frete_gratis ||
       (freteResolvido.valor_minimo_frete_gratis != null && subtotal >= freteResolvido.valor_minimo_frete_gratis));
   const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : freteResolvido.valor) : 0;
-  const valorAntesDoSaldo = subtotal + valorEntrega;
+  const descontoCupom = cupomAplicado?.valorDesconto ?? 0;
+  const valorAntesDoSaldo = Math.max(0, subtotal + valorEntrega - descontoCupom);
   const saldoAplicado = usarSaldo ? Math.min(saldoCliente, valorAntesDoSaldo) : 0;
   const valorFinal = valorAntesDoSaldo - saldoAplicado;
   const faltaParaFreteGratis =
@@ -120,6 +149,7 @@ export function CheckoutForm({
       observacoes,
       saldoAplicado,
       tipoPagamento === "Dinheiro" && trocoValido ? trocoPara : null,
+      cupomAplicado?.codigo ?? null,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -253,12 +283,52 @@ export function CheckoutForm({
         />
       </div>
 
+      <div>
+        <label htmlFor="cupom" className="mb-1 block text-sm font-semibold">
+          Cupom de desconto (opcional)
+        </label>
+        {cupomAplicado ? (
+          <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-3.5 py-2.5">
+            <span className="text-sm font-medium text-[var(--color-success)]">
+              &ldquo;{cupomAplicado.codigo}&rdquo; aplicado — -{formatarPreco(cupomAplicado.valorDesconto)}
+            </span>
+            <button
+              type="button"
+              onClick={removerCupom}
+              className="text-xs text-black/50 hover:underline dark:text-white/50"
+            >
+              Remover
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              id="cupom"
+              value={cupomTexto}
+              onChange={(e) => setCupomTexto(e.target.value.toUpperCase())}
+              placeholder="Ex: BEMVINDO10"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={aplicarCupom}
+              disabled={validandoCupom || !cupomTexto.trim()}
+            >
+              {validandoCupom ? "..." : "Aplicar"}
+            </Button>
+          </div>
+        )}
+        {erroCupom && <p className="mt-1 text-xs text-[var(--color-danger)]">{erroCupom}</p>}
+      </div>
+
       <Card className="p-4">
         <ResumoTotais
           subtotal={subtotal}
           entregaLabel={tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
           entregaValor={tipoEntrega === "entrega" ? (freteResolvido ? valorEntrega : null) : null}
           faltaParaFreteGratis={faltaParaFreteGratis}
+          descontoCupom={descontoCupom}
           saldoAplicado={saldoAplicado}
           total={valorFinal}
         />
