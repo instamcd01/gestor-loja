@@ -192,7 +192,7 @@ export async function getVariantesEmLote(
   const supabase = await createClient();
   const { data: filhos, error: erroFilhos } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label")
+    .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel")
     .eq("empresa_id", empresaId)
     .not("produto_pai_id", "is", null);
 
@@ -210,7 +210,7 @@ export async function getVariantesEmLote(
       ? { data: [], error: null }
       : await supabase
           .from("catalogo_produtos_publico")
-          .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label")
+          .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel")
           .in("id", ancorasReferenciadas);
 
   if (erroAncoras) {
@@ -226,7 +226,13 @@ export async function getVariantesEmLote(
     const item = {
       rotulo,
       chave,
-      variante: { id: linha.id, rotulo, preco: linha.preco, preco_promocional: linha.preco_promocional },
+      variante: {
+        id: linha.id,
+        rotulo,
+        preco: linha.preco,
+        preco_promocional: linha.preco_promocional,
+        estoque_disponivel: linha.estoque_disponivel,
+      },
     };
     const lista = membrosPorFamilia.get(familiaId) ?? [];
     lista.push(item);
@@ -262,7 +268,7 @@ export async function getVariantesDoProduto(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional, variante_label")
+    .select("id, nome, preco, preco_promocional, variante_label, estoque_disponivel")
     .eq("empresa_id", empresaId)
     .or(`id.eq.${paiId},produto_pai_id.eq.${paiId}`);
 
@@ -282,6 +288,7 @@ export async function getVariantesDoProduto(
           rotulo,
           preco: linha.preco,
           preco_promocional: linha.preco_promocional,
+          estoque_disponivel: linha.estoque_disponivel,
         } satisfies VarianteProduto,
       };
     })

@@ -78,6 +78,12 @@ export default async function LojaPage({
   ]);
 
   const variantesPorPai = await getVariantesEmLote(empresa.id, produtos);
+  const enderecoEmpresa = {
+    endereco: empresa.endereco,
+    cidade: empresa.cidade,
+    estado: empresa.estado,
+    cep: empresa.cep,
+  };
 
   const faixaAtiva =
     precoMin != null ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined } : null;
@@ -135,6 +141,8 @@ export default async function LojaPage({
               key={produto.id}
               produto={produto}
               slug={slug}
+              empresaId={empresa.id}
+              enderecoEmpresa={enderecoEmpresa}
               variantes={variantesPorPai.get(produto.id)}
               moderno={moderno}
             />
@@ -151,6 +159,8 @@ export default async function LojaPage({
                     key={produto.id}
                     produto={produto}
                     slug={slug}
+                    empresaId={empresa.id}
+                    enderecoEmpresa={enderecoEmpresa}
                     variantes={variantesPorPai.get(produto.id)}
                     moderno={moderno}
                   />

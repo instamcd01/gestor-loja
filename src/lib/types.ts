@@ -60,6 +60,7 @@ export interface VarianteProduto {
   rotulo: string;
   preco: number;
   preco_promocional: number | null;
+  estoque_disponivel: number;
 }
 
 export interface CategoriaCatalogo {

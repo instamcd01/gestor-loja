@@ -4,10 +4,14 @@ import type { ProdutoCatalogo } from "@/lib/types";
 export function ProdutosRelacionados({
   produtos,
   slug,
+  empresaId,
+  enderecoEmpresa,
   moderno,
 }: {
   produtos: ProdutoCatalogo[];
   slug: string;
+  empresaId: string;
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   moderno: boolean;
 }) {
   if (produtos.length === 0) return null;
@@ -17,7 +21,14 @@ export function ProdutosRelacionados({
       <h2 className="text-lg font-semibold">Quem viu, também viu</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {produtos.map((produto) => (
-          <ProdutoCard key={produto.id} produto={produto} slug={slug} moderno={moderno} />
+          <ProdutoCard
+            key={produto.id}
+            produto={produto}
+            slug={slug}
+            empresaId={empresaId}
+            enderecoEmpresa={enderecoEmpresa}
+            moderno={moderno}
+          />
         ))}
       </div>
     </section>

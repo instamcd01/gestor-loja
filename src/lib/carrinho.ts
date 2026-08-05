@@ -100,7 +100,13 @@ async function getOrCriarCarrinho(
 
 export type ResultadoCarrinho =
   | { ok: true; limitado: boolean; disponivel: number; carrinho: Carrinho }
-  | { ok: false; erro: "login_necessario" | "produto_invalido" | "sem_estoque"; disponivel?: number };
+  | { ok: false; erro: "login_necessario" | "produto_invalido" }
+  // Carrinho já tem o máximo do estoque — nada muda, mas devolve o
+  // carrinho mesmo assim: quem chama precisa dele pra abrir a gaveta e
+  // mostrar o que já está lá, em vez de só um erro sem contexto nenhum
+  // (era exatamente esse o bug: clicar "adicionar" com o carrinho já no
+  // limite não abria a gaveta, só mostrava a mensagem e parava).
+  | { ok: false; erro: "sem_estoque"; disponivel: number; carrinho: Carrinho };
 
 export async function adicionarAoCarrinho(
   slug: string,
@@ -137,7 +143,8 @@ export async function adicionarAoCarrinho(
 
   const quantidadeAtual = existente?.quantidade ?? 0;
   if (quantidadeAtual >= produto.estoque_disponivel) {
-    return { ok: false, erro: "sem_estoque", disponivel: produto.estoque_disponivel };
+    const carrinho = await recarregarCarrinho(supabase, carrinhoId);
+    return { ok: false, erro: "sem_estoque", disponivel: produto.estoque_disponivel, carrinho };
   }
 
   const quantidadeDesejada = quantidadeAtual + quantidade;

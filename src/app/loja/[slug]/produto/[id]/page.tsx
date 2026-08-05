@@ -171,7 +171,18 @@ export default async function ProdutoPage({
         </div>
       </div>
 
-      <ProdutosRelacionados produtos={relacionados} slug={slug} moderno={moderno} />
+      <ProdutosRelacionados
+        produtos={relacionados}
+        slug={slug}
+        empresaId={empresa.id}
+        enderecoEmpresa={{
+          endereco: empresa.endereco,
+          cidade: empresa.cidade,
+          estado: empresa.estado,
+          cep: empresa.cep,
+        }}
+        moderno={moderno}
+      />
     </div>
   );
 }
