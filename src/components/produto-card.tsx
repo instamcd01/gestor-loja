@@ -85,6 +85,21 @@ export function ProdutoCard({
             {percentualOff > 0 && <Badge variant="secondary">{percentualOff}% OFF</Badge>}
             {produto.destaque && <Badge variant="neutral">Destaque</Badge>}
           </div>
+
+          {/* Fica na foto (não no rodapé do card) de propósito — o botão
+              flutuante de WhatsApp é fixo no canto inferior direito da
+              TELA, então qualquer coisa que more no canto inferior do
+              CARD passa por baixo dele durante o scroll (relatado como
+              cards "cortados"). Aqui, bem mais alto, o cruzamento é raro. */}
+          <button
+            type="button"
+            onClick={adicionarRapido}
+            disabled={carrinhoRapido.carregando || selecionada.estoque_disponivel === 0}
+            aria-label="Adicionar ao carrinho"
+            className="absolute right-2 bottom-2 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary)] text-lg leading-none text-white shadow-md transition-opacity hover:opacity-90 disabled:opacity-30"
+          >
+            +
+          </button>
         </div>
 
         <div className="flex flex-1 flex-col gap-1 p-3">
@@ -112,27 +127,15 @@ export function ProdutoCard({
             </div>
           )}
 
-          <div className="mt-auto flex items-baseline justify-between gap-2 pt-1">
-            <div className="flex items-baseline gap-2">
-              <span className={moderno ? "text-lg font-extrabold" : "text-base font-semibold"}>
-                {formatarPreco(temPromocao ? selecionada.preco_promocional! : selecionada.preco)}
+          <div className="mt-auto flex items-baseline gap-2 pt-1">
+            <span className={moderno ? "text-lg font-extrabold" : "text-base font-semibold"}>
+              {formatarPreco(temPromocao ? selecionada.preco_promocional! : selecionada.preco)}
+            </span>
+            {temPromocao && (
+              <span className="text-xs text-black/40 line-through dark:text-white/40">
+                {formatarPreco(selecionada.preco)}
               </span>
-              {temPromocao && (
-                <span className="text-xs text-black/40 line-through dark:text-white/40">
-                  {formatarPreco(selecionada.preco)}
-                </span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={adicionarRapido}
-              disabled={carrinhoRapido.carregando || selecionada.estoque_disponivel === 0}
-              aria-label="Adicionar ao carrinho"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)] text-base leading-none text-white transition-opacity hover:opacity-90 disabled:opacity-30"
-            >
-              +
-            </button>
+            )}
           </div>
 
           {carrinhoRapido.erro && (
