@@ -1,8 +1,23 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { EnderecoCliente } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/** Mesmo formato de Cliente.enderecoCompleto no app Gestor (lib/models/cliente.dart). */
+export function formatarEnderecoCompleto(e: EnderecoCliente): string {
+  const partes: string[] = [];
+  if (e.endereco) partes.push(e.numero ? `${e.endereco}, ${e.numero}` : e.endereco);
+  if (e.bairro) partes.push(e.bairro);
+
+  const cidadeUf = [e.cidade, e.estado].filter(Boolean).join(" - ");
+  if (cidadeUf) partes.push(cidadeUf);
+
+  if (e.cep) partes.push(`CEP ${e.cep}`);
+
+  return partes.join(", ");
 }
 
 export function formatarPreco(valor: number) {

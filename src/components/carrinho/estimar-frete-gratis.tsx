@@ -13,6 +13,7 @@ import {
   type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { EnderecoCliente } from "@/lib/types";
+import { formatarEnderecoCompleto } from "@/lib/utils";
 
 /**
  * Pede o endereço antes de afirmar "frete grátis" — sem saber onde o
@@ -22,22 +23,21 @@ import type { EnderecoCliente } from "@/lib/types";
  * completo + geolocalização em vez de só CEP, que geocodifica mal em
  * ruas longas/numéricas e pode errar a zona por vários km.
  *
- * `mostrarProgresso=false` quando a tela já renderiza ResumoTotais logo
- * abaixo (gaveta, carrinho de visitante) — nesse caso este componente só
- * cuida de capturar/trocar o endereço, sem repetir valor/barra que já
- * aparecem no resumo. Nas telas onde ResumoTotais só aparece bem mais
- * abaixo (carrinho logado), mantém a barra aqui como feedback antecipado.
+ * A barra de progresso fica sempre visível (gaveta, carrinho de
+ * visitante e carrinho logado) — é o que incentiva o cliente a completar
+ * o carrinho pra desbloquear frete grátis, então repetir a mesma
+ * informação do ResumoTotais logo abaixo vale a pena aqui, não é
+ * duplicação inútil. O endereço usado pra calcular fica sempre visível
+ * também, pra o cliente confirmar que é o endereço certo antes de trocar.
  */
 export function EstimarFreteGratis({
   empresaId,
   enderecoEmpresa,
   subtotal,
-  mostrarProgresso = true,
 }: {
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   subtotal: number;
-  mostrarProgresso?: boolean;
 }) {
   const estimado = useSyncExternalStore(
     assinarEnderecoEstimado,
@@ -73,16 +73,19 @@ export function EstimarFreteGratis({
   if (estimado) {
     return (
       <div className="flex flex-col gap-2">
-        {mostrarProgresso && estimado.valorMinimoFreteGratis != null && (
+        {estimado.valorMinimoFreteGratis != null && (
           <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
         )}
-        <button
-          type="button"
-          onClick={() => limparEnderecoEstimado(empresaId)}
-          className="self-start text-xs text-black/40 hover:underline dark:text-white/40"
-        >
-          Trocar endereço
-        </button>
+        <div className="flex items-center justify-between gap-2 text-xs text-black/50 dark:text-white/50">
+          <span className="truncate">📍 {formatarEnderecoCompleto(estimado.endereco)}</span>
+          <button
+            type="button"
+            onClick={() => limparEnderecoEstimado(empresaId)}
+            className="shrink-0 text-black/40 hover:underline dark:text-white/40"
+          >
+            Trocar endereço
+          </button>
+        </div>
       </div>
     );
   }
