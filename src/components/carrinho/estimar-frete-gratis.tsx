@@ -56,22 +56,23 @@ export function EstimarFreteGratis({
   const [calculando, setCalculando] = useState(false);
   const [erro, setErro] = useState(false);
 
-  // Se o cliente já tem um endereço confirmado na conta (salvo num
-  // checkout anterior) e ele for DIFERENTE do que está em cache no
-  // navegador (ex: cache antigo de antes de logar, ou endereço trocado
-  // desde a última estimativa), a conta vence — recalcula e sobrescreve.
-  // Sem isso, a barra de frete grátis (gaveta e carrinho) podia mostrar
-  // um valor pra um endereço, enquanto o checkout de verdade (que já
-  // prioriza o endereço da conta) calculava o frete real pra outro —
-  // exatamente o que o cliente reportou ver.
+  // Conciliação com a conta: só roda pra entradas AINDA NÃO conciliadas
+  // (sem cache nenhum, ou cache salvo antes dessa correção existir) — uma
+  // vez conciliada (automática ou manualmente via "Trocar endereço"), a
+  // entrada fica marcada e nunca mais é sobrescrita sozinha. Sem essa
+  // marca, toda escolha manual do cliente seria desfeita no próximo mount
+  // (foi exatamente o bug relatado: trocar endereço na gaveta manualmente
+  // e ver o carrinho voltar pro endereço antigo da conta).
   const jaConferiuConta = useRef(false);
   useEffect(() => {
     if (jaConferiuConta.current) return;
     jaConferiuConta.current = true;
 
+    const atual = obterSnapshotEnderecoEstimado(empresaId);
+    if (atual?.conciliadoComConta) return;
+
     getEnderecoCliente(empresaId).then((enderecoConta) => {
       if (!enderecoConta) return;
-      const atual = obterSnapshotEnderecoEstimado(empresaId);
       if (atual && mesmoEndereco(atual.endereco, enderecoConta)) return;
       resolverEndereco(enderecoConta);
     });
@@ -99,6 +100,10 @@ export function EstimarFreteGratis({
       valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
       estimativaMinMin: resultado.opcao.estimativa_min_min,
       estimativaMinMax: resultado.opcao.estimativa_min_max,
+      // Qualquer resolução daqui em diante (manual ou automática) já
+      // conta como conciliada — só entradas de antes dessa correção
+      // ficam sem essa marca.
+      conciliadoComConta: true,
     };
     salvarEnderecoEstimado(empresaId, novo);
   }

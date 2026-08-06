@@ -23,6 +23,16 @@ export interface EnderecoEstimado {
   valorMinimoFreteGratis: number | null;
   estimativaMinMin: number | null;
   estimativaMinMax: number | null;
+  /**
+   * true = esse valor já passou pela conciliação com o endereço da conta
+   * (ver EstimarFreteGratis) — seja porque foi conciliado automaticamente,
+   * seja porque o cliente escolheu manualmente ("Trocar endereço") depois
+   * dessa conciliação existir. Só entradas SEM essa marca (salvas antes
+   * dessa correção, ou nunca conferidas) são elegíveis pra conciliação
+   * automática — uma entrada já marcada nunca é sobrescrita sozinha,
+   * senão toda escolha manual do cliente seria desfeita no próximo mount.
+   */
+  conciliadoComConta?: boolean;
 }
 
 function chave(empresaId: string) {
