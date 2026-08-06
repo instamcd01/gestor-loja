@@ -167,6 +167,7 @@ export function CarrinhoConvidado({
           subtotal={total}
           entregaLabel="Entrega"
           entregaValor={entregaValor}
+          entregaValorOriginal={estimado?.valor}
           faltaParaFreteGratis={faltaParaFreteGratis}
           total={total + (entregaValor ?? 0)}
         />

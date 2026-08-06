@@ -14,6 +14,7 @@ export function ResumoTotais({
   subtotal,
   entregaLabel,
   entregaValor,
+  entregaValorOriginal,
   faltaParaFreteGratis,
   descontoCupom,
   saldoAplicado,
@@ -24,6 +25,8 @@ export function ResumoTotais({
   entregaLabel: string;
   /** null = ainda não sabemos (endereço não informado); 0 = grátis; N = valor a cobrar. */
   entregaValor: number | null;
+  /** Quanto a entrega custaria sem o frete grátis — mostrado riscado do lado de "Grátis" (estilo "isso aqui é um desconto", igual iFood), só quando entregaValor é 0 e esse valor é conhecido e > 0. */
+  entregaValorOriginal?: number | null;
   /** Só exibido quando > 0 — mesma regra do app, não mostra nada se não houver mínimo configurado. */
   faltaParaFreteGratis?: number | null;
   descontoCupom?: number;
@@ -39,9 +42,18 @@ export function ResumoTotais({
 
       <div className="flex justify-between">
         <span className="text-black/50 dark:text-white/50">{entregaLabel}</span>
-        <span className={entregaValor === 0 ? "font-medium text-[var(--color-success)]" : undefined}>
-          {entregaValor == null ? "—" : entregaValor === 0 ? "Frete grátis" : formatarPreco(entregaValor)}
-        </span>
+        {entregaValor == null ? (
+          <span>—</span>
+        ) : entregaValor === 0 ? (
+          <span className="flex items-center gap-1.5 font-medium text-[var(--color-success)]">
+            {!!entregaValorOriginal && entregaValorOriginal > 0 && (
+              <span className="text-black/40 line-through dark:text-white/40">{formatarPreco(entregaValorOriginal)}</span>
+            )}
+            Grátis
+          </span>
+        ) : (
+          <span>{formatarPreco(entregaValor)}</span>
+        )}
       </div>
 
       {!!faltaParaFreteGratis && faltaParaFreteGratis > 0 && (

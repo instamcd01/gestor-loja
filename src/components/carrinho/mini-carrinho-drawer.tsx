@@ -193,6 +193,7 @@ export function MiniCarrinhoDrawer({
             subtotal={valorTotal}
             entregaLabel="Entrega"
             entregaValor={entregaValor}
+            entregaValorOriginal={estimado?.valor}
             faltaParaFreteGratis={faltaParaFreteGratis}
             total={valorTotal + (entregaValor ?? 0)}
           />

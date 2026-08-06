@@ -235,7 +235,12 @@ export function CheckoutForm({
     setErro(resultado.erro);
   }
 
-  const podeConfirmar = tipoEntrega === "retirada" || (frete?.disponivel ?? false);
+  // Dinheiro sem valor informado (ou insuficiente) não confirma — mesma
+  // regra já usada na venda presencial do app (pagamento_dinheiro_screen.dart:
+  // "Pagamento incompleto!" bloqueia até o valor recebido cobrir o total).
+  const dinheiroResolvido =
+    tipoPagamento !== "Dinheiro" || valorFinal <= 0 || (trocoValido && troco !== null && troco >= 0);
+  const podeConfirmar = (tipoEntrega === "retirada" || (frete?.disponivel ?? false)) && dinheiroResolvido;
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
@@ -344,7 +349,7 @@ export function CheckoutForm({
       {tipoPagamento === "Dinheiro" && valorFinal > 0 && (
         <Card className="flex flex-col gap-2 p-4">
           <label htmlFor="trocoPara" className="text-sm font-semibold">
-            Vai pagar com quanto? (pra levarmos o troco certo)
+            Vai pagar com quanto? <span className="text-[var(--color-danger)]">*</span>
           </label>
           <Input
             id="trocoPara"
@@ -353,12 +358,22 @@ export function CheckoutForm({
             value={trocoParaTexto}
             onChange={(e) => setTrocoParaTexto(e.target.value)}
           />
-          {trocoValido && troco !== null && (
+          {trocoValido && troco !== null ? (
             <p className={`text-sm font-medium ${troco >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>
               {troco >= 0 ? `Troco: ${formatarPreco(troco)}` : `Faltam ${formatarPreco(-troco)} — informe um valor maior`}
             </p>
+          ) : (
+            <p className="text-xs text-black/50 dark:text-white/50">
+              Obrigatório — pra já sabermos se vai precisar de troco.
+            </p>
           )}
         </Card>
+      )}
+
+      {tipoPagamento === "Pix" && (
+        <p className="text-xs text-black/50 dark:text-white/50">
+          O QR Code e o código Pix copia e cola aparecem assim que você confirmar o pedido.
+        </p>
       )}
 
       <div>
@@ -418,6 +433,7 @@ export function CheckoutForm({
           subtotal={subtotal}
           entregaLabel={tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
           entregaValor={tipoEntrega === "entrega" ? (freteResolvido ? valorEntrega : null) : null}
+          entregaValorOriginal={freteResolvido?.valor}
           faltaParaFreteGratis={faltaParaFreteGratis}
           descontoCupom={descontoCupom}
           saldoAplicado={saldoAplicado}
