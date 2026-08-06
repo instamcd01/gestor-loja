@@ -55,18 +55,18 @@ export function SeletorAgendamento({
     <div>
       <p className="mb-2 text-sm font-semibold">Quando?</p>
       <div className="flex items-start gap-2">
-        <div className="flex flex-1 flex-col items-start gap-1">
+        <div className="flex flex-col items-start gap-1">
           <button
             type="button"
             onClick={() => {
               setAgendando(false);
               onMudarJanela(null);
             }}
-            className={`w-full ${pill(!agendando)}`}
+            className={pill(!agendando)}
           >
             Quero agora
           </button>
-          {estimativa && (
+          {!agendando && estimativa && (
             <p className="px-1 text-xs text-black/50 dark:text-white/50">
               Entrega estimada em {estimativa.min}–{estimativa.max} min
             </p>
