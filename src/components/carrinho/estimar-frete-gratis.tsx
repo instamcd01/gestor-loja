@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { calcularFretePorEndereco } from "@/lib/checkout";
+import { getEnderecoCliente } from "@/lib/cliente";
 import {
   assinarEnderecoEstimado,
   limparEnderecoEstimado,
@@ -14,6 +15,14 @@ import {
 } from "@/lib/endereco-estimado";
 import type { EnderecoCliente } from "@/lib/types";
 import { formatarEnderecoCompleto } from "@/lib/utils";
+
+/** Coordenadas iguais (com folga de ~10m) = mesmo endereço, sem precisar comparar texto. */
+function mesmoEndereco(a: EnderecoCliente, b: EnderecoCliente): boolean {
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) {
+    return formatarEnderecoCompleto(a) === formatarEnderecoCompleto(b);
+  }
+  return Math.abs(a.lat - b.lat) < 0.0001 && Math.abs(a.lng - b.lng) < 0.0001;
+}
 
 /**
  * Pede o endereço antes de afirmar "frete grátis" — sem saber onde o
@@ -46,6 +55,28 @@ export function EstimarFreteGratis({
   );
   const [calculando, setCalculando] = useState(false);
   const [erro, setErro] = useState(false);
+
+  // Se o cliente já tem um endereço confirmado na conta (salvo num
+  // checkout anterior) e ele for DIFERENTE do que está em cache no
+  // navegador (ex: cache antigo de antes de logar, ou endereço trocado
+  // desde a última estimativa), a conta vence — recalcula e sobrescreve.
+  // Sem isso, a barra de frete grátis (gaveta e carrinho) podia mostrar
+  // um valor pra um endereço, enquanto o checkout de verdade (que já
+  // prioriza o endereço da conta) calculava o frete real pra outro —
+  // exatamente o que o cliente reportou ver.
+  const jaConferiuConta = useRef(false);
+  useEffect(() => {
+    if (jaConferiuConta.current) return;
+    jaConferiuConta.current = true;
+
+    getEnderecoCliente(empresaId).then((enderecoConta) => {
+      if (!enderecoConta) return;
+      const atual = obterSnapshotEnderecoEstimado(empresaId);
+      if (atual && mesmoEndereco(atual.endereco, enderecoConta)) return;
+      resolverEndereco(enderecoConta);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaId]);
 
   async function resolverEndereco(endereco: EnderecoCliente) {
     setCalculando(true);
