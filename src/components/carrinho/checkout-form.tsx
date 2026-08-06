@@ -40,6 +40,7 @@ export function CheckoutForm({
   horarioFuncionamento,
   bandeirasAceitas,
   taxasParcelamento,
+  valorMinimoParcela,
   subtotal,
   itens,
   enderecoSalvo,
@@ -54,6 +55,7 @@ export function CheckoutForm({
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
+  valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
   subtotal: number;
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
@@ -230,6 +232,12 @@ export function CheckoutForm({
       return { parcelas, taxa, valorParcela: valorComJuros / parcelas };
     })
     .filter((opcao) => Number.isFinite(opcao.parcelas) && opcao.parcelas >= 1)
+    // 1x sempre entra (é só o preço à vista, não uma "parcela pequena
+    // demais"). Pra 2x em diante, esconde opção cuja parcela ficaria
+    // abaixo do mínimo que maquininha costuma aceitar — sem isso, um
+    // pedido pequeno com parcelamento até 12x configurado oferecia
+    // absurdos tipo "12x de R$1,63".
+    .filter((opcao) => opcao.parcelas === 1 || opcao.valorParcela >= valorMinimoParcela)
     .sort((a, b) => a.parcelas - b.parcelas);
 
   function mudarMetodoPagamento(metodo: string) {

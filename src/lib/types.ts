@@ -32,6 +32,8 @@ export interface EmpresaCatalogo {
   bandeiras_aceitas: string[] | null;
   /** Taxa de juros (%) por quantidade de parcelas no crédito, ex: {"1": 0, "2": 3.5} — só as chaves presentes são oferecidas. */
   taxas_parcelamento: Record<string, number> | null;
+  /** Abaixo disso, a parcela (2x em diante) não é oferecida no checkout. */
+  valor_minimo_parcela: number;
 }
 
 export interface ProdutoCatalogo {

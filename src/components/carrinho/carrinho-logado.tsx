@@ -29,6 +29,7 @@ export function CarrinhoLogado({
   horarioFuncionamento,
   bandeirasAceitas,
   taxasParcelamento,
+  valorMinimoParcela,
   enderecoSalvo,
   saldoCliente,
   carrinhoInicial,
@@ -41,6 +42,7 @@ export function CarrinhoLogado({
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
+  valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
   carrinhoInicial: Carrinho;
@@ -124,6 +126,7 @@ export function CarrinhoLogado({
         horarioFuncionamento={horarioFuncionamento}
         bandeirasAceitas={bandeirasAceitas}
         taxasParcelamento={taxasParcelamento}
+        valorMinimoParcela={valorMinimoParcela}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
