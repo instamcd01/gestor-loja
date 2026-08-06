@@ -49,6 +49,18 @@ export function CapturarEndereco({
   onResolvido: (endereco: EnderecoCliente) => void;
 }) {
   const [campos, setCampos] = useState<EnderecoCliente>(valorInicial ?? ENDERECO_VAZIO);
+  // `campos` só nascia de `valorInicial` na primeira montagem — sem isso,
+  // trocar o endereço em outro lugar da tela (ex: barra "frete grátis",
+  // que reage e recalcula sozinha) nunca refletia aqui, porque o estado
+  // interno já tinha "congelado" o valor de quando este componente montou.
+  // Ajusta durante o render em vez de um useEffect (padrão recomendado
+  // pelo React pra "resetar estado quando uma prop muda", evita o efeito
+  // rodar depois do commit e re-render em cascata).
+  const [valorInicialAnterior, setValorInicialAnterior] = useState(valorInicial);
+  if (valorInicial !== valorInicialAnterior) {
+    setValorInicialAnterior(valorInicial);
+    if (valorInicial) setCampos(valorInicial);
+  }
   const [candidatos, setCandidatos] = useState<CandidatoEndereco[] | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [localizando, setLocalizando] = useState(false);

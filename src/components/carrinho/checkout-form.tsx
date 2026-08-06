@@ -175,7 +175,13 @@ export function CheckoutForm({
     setErro(null);
   }
 
+  // Guarda o endereço já usado no último cálculo — evita recalcular em
+  // loop quando a própria confirmação (manual ou automática) já deixa
+  // `endereco` apontando pro mesmo objeto de novo.
+  const ultimoEnderecoCalculado = useRef<EnderecoCliente | null>(null);
+
   async function confirmarEnderecoECalcularFrete(novoEndereco: EnderecoCliente) {
+    ultimoEnderecoCalculado.current = novoEndereco;
     setEnderecoConfirmado(novoEndereco);
     setCalculando(true);
     setErro(null);
@@ -195,18 +201,27 @@ export function CheckoutForm({
   // O cliente pode já ter confirmado o endereço antes de chegar aqui (na
   // gaveta, via EstimarFreteGratis, ou porque a conta já tem endereço
   // salvo) — nesse caso o frete calcula sozinho, sem esperar ele clicar
-  // "Confirmar endereço" de novo dentro do CapturarEndereco. Só dispara
-  // uma vez (a mesma regra do CarrinhoProvider.valorEntregaCalculado no
-  // app não recalcula frete a cada mudança de subtotal, só a decisão de
-  // "é grátis?", já reavaliada localmente em entregaGratisAgora abaixo).
-  const autoConfirmado = useRef(false);
+  // "Confirmar endereço" de novo dentro do CapturarEndereco. Recalcula de
+  // novo sempre que `endereco` mudar pra um valor DIFERENTE do último já
+  // calculado — não só na primeira vez — porque o cliente pode trocar o
+  // endereço na barra "frete grátis" enquanto já está nesta tela (ela
+  // reage e atualiza `endereco` sozinha via EstimarFreteGratis), e sem
+  // isso o frete cobrado (e o endereço salvo no Supabase) ficava travado
+  // no endereço antigo mesmo com o campo abaixo já mostrando o novo.
+  //
+  // `calculando` também entra nas dependências de propósito: sem isso, se
+  // o endereço mudasse DE NOVO enquanto uma chamada anterior ainda estava
+  // em andamento, esse efeito não reavaliava depois que ela terminasse
+  // (só reage a mudança de `endereco`, e `endereco` não mudou de novo
+  // nesse meio-tempo) — a troca mais recente ficava perdida, nunca
+  // chegava a ser calculada nem salva. Incluindo `calculando`, o efeito
+  // reavalia assim que a chamada anterior termina e pega a versão mais
+  // atual de `endereco` nesse momento.
   useEffect(() => {
-    if (!autoConfirmado.current && endereco && !frete && !calculando) {
-      autoConfirmado.current = true;
-      confirmarEnderecoECalcularFrete(endereco);
-    }
+    if (!endereco || calculando || endereco === ultimoEnderecoCalculado.current) return;
+    confirmarEnderecoECalcularFrete(endereco);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endereco]);
+  }, [endereco, calculando]);
 
   const freteResolvido = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao : null;
   // frete_gratis veio do subtotal de quando o endereço foi confirmado —
