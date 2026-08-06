@@ -31,6 +31,23 @@ function formatarHM(data: Date): string {
 }
 
 /**
+ * Horário real estimado de chegada a partir de agora — mesma faixa
+ * usada em "Quero agora" (min–max em minutos, vindo da zona de entrega),
+ * só que convertida pro cliente ver um horário de relógio em vez de ter
+ * que somar a duração de cabeça. Fixado em America/Sao_Paulo (fuso da
+ * loja), não no fuso do navegador de quem está comprando.
+ */
+export function estimarChegada(min: number, max: number): { inicio: string; fim: string } {
+  const agora = Date.now();
+  const formatar = (data: Date) =>
+    data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+  return {
+    inicio: formatar(new Date(agora + min * 60_000)),
+    fim: formatar(new Date(agora + max * 60_000)),
+  };
+}
+
+/**
  * Dias em que dá pra agendar — hoje até +3 dias, pulando os que a loja
  * marcou como fechado em Configurações > Horário de Funcionamento.
  */

@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { EmpresaCatalogo } from "@/lib/types";
-import { gerarJanelasHorario, gerarOpcoesData, type JanelaHorarioAgendamento, type OpcaoDataAgendamento } from "@/lib/agendamento";
+import {
+  estimarChegada,
+  gerarJanelasHorario,
+  gerarOpcoesData,
+  type JanelaHorarioAgendamento,
+  type OpcaoDataAgendamento,
+} from "@/lib/agendamento";
 
 function pill(ativo: boolean) {
   return `rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
@@ -34,7 +40,7 @@ export function SeletorAgendamento({
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   janela: JanelaHorarioAgendamento | null;
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
-  /** Estimativa da zona de entrega (min–max em minutos) — null pra retirada, ou entrega sem frete resolvido ainda. Mostrada como legenda de "Quero agora", já que é o que esse horário representa. */
+  /** Estimativa da zona de entrega (min–max em minutos) — null pra retirada, ou entrega sem frete resolvido ainda. Convertida em horário real de chegada e mostrada como legenda de "Quero agora" (some se "Agendar" estiver ativo). */
   estimativa?: { min: number; max: number } | null;
 }) {
   const opcoesData = useMemo(() => gerarOpcoesData(horarioFuncionamento), [horarioFuncionamento]);
@@ -46,6 +52,8 @@ export function SeletorAgendamento({
       dataEscolhida ? gerarJanelasHorario(dataEscolhida.data, dataEscolhida.diaSemana, horarioFuncionamento) : [],
     [dataEscolhida, horarioFuncionamento],
   );
+
+  const chegadaEstimada = !agendando && estimativa ? estimarChegada(estimativa.min, estimativa.max) : null;
 
   // Loja fechada nos próximos dias (feriado prolongado etc.) — sem
   // nenhuma data disponível, não faz sentido nem oferecer "Agendar".
@@ -66,9 +74,9 @@ export function SeletorAgendamento({
           >
             Quero agora
           </button>
-          {!agendando && estimativa && (
+          {chegadaEstimada && (
             <p className="px-1 text-xs text-black/50 dark:text-white/50">
-              Entrega estimada em {estimativa.min}–{estimativa.max} min
+              Chega entre {chegadaEstimada.inicio}–{chegadaEstimada.fim}
             </p>
           )}
         </div>
