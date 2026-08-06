@@ -22,6 +22,15 @@ import { formatarPreco } from "@/lib/utils";
 
 type TipoEntrega = "retirada" | "entrega";
 
+const NOME_BANDEIRA: Record<string, string> = {
+  visa: "Visa",
+  mastercard: "Mastercard",
+  elo: "Elo",
+  amex: "American Express",
+  hipercard: "Hipercard",
+  diners: "Diners Club",
+};
+
 export function CheckoutForm({
   slug,
   empresaId,
@@ -29,6 +38,8 @@ export function CheckoutForm({
   aceitaRetirada,
   enderecoEmpresa,
   horarioFuncionamento,
+  bandeirasAceitas,
+  taxasParcelamento,
   subtotal,
   itens,
   enderecoSalvo,
@@ -41,6 +52,8 @@ export function CheckoutForm({
   aceitaRetirada: boolean;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
+  taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   subtotal: number;
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
@@ -92,6 +105,7 @@ export function CheckoutForm({
   const [validandoCupom, setValidandoCupom] = useState(false);
   const [erroCupom, setErroCupom] = useState<string | null>(null);
   const [janelaAgendamento, setJanelaAgendamento] = useState<JanelaHorarioAgendamento | null>(null);
+  const [parcelaEscolhida, setParcelaEscolhida] = useState(1);
 
   async function aplicarCupom() {
     if (!cupomTexto.trim()) return;
@@ -206,6 +220,23 @@ export function CheckoutForm({
   const trocoValido = Number.isFinite(trocoPara) && trocoPara > 0;
   const troco = trocoValido ? trocoPara - valorFinal : null;
 
+  // Só informativo (mostra o valor de cada parcela já com o juros da
+  // maquininha aplicado) — a cobrança real continua acontecendo na
+  // maquininha física, na entrega/retirada, não tem gateway aqui.
+  const opcoesParcelamento = Object.entries(taxasParcelamento ?? {})
+    .map(([parcelasTexto, taxa]) => {
+      const parcelas = Number(parcelasTexto);
+      const valorComJuros = valorFinal * (1 + taxa / 100);
+      return { parcelas, taxa, valorParcela: valorComJuros / parcelas };
+    })
+    .filter((opcao) => Number.isFinite(opcao.parcelas) && opcao.parcelas >= 1)
+    .sort((a, b) => a.parcelas - b.parcelas);
+
+  function mudarMetodoPagamento(metodo: string) {
+    setTipoPagamento(metodo);
+    if (metodo !== "Cartão de Crédito") setParcelaEscolhida(1);
+  }
+
   async function confirmar() {
     setConfirmando(true);
     setErro(null);
@@ -228,6 +259,7 @@ export function CheckoutForm({
       tipoPagamento === "Dinheiro" && trocoValido ? trocoPara : null,
       cupomAplicado?.codigo ?? null,
       janelaAgendamento ? { inicio: janelaAgendamento.inicio, fim: janelaAgendamento.fim } : null,
+      tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 ? parcelaEscolhida : null,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -336,7 +368,7 @@ export function CheckoutForm({
                 name="tipoPagamento"
                 value={metodo}
                 checked={tipoPagamento === metodo}
-                onChange={() => setTipoPagamento(metodo)}
+                onChange={() => mudarMetodoPagamento(metodo)}
                 className="sr-only"
               />
               <IconePagamento metodo={metodo} className="h-4 w-4" />
@@ -345,6 +377,56 @@ export function CheckoutForm({
           ))}
         </div>
       </div>
+
+      {(tipoPagamento === "Cartão de Crédito" || tipoPagamento === "Cartão de Débito") &&
+        !!bandeirasAceitas?.length && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-black/50 dark:text-white/50">
+            <span>Bandeiras aceitas:</span>
+            {bandeirasAceitas.map((bandeira) => (
+              <span
+                key={bandeira}
+                className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
+              >
+                {NOME_BANDEIRA[bandeira] ?? bandeira}
+              </span>
+            ))}
+          </div>
+        )}
+
+      {tipoPagamento === "Cartão de Crédito" && opcoesParcelamento.length > 1 && (
+        <Card className="flex flex-col gap-2 p-4">
+          <p className="text-sm font-semibold">Parcelamento</p>
+          <p className="text-xs text-black/50 dark:text-white/50">
+            Só informativo — o pagamento é feito na maquininha, na entrega/retirada.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {opcoesParcelamento.map((opcao) => (
+              <label
+                key={opcao.parcelas}
+                className={`flex cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-3.5 py-2.5 text-sm transition-colors ${
+                  parcelaEscolhida === opcao.parcelas
+                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                    : "border-black/10 dark:border-white/10"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="parcelamento"
+                    checked={parcelaEscolhida === opcao.parcelas}
+                    onChange={() => setParcelaEscolhida(opcao.parcelas)}
+                    className="accent-[var(--brand-primary)]"
+                  />
+                  {opcao.parcelas}x de {formatarPreco(opcao.valorParcela)}
+                </span>
+                <span className="text-xs text-black/50 dark:text-white/50">
+                  {opcao.taxa > 0 ? `com juros (${opcao.taxa.toString().replace(".", ",")}%)` : "sem juros"}
+                </span>
+              </label>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {tipoPagamento === "Dinheiro" && valorFinal > 0 && (
         <Card className="flex flex-col gap-2 p-4">

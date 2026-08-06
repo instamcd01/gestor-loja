@@ -28,6 +28,10 @@ export interface EmpresaCatalogo {
   chave_pix: string | null;
   aceita_retirada: boolean;
   mostrar_estoque_baixo: boolean;
+  /** Chaves: visa, mastercard, elo, amex, hipercard, diners — só exibição, sem validação real. */
+  bandeiras_aceitas: string[] | null;
+  /** Taxa de juros (%) por quantidade de parcelas no crédito, ex: {"1": 0, "2": 3.5} — só as chaves presentes são oferecidas. */
+  taxas_parcelamento: Record<string, number> | null;
 }
 
 export interface ProdutoCatalogo {

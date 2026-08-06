@@ -27,6 +27,8 @@ export function CarrinhoLogado({
   aceitaRetirada,
   enderecoEmpresa,
   horarioFuncionamento,
+  bandeirasAceitas,
+  taxasParcelamento,
   enderecoSalvo,
   saldoCliente,
   carrinhoInicial,
@@ -37,6 +39,8 @@ export function CarrinhoLogado({
   aceitaRetirada: boolean;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
+  taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
   carrinhoInicial: Carrinho;
@@ -118,6 +122,8 @@ export function CarrinhoLogado({
         aceitaRetirada={aceitaRetirada}
         enderecoEmpresa={enderecoEmpresa}
         horarioFuncionamento={horarioFuncionamento}
+        bandeirasAceitas={bandeirasAceitas}
+        taxasParcelamento={taxasParcelamento}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}

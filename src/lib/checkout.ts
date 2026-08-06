@@ -19,6 +19,7 @@ export async function finalizarPedido(
   trocoPara: number | null,
   cupomCodigo: string | null,
   agendamento: { inicio: string; fim: string } | null,
+  parcelas: number | null,
 ): Promise<ResultadoCheckout> {
   const supabase = await createClient();
 
@@ -46,6 +47,7 @@ export async function finalizarPedido(
     p_cupom_codigo: cupomLimitado,
     p_agendado_inicio: agendamento?.inicio ?? null,
     p_agendado_fim: agendamento?.fim ?? null,
+    p_parcelas: parcelas,
   });
 
   if (error) {

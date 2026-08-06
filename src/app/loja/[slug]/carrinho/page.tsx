@@ -68,6 +68,8 @@ export default async function CarrinhoPage({
       aceitaRetirada={empresa.aceita_retirada}
       enderecoEmpresa={enderecoEmpresa}
       horarioFuncionamento={empresa.horario_funcionamento}
+      bandeirasAceitas={empresa.bandeiras_aceitas}
+      taxasParcelamento={empresa.taxas_parcelamento}
       enderecoSalvo={enderecoSalvo}
       saldoCliente={saldoCliente}
       carrinhoInicial={carrinho}
