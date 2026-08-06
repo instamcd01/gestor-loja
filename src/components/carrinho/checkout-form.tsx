@@ -84,11 +84,22 @@ export function CheckoutForm({
   const escolhaManual = useRef(false);
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   const [observacoes, setObservacoes] = useState("");
-  // Confirmado nessa sessão > salvo na conta > estimado no navegador antes
-  // do login — derivado a cada render (não useState) pra reagir sozinho
-  // quando o useSyncExternalStore acima resolve depois da hidratação.
+  // Confirmado nesta tela agora > estimado "conciliado" (ver EstimarFreteGratis
+  // — já bate com a conta, ou é uma troca manual deliberada mais recente
+  // que ela, ex: "Trocar endereço" na gaveta) > salvo na conta > estimado
+  // ainda não conciliado (cache de antes de logar). Derivado a cada render
+  // (não useState) pra reagir sozinho quando o useSyncExternalStore acima
+  // resolve depois da hidratação, ou quando EstimarFreteGratis concilia
+  // em segundo plano.
+  //
+  // Sem o passo "conciliado" no meio, o campo de endereço desta tela
+  // sempre ignorava qualquer troca feita na gaveta/carrinho enquanto
+  // existisse um endereço salvo na conta — mesmo bug relatado pelo
+  // usuário: barra de frete grátis mostrando o endereço novo, campo de
+  // baixo (e o frete cobrado de verdade) ainda no endereço antigo salvo.
   const [enderecoConfirmado, setEnderecoConfirmado] = useState<EnderecoCliente | null>(null);
-  const endereco = enderecoConfirmado ?? enderecoSalvo ?? enderecoEstimado?.endereco ?? null;
+  const enderecoEstimadoConciliado = enderecoEstimado?.conciliadoComConta ? enderecoEstimado.endereco : null;
+  const endereco = enderecoConfirmado ?? enderecoEstimadoConciliado ?? enderecoSalvo ?? enderecoEstimado?.endereco ?? null;
 
   useEffect(() => {
     if (!escolhaManual.current && endereco && tipoEntrega === "retirada") {
