@@ -16,14 +16,6 @@ import {
 import type { EnderecoCliente } from "@/lib/types";
 import { formatarEnderecoCompleto } from "@/lib/utils";
 
-/** Coordenadas iguais (com folga de ~10m) = mesmo endereço, sem precisar comparar texto. */
-function mesmoEndereco(a: EnderecoCliente, b: EnderecoCliente): boolean {
-  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) {
-    return formatarEnderecoCompleto(a) === formatarEnderecoCompleto(b);
-  }
-  return Math.abs(a.lat - b.lat) < 0.0001 && Math.abs(a.lng - b.lng) < 0.0001;
-}
-
 /**
  * Pede o endereço antes de afirmar "frete grátis" — sem saber onde o
  * cliente está não dá pra saber qual zona (e qual mínimo) se aplica,
@@ -56,24 +48,25 @@ export function EstimarFreteGratis({
   const [calculando, setCalculando] = useState(false);
   const [erro, setErro] = useState(false);
 
-  // Conciliação com a conta: só roda pra entradas AINDA NÃO conciliadas
-  // (sem cache nenhum, ou cache salvo antes dessa correção existir) — uma
-  // vez conciliada (automática ou manualmente via "Trocar endereço"), a
-  // entrada fica marcada e nunca mais é sobrescrita sozinha. Sem essa
-  // marca, toda escolha manual do cliente seria desfeita no próximo mount
-  // (foi exatamente o bug relatado: trocar endereço na gaveta manualmente
-  // e ver o carrinho voltar pro endereço antigo da conta).
-  const jaConferiuConta = useRef(false);
+  // Semente inicial: só roda se esse cache ainda não existir de jeito
+  // nenhum (primeira vez que esse navegador vê esse carrinho) — nunca
+  // compara com o que já está aqui nem sobrescreve um valor existente,
+  // seja ele automático ou escolhido manualmente ("Trocar endereço").
+  // Esse cache é a ÚNICA fonte de verdade (ver comentário em
+  // endereco-estimado.ts) — uma vez que existe algo aqui, é sempre isso
+  // que vale, sem precisar "conferir" contra a conta de novo.
+  const jaSemeouConta = useRef(false);
   useEffect(() => {
-    if (jaConferiuConta.current) return;
-    jaConferiuConta.current = true;
-
-    const atual = obterSnapshotEnderecoEstimado(empresaId);
-    if (atual?.conciliadoComConta) return;
+    if (jaSemeouConta.current) return;
+    jaSemeouConta.current = true;
+    if (obterSnapshotEnderecoEstimado(empresaId) !== null) return;
 
     getEnderecoCliente(empresaId).then((enderecoConta) => {
       if (!enderecoConta) return;
-      if (atual && mesmoEndereco(atual.endereco, enderecoConta)) return;
+      // Confere de novo: pode ter sido preenchido (pela barra em outro
+      // componente montado ao mesmo tempo, ou pelo próprio checkout)
+      // enquanto esse fetch estava em andamento.
+      if (obterSnapshotEnderecoEstimado(empresaId) !== null) return;
       resolverEndereco(enderecoConta);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,10 +93,6 @@ export function EstimarFreteGratis({
       valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
       estimativaMinMin: resultado.opcao.estimativa_min_min,
       estimativaMinMax: resultado.opcao.estimativa_min_max,
-      // Qualquer resolução daqui em diante (manual ou automática) já
-      // conta como conciliada — só entradas de antes dessa correção
-      // ficam sem essa marca.
-      conciliadoComConta: true,
     };
     salvarEnderecoEstimado(empresaId, novo);
   }

@@ -16,6 +16,8 @@ import {
   assinarEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
+  salvarEnderecoEstimado,
+  type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { EmpresaCatalogo, EnderecoCliente, ItemCarrinho } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
@@ -84,22 +86,15 @@ export function CheckoutForm({
   const escolhaManual = useRef(false);
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   const [observacoes, setObservacoes] = useState("");
-  // Confirmado nesta tela agora > estimado "conciliado" (ver EstimarFreteGratis
-  // — já bate com a conta, ou é uma troca manual deliberada mais recente
-  // que ela, ex: "Trocar endereço" na gaveta) > salvo na conta > estimado
-  // ainda não conciliado (cache de antes de logar). Derivado a cada render
-  // (não useState) pra reagir sozinho quando o useSyncExternalStore acima
-  // resolve depois da hidratação, ou quando EstimarFreteGratis concilia
-  // em segundo plano.
-  //
-  // Sem o passo "conciliado" no meio, o campo de endereço desta tela
-  // sempre ignorava qualquer troca feita na gaveta/carrinho enquanto
-  // existisse um endereço salvo na conta — mesmo bug relatado pelo
-  // usuário: barra de frete grátis mostrando o endereço novo, campo de
-  // baixo (e o frete cobrado de verdade) ainda no endereço antigo salvo.
-  const [enderecoConfirmado, setEnderecoConfirmado] = useState<EnderecoCliente | null>(null);
-  const enderecoEstimadoConciliado = enderecoEstimado?.conciliadoComConta ? enderecoEstimado.endereco : null;
-  const endereco = enderecoConfirmado ?? enderecoEstimadoConciliado ?? enderecoSalvo ?? enderecoEstimado?.endereco ?? null;
+  // Endereço ativo pra esse carrinho: SEMPRE o cache compartilhado
+  // (enderecoEstimado, ver endereco-estimado.ts) — mesmo lugar que a
+  // barra "frete grátis" acima lê e escreve, então os dois nunca
+  // divergem. `enderecoSalvo` (vindo do servidor) só entra como
+  // fallback pra não piscar vazio no primeiro instante, antes do cache
+  // existir — nunca tem prioridade sobre ele. Derivado a cada render
+  // (não useState) pra reagir sozinho quando o useSyncExternalStore
+  // acima atualiza (troca feita aqui, na barra, ou na gaveta).
+  const endereco = enderecoEstimado?.endereco ?? enderecoSalvo ?? null;
 
   useEffect(() => {
     if (!escolhaManual.current && endereco && tipoEntrega === "retirada") {
@@ -182,7 +177,6 @@ export function CheckoutForm({
 
   async function confirmarEnderecoECalcularFrete(novoEndereco: EnderecoCliente) {
     ultimoEnderecoCalculado.current = novoEndereco;
-    setEnderecoConfirmado(novoEndereco);
     setCalculando(true);
     setErro(null);
 
@@ -196,6 +190,24 @@ export function CheckoutForm({
     const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, novoEndereco, subtotal);
     setCalculando(false);
     setFrete(resultado);
+
+    // Escreve no MESMO cache compartilhado que a barra "frete grátis" lê
+    // (ver endereco-estimado.ts) — é a única fonte de verdade, então
+    // confirmar o endereço aqui já atualiza a barra sozinha, sem precisar
+    // de nenhuma lógica de conciliação entre os dois.
+    if (resultado.disponivel) {
+      const novoEstimado: EnderecoEstimado = {
+        endereco: novoEndereco,
+        zonaId: resultado.opcao.zona_id,
+        zonaNome: resultado.opcao.zona_nome,
+        valor: resultado.opcao.valor,
+        freteGratis: resultado.opcao.frete_gratis,
+        valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
+        estimativaMinMin: resultado.opcao.estimativa_min_min,
+        estimativaMinMax: resultado.opcao.estimativa_min_max,
+      };
+      salvarEnderecoEstimado(empresaId, novoEstimado);
+    }
   }
 
   // O cliente pode já ter confirmado o endereço antes de chegar aqui (na
