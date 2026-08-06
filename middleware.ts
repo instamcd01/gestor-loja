@@ -15,7 +15,15 @@ const JANELA_MS = 60_000;
 const LIMITE_POST_POR_IP = 40;
 
 export async function middleware(request: NextRequest) {
-  if (request.method === "POST" && request.nextUrl.pathname.startsWith("/loja/")) {
+  // Checagem por método apenas, sem exigir prefixo /loja/ no path: numa
+  // loja acessada por domínio próprio, o path original (ex. "/carrinho")
+  // só ganha o prefixo /loja/[slug] depois da reescrita mais abaixo — uma
+  // checagem `pathname.startsWith("/loja/")` aqui nunca bateria pra esse
+  // caso, deixando o rate limit inteiro sem efeito no domínio do cliente.
+  // O matcher abaixo já exclui assets estáticos, e esta app não tem
+  // nenhuma rota POST fora do namespace da loja, então limitar por
+  // método é seguro.
+  if (request.method === "POST") {
     const ip = ipDaRequisicao(request.headers);
     if (!permitido(`post:${ip}`, LIMITE_POST_POR_IP, JANELA_MS)) {
       return new NextResponse("Muitas requisições — espera um instante e tenta de novo.", { status: 429 });

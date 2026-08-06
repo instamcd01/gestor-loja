@@ -43,8 +43,21 @@ export function permitido(chave: string, limite: number, janelaMs: number): bool
   return true;
 }
 
+/**
+ * Deploy é atrás de um único proxy reverso confiável (Traefik do
+ * Easypanel, ver README > Deploy) — nunca múltiplos hops. Um proxy
+ * reverso sempre ANEXA o IP que ele mesmo observou ao final do header
+ * X-Forwarded-For (nunca sobrescreve as entradas anteriores), então a
+ * ÚLTIMA entrada é a única que o cliente não consegue forjar. Pegar a
+ * PRIMEIRA (como estava antes) confia cegamente no que o próprio
+ * visitante manda nesse header, permitindo qualquer um se passar por
+ * outro IP e assim burlar o limite de requisições por IP.
+ */
 export function ipDaRequisicao(headers: Headers): string {
   const encaminhado = headers.get("x-forwarded-for");
-  if (encaminhado) return encaminhado.split(",")[0].trim();
+  if (encaminhado) {
+    const ips = encaminhado.split(",").map((ip) => ip.trim());
+    return ips[ips.length - 1];
+  }
   return headers.get("x-real-ip") ?? "desconhecido";
 }

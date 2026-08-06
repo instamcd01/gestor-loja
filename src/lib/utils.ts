@@ -27,6 +27,17 @@ export function formatarPreco(valor: number) {
   });
 }
 
+/**
+ * Converte um texto digitado em formato monetário BR ("1.234,56") pra
+ * number. `parseFloat` sozinho quebra nesse formato — o ponto de milhar
+ * fica pelo caminho e é interpretado como separador decimal (ex:
+ * "1.234,56" virava 1.234 depois de só trocar vírgula por ponto).
+ */
+export function parseValorMonetarioBr(texto: string): number {
+  const semMilhar = texto.replace(/\./g, "").replace(",", ".");
+  return Number.parseFloat(semMilhar);
+}
+
 export function formatarHora(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", {
     hour: "2-digit",

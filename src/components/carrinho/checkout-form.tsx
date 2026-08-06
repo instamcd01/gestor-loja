@@ -20,7 +20,7 @@ import {
   type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { EmpresaCatalogo, EnderecoCliente, ItemCarrinho } from "@/lib/types";
-import { formatarPreco } from "@/lib/utils";
+import { formatarPreco, parseValorMonetarioBr } from "@/lib/utils";
 
 type TipoEntrega = "retirada" | "entrega";
 
@@ -256,7 +256,7 @@ export function CheckoutForm({
       ? freteResolvido.valor_minimo_frete_gratis - subtotal
       : null;
 
-  const trocoPara = Number.parseFloat(trocoParaTexto.replace(",", "."));
+  const trocoPara = parseValorMonetarioBr(trocoParaTexto);
   const trocoValido = Number.isFinite(trocoPara) && trocoPara > 0;
   const troco = trocoValido ? trocoPara - valorFinal : null;
 

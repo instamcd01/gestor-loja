@@ -65,7 +65,15 @@ export function obterSnapshotCarrinhoConvidado(empresaId: string): ItemCarrinhoC
   if (snapshotCache && snapshotCache.empresaId === empresaId && snapshotCache.bruto === bruto) {
     return snapshotCache.itens;
   }
-  const itens = bruto ? (JSON.parse(bruto) as ItemCarrinhoConvidado[]) : [];
+  // getSnapshot roda dentro do render do React — um JSON corrompido aqui
+  // (extensão de navegador, edição manual, escrita parcial) não pode
+  // derrubar a página inteira, precisa cair pro carrinho vazio.
+  let itens: ItemCarrinhoConvidado[];
+  try {
+    itens = bruto ? (JSON.parse(bruto) as ItemCarrinhoConvidado[]) : [];
+  } catch {
+    itens = CARRINHO_VAZIO;
+  }
   snapshotCache = { empresaId, bruto, itens };
   return itens;
 }

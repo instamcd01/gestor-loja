@@ -57,7 +57,15 @@ export function obterSnapshotEnderecoEstimado(empresaId: string): EnderecoEstima
   if (snapshotCache && snapshotCache.empresaId === empresaId && snapshotCache.bruto === bruto) {
     return snapshotCache.valor;
   }
-  const valor = bruto ? (JSON.parse(bruto) as EnderecoEstimado) : null;
+  // getSnapshot roda dentro do render do React — um JSON corrompido aqui
+  // não pode derrubar a página inteira, precisa cair pra "sem endereço
+  // estimado ainda" (mesmo tratamento de carrinho-convidado.ts).
+  let valor: EnderecoEstimado | null;
+  try {
+    valor = bruto ? (JSON.parse(bruto) as EnderecoEstimado) : null;
+  } catch {
+    valor = null;
+  }
   snapshotCache = { empresaId, bruto, valor };
   return valor;
 }
