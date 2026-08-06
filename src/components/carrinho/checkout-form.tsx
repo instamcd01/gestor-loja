@@ -578,6 +578,30 @@ export function CheckoutForm({
       <p className="text-center text-xs text-black/40 dark:text-white/40">
         Pedido é confirmado direto com o lojista — sem pagamento online por enquanto.
       </p>
+
+      {/* Barra fixa: total + confirmar sempre visíveis rolando a tela,
+          mesmo com o formulário longo (endereço, agendamento, pagamento,
+          bandeiras, parcelamento, cupom...) — reduz a sensação de "quanto
+          falta" até finalizar, sem tirar o botão/resumo que já existiam
+          no fluxo normal (redundância intencional, padrão comum em
+          checkout longo). Some no dark/light theme igual ao resto do
+          card. z-30 fica acima do botão do WhatsApp (z-20, que também
+          sobe mais alto nesta página — ver whatsapp-suporte-button.tsx). */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10">
+        <div className="mx-auto flex max-w-2xl items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-black/50 dark:text-white/50">Total</p>
+            <p className="truncate text-lg font-bold">{formatarPreco(valorFinal)}</p>
+          </div>
+          <Button
+            onClick={confirmar}
+            disabled={!podeConfirmar || confirmando}
+            className="flex-1 py-3 text-base"
+          >
+            {confirmando ? "Confirmando..." : "Confirmar pedido"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

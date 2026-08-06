@@ -5,10 +5,11 @@ import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
+import { ProdutosRelacionados } from "@/components/loja/produtos-relacionados";
 import { Card } from "@/components/ui/card";
-import { atualizarQuantidade, limparCarrinho } from "@/lib/carrinho";
+import { adicionarAoCarrinho, atualizarQuantidade, limparCarrinho } from "@/lib/carrinho";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
-import type { Carrinho, EmpresaCatalogo, EnderecoCliente } from "@/lib/types";
+import type { Carrinho, EmpresaCatalogo, EnderecoCliente, ProdutoCatalogo } from "@/lib/types";
 import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 /**
@@ -33,6 +34,8 @@ export function CarrinhoLogado({
   enderecoSalvo,
   saldoCliente,
   carrinhoInicial,
+  relacionados,
+  moderno,
 }: {
   slug: string;
   empresaId: string;
@@ -46,6 +49,8 @@ export function CarrinhoLogado({
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
   carrinhoInicial: Carrinho;
+  relacionados: ProdutoCatalogo[];
+  moderno: boolean;
 }) {
   const [carrinho, setCarrinho] = useState(carrinhoInicial);
   const { agendar: agendarSync, flushTudo } = useDebounceQuantidade();
@@ -83,6 +88,19 @@ export function CarrinhoLogado({
     });
   }
 
+  // Usada pela sugestão "completa o frete grátis" (ver EstimarFreteGratis)
+  // — chama o mesmo RPC que o resto da tela já usa e atualiza o MESMO
+  // estado `carrinho` local, em vez do hook de adicionar-rápido do
+  // catálogo (que devolve o resultado pra uma gaveta separada e nunca
+  // atualizaria a lista que já está renderizada aqui).
+  async function adicionarSugestao(produto: ProdutoCatalogo) {
+    const resultado = await adicionarAoCarrinho(slug, empresaId, produto.id, 1);
+    if ("carrinho" in resultado) {
+      setCarrinho(resultado.carrinho);
+      notificarCarrinhoAtualizado();
+    }
+  }
+
   async function esvaziar() {
     if (!carrinho.id) return;
     const carrinhoId = carrinho.id;
@@ -103,13 +121,22 @@ export function CarrinhoLogado({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
+    // pb-24 reserva espaço pra barra fixa de total/confirmar do
+    // CheckoutForm não cobrir o fim do conteúdo (ex: "Quem viu, também
+    // viu" ou o aviso final) — a barra em si é `fixed`, então não empurra
+    // o layout sozinha.
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-24 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
         <LimparCarrinhoButton onConfirmar={esvaziar} />
       </div>
 
-      <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={carrinho.valorTotal} />
+      <EstimarFreteGratis
+        empresaId={empresaId}
+        enderecoEmpresa={enderecoEmpresa}
+        subtotal={carrinho.valorTotal}
+        onAdicionarSugestao={adicionarSugestao}
+      />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {carrinho.itens.map((item) => (
@@ -132,6 +159,14 @@ export function CarrinhoLogado({
         enderecoSalvo={enderecoSalvo}
         saldoCliente={saldoCliente}
         aoConfirmarAntes={flushTudo}
+      />
+
+      <ProdutosRelacionados
+        produtos={relacionados}
+        slug={slug}
+        empresaId={empresaId}
+        enderecoEmpresa={enderecoEmpresa}
+        moderno={moderno}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
+import { SugestaoCompletaFrete } from "@/components/carrinho/sugestao-completa-frete";
 import { calcularFretePorEndereco } from "@/lib/checkout";
 import { getEnderecoCliente } from "@/lib/cliente";
 import {
@@ -13,7 +14,7 @@ import {
   salvarEnderecoEstimado,
   type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
-import type { EnderecoCliente } from "@/lib/types";
+import type { EnderecoCliente, ProdutoCatalogo } from "@/lib/types";
 import { formatarEnderecoCompleto } from "@/lib/utils";
 
 /**
@@ -35,10 +36,20 @@ export function EstimarFreteGratis({
   empresaId,
   enderecoEmpresa,
   subtotal,
+  onAdicionarSugestao,
 }: {
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   subtotal: number;
+  /**
+   * Quando informado, mostra um produto pra completar o frete grátis
+   * (ver SugestaoCompletaFrete) — cada tela passa sua própria lógica de
+   * adicionar (atualiza a lista que já está na tela), por isso é opcional
+   * e não vem com um padrão embutido aqui. Omitido = sem sugestão (ex: na
+   * gaveta de confirmação rápida, onde não faz sentido empilhar mais uma
+   * ação de adicionar).
+   */
+  onAdicionarSugestao?: (produto: ProdutoCatalogo) => void | Promise<void>;
 }) {
   const estimado = useSyncExternalStore(
     assinarEnderecoEstimado,
@@ -98,10 +109,16 @@ export function EstimarFreteGratis({
   }
 
   if (estimado) {
+    const falta =
+      estimado.valorMinimoFreteGratis != null ? estimado.valorMinimoFreteGratis - subtotal : 0;
+
     return (
       <div className="flex flex-col gap-2">
         {estimado.valorMinimoFreteGratis != null && (
           <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
+        )}
+        {onAdicionarSugestao && falta > 0 && (
+          <SugestaoCompletaFrete empresaId={empresaId} falta={falta} onAdicionar={onAdicionarSugestao} />
         )}
         <div className="flex items-center justify-between gap-2 text-xs text-black/50 dark:text-white/50">
           <span className="truncate">📍 {formatarEnderecoCompleto(estimado.endereco)}</span>

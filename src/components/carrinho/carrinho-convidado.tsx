@@ -9,6 +9,7 @@ import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  adicionarItemConvidado,
   assinarCarrinhoConvidado,
   atualizarItemConvidado,
   limparCarrinhoConvidado,
@@ -20,6 +21,7 @@ import {
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
 } from "@/lib/endereco-estimado";
+import type { ProdutoCatalogo } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
 
 /**
@@ -59,6 +61,21 @@ export function CarrinhoConvidado({
     atualizarItemConvidado(empresaId, produtoId, quantidade);
   }
 
+  // Mesmo mecanismo do carrinho logado (ver CarrinhoLogado.adicionarSugestao)
+  // — grava direto no MESMO storage que `itens` já lê via useSyncExternalStore,
+  // então a lista reage sozinha, sem precisar de gaveta/popup separado.
+  function adicionarSugestao(produto: ProdutoCatalogo) {
+    adicionarItemConvidado(empresaId, {
+      produtoId: produto.id,
+      nome: produto.nome,
+      imagemUrl: produto.imagem_url,
+      categoria: produto.categoria,
+      preco: produto.preco_promocional ?? produto.preco,
+      estoqueDisponivel: produto.estoque_disponivel,
+      quantidade: 1,
+    });
+  }
+
   if (itens.length === 0) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-2 py-16 text-center">
@@ -86,7 +103,12 @@ export function CarrinhoConvidado({
         <LimparCarrinhoButton onConfirmar={() => limparCarrinhoConvidado(empresaId)} />
       </div>
 
-      <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={total} />
+      <EstimarFreteGratis
+        empresaId={empresaId}
+        enderecoEmpresa={enderecoEmpresa}
+        subtotal={total}
+        onAdicionarSugestao={adicionarSugestao}
+      />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (
