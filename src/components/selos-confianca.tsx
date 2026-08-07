@@ -36,13 +36,13 @@ export function SelosConfianca({
 
   if (moderno) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="scrollbar-none -mx-1 flex snap-x gap-3 overflow-x-auto px-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
         {selos.map((selo) => {
           const cor = paleta[selo.icone];
           return (
             <div
               key={selo.titulo}
-              className="rounded-[var(--radius-lg)] p-4"
+              className="w-[78%] shrink-0 snap-start rounded-[var(--radius-lg)] p-4 sm:w-auto"
               style={{ background: cor.bg }}
             >
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/60">
@@ -59,11 +59,11 @@ export function SelosConfianca({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="scrollbar-none -mx-1 flex snap-x gap-3 overflow-x-auto px-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
       {selos.map((selo) => (
         <div
           key={selo.titulo}
-          className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-card)] dark:border-white/10"
+          className="flex w-[78%] shrink-0 snap-start items-center gap-3 rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-card)] sm:w-auto dark:border-white/10"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10">
             <IconeSelo tipo={selo.icone} className="h-4.5 w-4.5 text-[var(--brand-primary)]" />

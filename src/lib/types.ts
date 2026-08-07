@@ -36,6 +36,17 @@ export interface EmpresaCatalogo {
   valor_minimo_parcela: number;
 }
 
+export interface BannerCatalogo {
+  id: string;
+  empresa_id: string;
+  tipo: "imagem" | "video";
+  url: string;
+  url_thumbnail: string | null;
+  titulo: string | null;
+  link_destino: string | null;
+  ordem: number;
+}
+
 export interface ProdutoCatalogo {
   id: string;
   empresa_id: string;

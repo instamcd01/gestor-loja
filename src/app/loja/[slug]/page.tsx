@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
+import { BannerCarousel } from "@/components/loja/banner-carousel";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
+  getBannersCatalogo,
   getEmpresaPorSlug,
   getEspeciesComContagem,
   getFaixasPrecoComContagem,
@@ -58,7 +60,7 @@ export default async function LojaPage({
   const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
   const moderno = empresa.catalogo_modelo === "moderno";
 
-  const [produtos, marcas, especies, fases, faixasPreco, freteGratisMinimo] = await Promise.all([
+  const [produtos, marcas, especies, fases, faixasPreco, freteGratisMinimo, banners] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
       busca: q,
       departamento,
@@ -75,6 +77,7 @@ export default async function LojaPage({
     getFasesComContagem(empresa.id),
     getFaixasPrecoComContagem(empresa.id),
     getMenorValorFreteGratis(empresa.id),
+    getBannersCatalogo(empresa.id),
   ]);
 
   const variantesPorPai = await getVariantesEmLote(empresa.id, produtos);
@@ -90,13 +93,12 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      {!filtroAtivo && (
-        <HeroBanner
-          nome={empresa.nome}
-          tagline={empresa.catalogo_info_extra}
-          moderno={moderno}
-        />
-      )}
+      {!filtroAtivo &&
+        (banners.length > 0 ? (
+          <BannerCarousel banners={banners} />
+        ) : (
+          <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} moderno={moderno} />
+        ))}
 
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}

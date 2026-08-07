@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
+import type { BannerCatalogo, CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { chaveOrdenacaoRotulo, extrairPeso } from "@/lib/variantes";
 
 /**
@@ -45,6 +45,21 @@ export async function getEmpresaPorSlug(slug: string): Promise<EmpresaCatalogo |
     return null;
   }
   return data;
+}
+
+export async function getBannersCatalogo(empresaId: string): Promise<BannerCatalogo[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_banners_publico")
+    .select("*")
+    .eq("empresa_id", empresaId)
+    .order("ordem");
+
+  if (error) {
+    console.error("Erro ao buscar banners:", error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 export async function getProdutosCatalogo(
