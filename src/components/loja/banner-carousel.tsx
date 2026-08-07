@@ -4,26 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
 import type { BannerCatalogo } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const DELAY_IMAGEM_MS = 5000;
+
 /**
- * Carrossel de banners da home — imagem ou vídeo, rotação automática (pausa
- * ao interagir, retoma depois) + setas/dots manuais + swipe (embla cuida do
- * gesto de toque nativamente). Só o vídeo do slide ativo toca de verdade
- * (os outros ficam pausados) pra não gastar banda/bateria à toa com vários
- * vídeos escondidos rodando ao mesmo tempo.
+ * Carrossel de banners da home — imagem ou vídeo, rotação automática + setas/
+ * dots manuais + swipe (embla cuida do gesto de toque nativamente).
+ *
+ * Autoplay é implementado aqui na mão (sem o plugin embla-carousel-autoplay)
+ * de propósito: numa primeira versão, o plugin tinha timer próprio que corria
+ * em paralelo com o `stop()`/`play()` chamado a cada troca de slide pra
+ * pausar em vídeo — mesmo tentando desligá-lo em slide de vídeo, o vídeo
+ * ainda era cortado no meio (o timer interno do plugin reagendava sozinho
+ * antes/depois da minha chamada, uma corrida que não dava pra garantir
+ * vencer de fora). Um `setTimeout` só meu, criado e limpo dentro do próprio
+ * `onSelect`, elimina essa corrida: nunca existe timer nenhum agendado
+ * enquanto o slide ativo é vídeo — só quem decide avançar nesse caso é o
+ * evento `onEnded` do próprio elemento de vídeo.
  */
 export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
-  // stopOnMouseEnter fica de fora de propósito: o plugin retomaria o
-  // cronômetro fixo sozinho ao tirar o mouse de cima, mesmo em cima de um
-  // slide de vídeo — atropelando o controle manual (stop/play por tipo de
-  // slide) feito em onSelect, que é quem garante que vídeo só passa pro
-  // próximo quando termina de tocar, não num tempo fixo.
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: banners.length > 1 }, [
-    Autoplay({ delay: 5000, stopOnInteraction: false }),
-  ]);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: banners.length > 1 });
   const [selecionado, setSelecionado] = useState(0);
   // Todo navegador bloqueia autoplay de vídeo COM som — só é permitido
   // mudo. Por isso todo carrossel/feed com vídeo autoplay (Instagram,
@@ -32,12 +34,17 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
   // não só o atual — ativou uma vez, continua ativado ao trocar de slide.
   const [mudo, setMudo] = useState(true);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  // Cópia borrada/ampliada do mesmo vídeo, exibida atrás da versão nítida
+  // (object-contain) — preenche as bordas com um "brilho" ambiente do
+  // próprio conteúdo em vez de barra preta seca (mesmo truque do Spotify/
+  // Instagram Stories). Sempre muda, tocada em conjunto com a principal.
+  const videoBgRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     const indice = emblaApi.selectedScrollSnap();
     setSelecionado(indice);
-    const autoplay = emblaApi.plugins().autoplay;
 
     videoRefs.current.forEach((video, i) => {
       if (!video) return;
@@ -49,15 +56,22 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
         video.pause();
       }
     });
+    videoBgRefs.current.forEach((video, i) => {
+      if (!video) return;
+      if (i === indice) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
 
-    // Slide de vídeo: pausa a troca automática por tempo fixo — quem
-    // decide quando passar pro próximo é o fim do vídeo (`onEnded` do
-    // elemento), não um cronômetro genérico de 5s que cortaria o vídeo no
-    // meio. Slide de imagem: volta a rodar no tempo normal.
-    if (banners[indice]?.tipo === "video") {
-      autoplay?.stop();
-    } else {
-      autoplay?.play();
+    // Reagenda do zero a cada troca de slide (automática ou manual) — só
+    // existe timer pendente quando o slide ativo é imagem. Slide de vídeo
+    // nunca tem timer nenhum: quem avança é o onEnded do <video>.
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (banners.length > 1 && banners[indice]?.tipo !== "video") {
+      timerRef.current = setTimeout(() => emblaApi.scrollNext(), DELAY_IMAGEM_MS);
     }
   }, [emblaApi, mudo, banners]);
 
@@ -76,6 +90,7 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
     emblaApi.on("select", onSelect);
     return () => {
       clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
       emblaApi.off("select", onSelect);
     };
   }, [emblaApi, onSelect]);
@@ -93,12 +108,16 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
                 videoRef={(el) => {
                   videoRefs.current[i] = el;
                 }}
+                videoBgRef={(el) => {
+                  videoBgRefs.current[i] = el;
+                }}
                 onVideoEnded={() => {
                   // Único banner: não tem pra onde avançar (loop desligado
                   // com 1 slide só) — melhor repetir o vídeo do que travar
                   // no último frame.
                   if (banners.length <= 1) {
                     videoRefs.current[i]?.play().catch(() => {});
+                    videoBgRefs.current[i]?.play().catch(() => {});
                   } else {
                     emblaApi?.scrollNext();
                   }
@@ -175,10 +194,12 @@ function IconeSom({ mudo }: { mudo: boolean }) {
 function BannerSlide({
   banner,
   videoRef,
+  videoBgRef,
   onVideoEnded,
 }: {
   banner: BannerCatalogo;
   videoRef: (el: HTMLVideoElement | null) => void;
+  videoBgRef: (el: HTMLVideoElement | null) => void;
   onVideoEnded: () => void;
 }) {
   const conteudo = (
@@ -188,9 +209,18 @@ function BannerSlide({
         // foto, o vídeo não passa por recorte no app antes de subir (sem
         // ferramenta de edição de vídeo), então cortar pra preencher o
         // quadro cortaria partes imprevisíveis do conteúdo. Mostra o vídeo
-        // inteiro sempre, com barras pretas nas bordas quando a proporção
-        // não bate exatamente com a do carrossel.
-        <div className="h-full w-full bg-black">
+        // inteiro sempre — e em vez de deixar barra preta na sobra, uma
+        // cópia borrada/ampliada do mesmo vídeo preenche o fundo.
+        <div className="relative h-full w-full overflow-hidden bg-black">
+          <video
+            ref={videoBgRef}
+            src={banner.url}
+            muted
+            playsInline
+            aria-hidden
+            tabIndex={-1}
+            className="absolute inset-0 h-full w-full scale-125 object-cover object-center blur-2xl brightness-[0.55] saturate-125"
+          />
           <video
             ref={videoRef}
             src={banner.url}
@@ -198,7 +228,7 @@ function BannerSlide({
             muted
             playsInline
             onEnded={onVideoEnded}
-            className="h-full w-full object-contain"
+            className="relative z-10 h-full w-full object-contain"
           />
         </div>
       ) : (
