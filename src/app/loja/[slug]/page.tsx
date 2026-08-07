@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
+import { CategoriasEspecie } from "@/components/loja/categorias-especie";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
@@ -99,6 +100,8 @@ export default async function LojaPage({
         ) : (
           <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} moderno={moderno} />
         ))}
+
+      {!filtroAtivo && <CategoriasEspecie slug={slug} />}
 
       <SelosConfianca
         freteGratisMinimo={freteGratisMinimo}

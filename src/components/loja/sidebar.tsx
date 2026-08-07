@@ -15,13 +15,30 @@ import { cn } from "@/lib/utils";
  * existe no cliente, o que não é possível entre os dois pontos distantes
  * do JSX de forma direta.
  */
-const SidebarContext = createContext<{ aberta: boolean; abrir: () => void; fechar: () => void } | null>(null);
+const SidebarContext = createContext<{
+  aberta: boolean;
+  montada: boolean;
+  abrir: () => void;
+  fechar: () => void;
+} | null>(null);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [aberta, setAberta] = useState(false);
+  // "montada" só vira true dentro do clique que abre a gaveta pela primeira
+  // vez (nunca num efeito) — assim o painel simplesmente não existe no DOM
+  // no carregamento inicial, ver comentário em cima do <Sidebar>.
+  const [montada, setMontada] = useState(false);
   return (
     <SidebarContext.Provider
-      value={{ aberta, abrir: () => setAberta(true), fechar: () => setAberta(false) }}
+      value={{
+        aberta,
+        montada,
+        abrir: () => {
+          setAberta(true);
+          setMontada(true);
+        },
+        fechar: () => setAberta(false),
+      }}
     >
       {children}
     </SidebarContext.Provider>
@@ -73,42 +90,53 @@ export function Sidebar({
   slug: string;
   moderno: boolean;
 }) {
-  const { aberta, fechar } = useSidebarContext();
+  // "montada" só vira true dentro do clique que abre a gaveta pela primeira
+  // vez (ver SidebarProvider.abrir) — no carregamento inicial o painel nem
+  // existe no DOM. Antes ele ficava sempre montado, só deslocado pra fora da
+  // tela via -translate-x-full (left: -288px) enquanto fechado; mesmo com
+  // overflow-hidden no wrapper, esse elemento fixed+transform presente desde
+  // o primeiro paint é exatamente a classe de configuração que navegadores
+  // mobile têm bugs conhecidos de recalcular errado o viewport/zoom inicial.
+  // Não montar até precisar elimina o risco por completo, não só cobre com CSS.
+  const { aberta, montada, fechar } = useSidebarContext();
+
   const conteudo = <SidebarConteudo departamentos={departamentos} slug={slug} moderno={moderno} onNavegar={fechar} />;
 
   return (
     <>
-      {/* Mobile — backdrop + gaveta deslizante, some da árvore de foco/clique quando fechada. */}
-      <div className={cn("fixed inset-0 z-40 lg:hidden", aberta ? "" : "pointer-events-none")}>
-        <div
-          onClick={fechar}
-          className={cn(
-            "absolute inset-0 bg-black/40 transition-opacity",
-            aberta ? "opacity-100" : "opacity-0",
-          )}
-        />
-        <aside
-          className={cn(
-            "absolute top-0 left-0 flex h-full w-72 flex-col bg-[var(--surface)] shadow-xl transition-transform duration-200",
-            aberta ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <div className="flex items-center justify-between border-b border-black/5 p-4 dark:border-white/10">
-            <span className="text-sm font-semibold">Menu</span>
-            <button
-              type="button"
-              onClick={fechar}
-              aria-label="Fechar menu"
-              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          </div>
-          {conteudo}
-        </aside>
-      </div>
+      {/* Mobile — backdrop + gaveta deslizante. */}
+      {montada && (
+        <div className={cn("fixed inset-0 z-40 overflow-hidden lg:hidden", aberta ? "" : "pointer-events-none")}>
+          <div
+            onClick={fechar}
+            className={cn(
+              "absolute inset-0 bg-black/40 transition-opacity",
+              aberta ? "opacity-100" : "opacity-0",
+            )}
+          />
+          <aside
+            className={cn(
+              "absolute top-0 left-0 flex h-full w-72 flex-col bg-[var(--surface)] shadow-xl transition-transform duration-200",
+              aberta ? "translate-x-0" : "-translate-x-full",
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-black/5 p-4 dark:border-white/10">
+              <span className="text-sm font-semibold">Menu</span>
+              <button
+                type="button"
+                onClick={fechar}
+                aria-label="Fechar menu"
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+            {conteudo}
+          </aside>
+        </div>
+      )}
 
       {/* Desktop — coluna fixa, sempre visível. */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/5 lg:flex dark:border-white/10">
@@ -163,7 +191,10 @@ function SidebarConteudo({
               <div key={d.nome}>
                 <Link
                   href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
-                  onClick={onNavegar}
+                  // Só fecha a gaveta se não houver subcategoria pra revelar — clicar num
+                  // departamento com mais de 1 categoria deve abrir o refinamento abaixo
+                  // dele, não sumir com o menu antes da pessoa conseguir escolher.
+                  onClick={d.categorias.length > 1 ? undefined : onNavegar}
                   className={linkClasse(ativo, moderno)}
                 >
                   {d.nome}

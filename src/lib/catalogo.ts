@@ -394,7 +394,7 @@ export async function getMarcasComContagem(
  * iguais), usa um conjunto fixo de rótulos que o cliente reconhece e
  * conta via substring (ilike), a mesma lógica do filtro em getProdutosCatalogo.
  */
-const ESPECIES_FILTRO = ["Cães", "Gatos"];
+const ESPECIES_FILTRO = ["Cães", "Gatos", "Pássaros"];
 const FASES_FILTRO = ["Filhotes", "Adultos", "Sênior", "Castrados"];
 
 export async function getEspeciesComContagem(

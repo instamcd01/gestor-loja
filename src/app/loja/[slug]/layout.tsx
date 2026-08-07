@@ -45,7 +45,12 @@ export default async function LojaLayout({
         <SidebarProvider>
           <Sidebar departamentos={departamentos} slug={slug} moderno={moderno} />
 
-          <div className="flex min-h-screen flex-1 flex-col">
+          {/* min-w-0 é obrigatório aqui: item flex numa linha não encolhe abaixo do
+              min-content do próprio conteúdo por padrão (min-width:auto), então sem
+              isso essa coluna força a página inteira a ficar mais larga que a tela
+              no mobile assim que qualquer coisa lá dentro (grid de produtos, nomes
+              longos) pede mais espaço — a causa real do "zoom" no carregamento. */}
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
             <header className="sticky top-0 z-10 border-b border-black/5 bg-[var(--surface)]/90 backdrop-blur dark:border-white/10">
               <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3">
                 <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
@@ -54,23 +59,17 @@ export default async function LojaLayout({
                     <AccountLink slug={slug} />
                   </div>
 
-                  <Link href={`/loja/${slug}`} className="flex min-w-0 items-center justify-center gap-2 justify-self-center">
+                  <Link href={`/loja/${slug}`} className="flex min-w-0 items-center justify-center justify-self-center">
                     {empresa.logo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={empresa.logo_url}
                         alt={empresa.nome}
-                        className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-black/5 dark:ring-white/10"
+                        className="h-10 max-w-[160px] shrink-0 object-contain"
                       />
                     ) : (
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                        style={{ background: corPrimaria }}
-                      >
-                        {empresa.nome.slice(0, 1).toUpperCase()}
-                      </div>
+                      <span className="min-w-0 truncate text-sm font-semibold sm:text-lg">{empresa.nome}</span>
                     )}
-                    <span className="min-w-0 truncate text-sm font-semibold sm:text-lg">{empresa.nome}</span>
                   </Link>
 
                   <div className="flex shrink-0 items-center gap-1 justify-self-end">
