@@ -29,11 +29,15 @@ export function OrdenarPor({ ordenacaoAtiva }: { ordenacaoAtiva: Ordenacao }) {
 
   return (
     <label className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
-      Ordenar por:
+      {/* Some no mobile — junto com o botão "Filtros" e o próprio select,
+          o rótulo por extenso não cabia em telas estreitas e empurrava a
+          linha inteira pra fora da tela (select nativo não encolhe pelo
+          flex normal, precisa de max-width explícito também). */}
+      <span className="hidden sm:inline">Ordenar por:</span>
       <select
         value={ordenacaoAtiva}
         onChange={(e) => alterar(e.target.value)}
-        className="rounded-[var(--radius-sm)] border border-black/10 bg-white py-1.5 pl-2 pr-7 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:bg-white/5"
+        className="max-w-[45vw] rounded-[var(--radius-sm)] border border-black/10 bg-white py-1.5 pl-2 pr-7 text-sm outline-none focus:border-[var(--brand-primary)] sm:max-w-none dark:border-white/10 dark:bg-white/5"
       >
         {OPCOES.map((opcao) => (
           <option key={opcao.valor} value={opcao.valor}>

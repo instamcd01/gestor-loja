@@ -111,11 +111,11 @@ export default async function LojaPage({
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
-        <p className="text-sm text-black/50 dark:text-white/50">
+        <p className="min-w-0 flex-1 truncate text-sm text-black/50 dark:text-white/50">
           {produtos.length} produto{produtos.length === 1 ? "" : "s"}
           {categoria ? ` em ${categoria}` : departamento ? ` em ${departamento}` : ""}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <FiltrosDrawer
             marcas={marcas}
             marcaAtiva={marca ?? null}
