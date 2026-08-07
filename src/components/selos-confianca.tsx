@@ -36,7 +36,7 @@ export function SelosConfianca({
 
   if (moderno) {
     return (
-      <div className="scrollbar-none -mx-1 flex snap-x gap-3 overflow-x-auto px-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+      <div className="scrollbar-none flex snap-x gap-3 overflow-x-auto sm:grid sm:grid-cols-3 sm:overflow-visible">
         {selos.map((selo) => {
           const cor = paleta[selo.icone];
           return (
@@ -59,7 +59,7 @@ export function SelosConfianca({
   }
 
   return (
-    <div className="scrollbar-none -mx-1 flex snap-x gap-3 overflow-x-auto px-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+    <div className="scrollbar-none flex snap-x gap-3 overflow-x-auto sm:grid sm:grid-cols-3 sm:overflow-visible">
       {selos.map((selo) => (
         <div
           key={selo.titulo}
