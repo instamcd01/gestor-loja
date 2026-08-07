@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
 import { Badge } from "@/components/ui/badge";
+import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { useCarrinhoRapido } from "@/lib/use-carrinho-rapido";
@@ -86,6 +87,8 @@ export function ProdutoCard({
             {percentualOff > 0 && <Badge variant="secondary">{percentualOff}% OFF</Badge>}
             {produto.destaque && <Badge variant="neutral">Destaque</Badge>}
           </div>
+
+          <FavoritoButton produtoId={selecionada.id} className="absolute top-2 right-2 h-8 w-8" />
 
           {/* Fica na foto (não no rodapé do card) de propósito — o botão
               flutuante de WhatsApp é fixo no canto inferior direito da

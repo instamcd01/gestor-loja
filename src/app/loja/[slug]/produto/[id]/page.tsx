@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { AdicionarCarrinhoButton } from "@/components/carrinho/adicionar-carrinho-button";
+import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { GaleriaProduto } from "@/components/galeria-produto";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { ProdutosRelacionados } from "@/components/loja/produtos-relacionados";
@@ -101,7 +102,10 @@ export default async function ProdutoPage({
                 {produto.categoria}
               </span>
             )}
-            <h1 className="text-2xl font-semibold">{produto.nome}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-semibold">{produto.nome}</h1>
+              <FavoritoButton produtoId={produto.id} className="shrink-0" />
+            </div>
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold">

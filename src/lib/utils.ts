@@ -46,6 +46,15 @@ export function formatarHora(iso: string) {
   });
 }
 
+export function formatarData(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
 export function percentualDesconto(preco: number, precoPromocional: number | null) {
   if (precoPromocional == null || precoPromocional >= preco) return 0;
   return Math.round((1 - precoPromocional / preco) * 100);

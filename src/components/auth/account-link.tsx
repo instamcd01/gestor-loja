@@ -24,15 +24,20 @@ export function AccountLink({ slug }: { slug: string }) {
   }, []);
 
   if (logado === null) {
-    return <span className="h-4 w-16 animate-pulse rounded bg-black/5 dark:bg-white/10" />;
+    return <span className="h-9 w-9 animate-pulse rounded-full bg-black/5 dark:bg-white/10" />;
   }
 
   return (
     <Link
       href={`/loja/${slug}/${logado ? "conta" : "entrar"}`}
-      className="text-sm font-medium hover:underline"
+      aria-label={logado ? "Minha conta" : "Entrar"}
+      title={logado ? "Minha conta" : "Entrar"}
+      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
     >
-      {logado ? "Minha conta" : "Entrar"}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6" />
+      </svg>
     </Link>
   );
 }

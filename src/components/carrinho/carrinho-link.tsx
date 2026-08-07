@@ -47,10 +47,19 @@ export function CarrinhoLink({ slug, empresaId }: { slug: string; empresaId: str
   }, [empresaId, logado]);
 
   return (
-    <Link href={`/loja/${slug}/carrinho`} className="flex items-center gap-1.5 text-sm font-medium hover:underline">
-      Carrinho
+    <Link
+      href={`/loja/${slug}/carrinho`}
+      aria-label="Carrinho"
+      title="Carrinho"
+      className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M3 4h2l1 3m0 0 2.2 8.4a2 2 0 0 0 1.94 1.6h7.32a2 2 0 0 0 1.94-1.52L21 8H6" />
+        <circle cx="9.5" cy="20" r="1.4" />
+        <circle cx="17.5" cy="20" r="1.4" />
+      </svg>
       {contagem > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-xs font-semibold text-white">
+        <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-[10px] font-semibold text-white">
           {contagem}
         </span>
       )}
