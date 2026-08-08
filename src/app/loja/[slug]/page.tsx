@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
 import { CategoriasEspecie } from "@/components/loja/categorias-especie";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
+import { GradeDeProdutos, GradeSkeleton } from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
-import { ProdutoCard } from "@/components/produto-card";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
   getBannersCatalogo,
@@ -15,7 +16,6 @@ import {
   getFiltrosCatalogo,
   getMenorValorFreteGratis,
   getProdutosCatalogo,
-  getVariantesEmLote,
   type Ordenacao,
 } from "@/lib/catalogo";
 
@@ -75,7 +75,6 @@ export default async function LojaPage({
     getBannersCatalogo(empresa.id),
   ]);
 
-  const variantesPorPai = await getVariantesEmLote(empresa.id, produtos);
   const enderecoEmpresa = {
     endereco: empresa.endereco,
     cidade: empresa.cidade,
@@ -133,51 +132,23 @@ export default async function LojaPage({
             ? "Nenhum produto encontrado."
             : "Nenhum produto disponível no catálogo ainda."}
         </p>
-      ) : filtroAtivo || ordenar ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {produtos.map((produto) => (
-            <ProdutoCard
-              key={produto.id}
-              produto={produto}
-              slug={slug}
-              empresaId={empresa.id}
-              enderecoEmpresa={enderecoEmpresa}
-              variantes={variantesPorPai.get(produto.id)}
-              moderno={moderno}
-            />
-          ))}
-        </div>
       ) : (
-        <div className="flex flex-col gap-10">
-          {agruparPorCategoria(produtos).map(([cat, itens]) => (
-            <section key={cat} className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold">{cat}</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {itens.map((produto) => (
-                  <ProdutoCard
-                    key={produto.id}
-                    produto={produto}
-                    slug={slug}
-                    empresaId={empresa.id}
-                    enderecoEmpresa={enderecoEmpresa}
-                    variantes={variantesPorPai.get(produto.id)}
-                    moderno={moderno}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        // Isolado num Server Component próprio + Suspense: a busca de variantes
+        // (getVariantesEmLote) é a parte mais lenta do carregamento desta página,
+        // mas nada acima dela (banners, filtros, contagem) depende do resultado.
+        // Sem isso o await bloqueava o streaming da página inteira até resolver.
+        <Suspense fallback={<GradeSkeleton />}>
+          <GradeDeProdutos
+            produtos={produtos}
+            slug={slug}
+            empresaId={empresa.id}
+            enderecoEmpresa={enderecoEmpresa}
+            moderno={moderno}
+            filtroAtivo={filtroAtivo}
+            ordenar={ordenar}
+          />
+        </Suspense>
       )}
     </div>
   );
-}
-
-function agruparPorCategoria<T extends { categoria: string | null }>(produtos: T[]) {
-  const porCategoria = new Map<string, T[]>();
-  for (const produto of produtos) {
-    const chave = produto.categoria ?? "Outros";
-    porCategoria.set(chave, [...(porCategoria.get(chave) ?? []), produto]);
-  }
-  return [...porCategoria.entries()];
 }
