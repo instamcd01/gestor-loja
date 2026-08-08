@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
+import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getSaldoCliente } from "@/lib/cliente";
@@ -49,6 +50,9 @@ export default async function CarrinhoPagamentoPage({
 
   return (
     <div className="mx-auto max-w-2xl pb-44 pt-6">
+      <ButtonLink href={`/loja/${slug}/carrinho`} variant="secondary" className="mb-4 w-fit">
+        ← Voltar ao carrinho
+      </ButtonLink>
       <h1 className="mb-6 text-xl font-semibold">Pagamento</h1>
       <PagamentoForm
         slug={slug}

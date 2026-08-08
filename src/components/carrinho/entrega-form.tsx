@@ -15,6 +15,7 @@ import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-es
 import { salvarEndereco } from "@/lib/cliente";
 import {
   assinarEnderecoEstimado,
+  limparEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
   salvarEnderecoEstimado,
@@ -205,6 +206,15 @@ export function EntregaForm({
       ? freteResolvido.valor_minimo_frete_gratis - subtotal
       : null;
   const quantidadeItens = itens.reduce((soma, item) => soma + item.quantidade, 0);
+  // Soma de (preço de catálogo atual − preço promocional) × quantidade —
+  // só dos itens em promoção agora, pra alimentar a linha "Você
+  // economizou" do resumo (ver ResumoTotais). Mesmo cálculo usado na
+  // etapa de pagamento (pagamento-form.tsx).
+  const descontoProdutos = itens.reduce((soma, item) => {
+    const produto = item.produto;
+    if (!produto || produto.preco_promocional == null || produto.preco_promocional >= produto.preco) return soma;
+    return soma + (produto.preco - produto.preco_promocional) * item.quantidade;
+  }, 0);
   const totalParcial = subtotal + valorEntrega;
 
   function calcularPrazoLabel(): string | null {
@@ -280,7 +290,20 @@ export function EntregaForm({
 
       {tipoEntrega === "entrega" && (
         <Card className="flex flex-col gap-3 p-4">
-          <CapturarEndereco valorInicial={endereco} onResolvido={confirmarEnderecoECalcularFrete} />
+          {endereco ? (
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-sm">📍 {formatarEnderecoCompleto(endereco)}</span>
+              <button
+                type="button"
+                onClick={() => limparEnderecoEstimado(empresaId)}
+                className="shrink-0 text-xs text-black/40 hover:underline dark:text-white/40"
+              >
+                Trocar endereço
+              </button>
+            </div>
+          ) : (
+            <CapturarEndereco valorInicial={endereco} onResolvido={confirmarEnderecoECalcularFrete} />
+          )}
 
           {calculando && (
             <p className="text-sm text-black/50 dark:text-white/50">Calculando frete...</p>
@@ -342,15 +365,12 @@ export function EntregaForm({
           entregaValor={tipoEntrega === "entrega" ? (freteResolvido ? valorEntrega : null) : null}
           entregaValorOriginal={freteResolvido ? valorBaseEntrega : undefined}
           faltaParaFreteGratis={faltaParaFreteGratis}
+          descontoProdutos={descontoProdutos}
           total={totalParcial}
         />
       </Card>
 
       {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
-
-      <Button onClick={irParaPagamento} disabled={!podeAvancar || avancando} className="w-full py-3.5 text-base">
-        {avancando ? "Continuando..." : "Ir para pagamento"}
-      </Button>
 
       {/* Barra fixa: total parcial + "Ir para pagamento" sempre visíveis
           rolando a tela — mesmo padrão da barra da etapa de pagamento
