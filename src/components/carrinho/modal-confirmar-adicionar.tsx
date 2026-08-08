@@ -8,14 +8,17 @@ import { useDrawerA11y } from "@/lib/use-drawer-a11y";
 import { formatarPreco } from "@/lib/utils";
 
 /**
- * Confirmação exibida ao adicionar direto pelo card do catálogo (grade,
- * relacionados, favoritos) quando o produto tem variantes — mesmo que uma
- * já venha pré-selecionada no card, o cliente só clicou o "+" da grade, não
- * abriu a página do produto, então pode não ter reparado nas opções. Não se
+ * Confirmação exibida ao clicar o "+" rápido pelo card do catálogo (grade,
+ * relacionados, favoritos) — sempre, não só quando o produto tem variantes.
+ * Abre na hora (sem esperar rede), então o clique nunca parece travado; a
+ * ida ao servidor só acontece quando o cliente confirma dentro do modal.
+ * Quando há mais de uma variante, mesmo a já pré-selecionada no card, o
+ * cliente pode não ter reparado nas opções — mostra a lista de novo com
+ * preço de cada uma. Com uma opção só, pula direto pra quantidade. Não se
  * aplica na página do próprio produto (ali o `SeletorVariante` + o card de
  * quantidade já cumprem esse papel).
  */
-export function ModalSelecionarVariante({
+export function ModalConfirmarAdicionar({
   nome,
   imagemUrl,
   categoria,
@@ -37,6 +40,7 @@ export function ModalSelecionarVariante({
   const painelRef = useDrawerA11y(true, onFechar);
   const [varianteId, setVarianteId] = useState(varianteInicialId);
   const [quantidade, setQuantidade] = useState(1);
+  const temOpcoes = opcoes.length > 1;
 
   const escolhida = opcoes.find((o) => o.id === varianteId) ?? opcoes[0];
 
@@ -52,11 +56,11 @@ export function ModalSelecionarVariante({
         ref={painelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Escolher variante"
+        aria-label="Adicionar ao carrinho"
         className="relative flex w-full max-w-sm flex-col gap-4 rounded-t-[var(--radius-lg)] bg-[var(--surface)] p-5 shadow-xl sm:rounded-[var(--radius-lg)]"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Qual você gostaria?</h2>
+          <h2 className="text-base font-semibold">{temOpcoes ? "Qual você gostaria?" : "Adicionar ao carrinho"}</h2>
           <button
             type="button"
             onClick={onFechar}
@@ -74,40 +78,42 @@ export function ModalSelecionarVariante({
           <p className="line-clamp-2 text-sm font-medium">{nome}</p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {opcoes.map((opcao) => {
-            const temPromocao = opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
-            const semEstoque = opcao.estoque_disponivel === 0;
-            return (
-              <button
-                key={opcao.id}
-                type="button"
-                disabled={semEstoque}
-                onClick={() => selecionar(opcao)}
-                className={`flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-left text-sm disabled:opacity-40 ${
-                  opcao.id === varianteId
-                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
-                    : "border-black/10 dark:border-white/10"
-                }`}
-              >
-                <span className="font-medium">
-                  {opcao.rotulo}
-                  {semEstoque ? " (sem estoque)" : ""}
-                </span>
-                <span className="flex items-baseline gap-1.5">
-                  <span className="font-semibold">
-                    {formatarPreco(temPromocao ? opcao.preco_promocional! : opcao.preco)}
+        {temOpcoes && (
+          <div className="flex flex-col gap-2">
+            {opcoes.map((opcao) => {
+              const temPromocao = opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
+              const semEstoque = opcao.estoque_disponivel === 0;
+              return (
+                <button
+                  key={opcao.id}
+                  type="button"
+                  disabled={semEstoque}
+                  onClick={() => selecionar(opcao)}
+                  className={`flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-left text-sm disabled:opacity-40 ${
+                    opcao.id === varianteId
+                      ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                      : "border-black/10 dark:border-white/10"
+                  }`}
+                >
+                  <span className="font-medium">
+                    {opcao.rotulo}
+                    {semEstoque ? " (sem estoque)" : ""}
                   </span>
-                  {temPromocao && (
-                    <span className="text-xs text-black/40 line-through dark:text-white/40">
-                      {formatarPreco(opcao.preco)}
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="font-semibold">
+                      {formatarPreco(temPromocao ? opcao.preco_promocional! : opcao.preco)}
                     </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                    {temPromocao && (
+                      <span className="text-xs text-black/40 line-through dark:text-white/40">
+                        {formatarPreco(opcao.preco)}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">

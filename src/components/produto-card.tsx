@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
-import { ModalSelecionarVariante } from "@/components/carrinho/modal-selecionar-variante";
+import { ModalConfirmarAdicionar } from "@/components/carrinho/modal-confirmar-adicionar";
 import { Badge } from "@/components/ui/badge";
 import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { ProdutoImagem } from "@/components/produto-imagem";
@@ -52,27 +52,28 @@ export function ProdutoCard({
     selecionada.preco_promocional != null && selecionada.preco_promocional < selecionada.preco;
   const percentualOff = percentualDesconto(selecionada.preco, selecionada.preco_promocional);
 
-  // Adicionar 1 unidade da variação selecionada sem precisar abrir o
-  // produto — pra quem quer continuar navegando o catálogo em vez de
-  // interromper pra visitar cada página. Mesma gaveta de confirmação do
-  // botão da página do produto (useCarrinhoRapido é compartilhado).
+  // Adicionar ao carrinho sem precisar abrir o produto — pra quem quer
+  // continuar navegando o catálogo em vez de interromper pra visitar cada
+  // página. Mesma gaveta de confirmação do botão da página do produto
+  // (useCarrinhoRapido é compartilhado).
   const carrinhoRapido = useCarrinhoRapido(slug, empresaId);
-  // Só entra em jogo aqui na grade/relacionados/favoritos — na página do
-  // próprio produto, o SeletorVariante (navega pra URL da variante) + o
-  // card de quantidade já cumprem esse papel, não precisa de confirmação.
-  const [modalVarianteAberto, setModalVarianteAberto] = useState(false);
+  // Abre sempre (mesmo sem variante) em vez de adicionar 1 unidade direto —
+  // deixa escolher a quantidade e some com o delay perceptível do clique
+  // "sem feedback" (o modal abre na hora; a ida ao servidor só acontece ao
+  // confirmar). Só entra em jogo aqui na grade/relacionados/favoritos — na
+  // página do próprio produto, o SeletorVariante (navega pra URL da
+  // variante) + o card de quantidade já cumprem esse papel.
+  const [modalAberto, setModalAberto] = useState(false);
 
   function abrirAdicionar(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (temVariantes) {
-      setModalVarianteAberto(true);
-      return;
-    }
-    void adicionar(selecionada, 1);
+    setModalAberto(true);
   }
 
-  async function adicionar(opcao: VarianteProduto, quantidade: number) {
+  async function confirmarAdicionar(varianteId: string, quantidade: number) {
+    const opcao = opcoes.find((o) => o.id === varianteId);
+    if (!opcao) return;
     const opcaoTemPromocao = opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
     await carrinhoRapido.adicionar(opcao.id, quantidade, {
       nome: opcao.nome,
@@ -81,13 +82,7 @@ export function ProdutoCard({
       preco: opcaoTemPromocao ? opcao.preco_promocional! : opcao.preco,
       estoqueDisponivel: opcao.estoque_disponivel,
     });
-  }
-
-  async function confirmarVariante(varianteId: string, quantidade: number) {
-    const opcao = opcoes.find((o) => o.id === varianteId);
-    if (!opcao) return;
-    await adicionar(opcao, quantidade);
-    setModalVarianteAberto(false);
+    setModalAberto(false);
   }
 
   return (
@@ -119,7 +114,7 @@ export function ProdutoCard({
           <button
             type="button"
             onClick={abrirAdicionar}
-            disabled={carrinhoRapido.carregando || selecionada.estoque_disponivel === 0}
+            disabled={selecionada.estoque_disponivel === 0}
             aria-label="Adicionar ao carrinho"
             className="absolute right-2 bottom-2 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary)] text-lg leading-none text-white shadow-md transition-opacity hover:opacity-90 disabled:opacity-30"
           >
@@ -169,16 +164,16 @@ export function ProdutoCard({
         </div>
       </Link>
 
-      {modalVarianteAberto && (
-        <ModalSelecionarVariante
+      {modalAberto && (
+        <ModalConfirmarAdicionar
           nome={produto.nome}
           imagemUrl={produto.imagem_url}
           categoria={produto.categoria}
           opcoes={opcoes}
           varianteInicialId={selecionada.id}
           carregando={carrinhoRapido.carregando}
-          onConfirmar={confirmarVariante}
-          onFechar={() => setModalVarianteAberto(false)}
+          onConfirmar={confirmarAdicionar}
+          onFechar={() => setModalAberto(false)}
         />
       )}
 
