@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
+import { CategoriasEmLinha } from "@/components/loja/categorias-em-linha";
 import { CategoriasEspecie } from "@/components/loja/categorias-especie";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { GradeDeProdutos, GradeSkeleton } from "@/components/loja/grade-de-produtos";
@@ -12,6 +13,7 @@ import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { SelosConfianca } from "@/components/selos-confianca";
 import {
   getBannersCatalogo,
+  getContagemProdutosCatalogo,
   getEmpresaPorSlug,
   getFiltrosCatalogo,
   getMenorValorFreteGratis,
@@ -56,24 +58,36 @@ export default async function LojaPage({
   if (!empresa) notFound();
 
   const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
+  const semFiltro = !filtroAtivo && !ordenar;
   const moderno = empresa.catalogo_modelo === "moderno";
 
-  const [produtos, { marcas, especies, fases, faixasPreco }, freteGratisMinimo, banners] = await Promise.all([
-    getProdutosCatalogo(empresa.id, {
-      busca: q,
-      departamento,
-      categoria,
-      marca,
-      especie,
-      fase,
-      precoMin: precoMin ? Number(precoMin) : undefined,
-      precoMax: precoMax ? Number(precoMax) : undefined,
-      ordenar,
-    }),
-    getFiltrosCatalogo(empresa.id),
-    getMenorValorFreteGratis(empresa.id),
-    getBannersCatalogo(empresa.id),
-  ]);
+  // Sem filtro/ordenação, a home usa `CategoriasEmLinha` (amostra por
+  // categoria via RPC) em vez da grade plana — não faz sentido buscar os
+  // ~424 produtos-pai da empresa inteira só pra jogar fora a lista e usar
+  // apenas a contagem. Com filtro/ordenação ativos, a grade plana precisa
+  // da lista real (é o que ela renderiza), então busca completa mesmo.
+  const [produtos, totalSemFiltro, { marcas, especies, fases, faixasPreco }, freteGratisMinimo, banners] =
+    await Promise.all([
+      semFiltro
+        ? Promise.resolve([])
+        : getProdutosCatalogo(empresa.id, {
+            busca: q,
+            departamento,
+            categoria,
+            marca,
+            especie,
+            fase,
+            precoMin: precoMin ? Number(precoMin) : undefined,
+            precoMax: precoMax ? Number(precoMax) : undefined,
+            ordenar,
+          }),
+      semFiltro ? getContagemProdutosCatalogo(empresa.id) : Promise.resolve(0),
+      getFiltrosCatalogo(empresa.id),
+      getMenorValorFreteGratis(empresa.id),
+      getBannersCatalogo(empresa.id),
+    ]);
+
+  const totalProdutos = semFiltro ? totalSemFiltro : produtos.length;
 
   const enderecoEmpresa = {
     endereco: empresa.endereco,
@@ -108,7 +122,7 @@ export default async function LojaPage({
 
       <div id="produtos" className="flex items-center justify-between gap-3">
         <p className="min-w-0 flex-1 truncate text-sm text-black/50 dark:text-white/50">
-          {produtos.length} produto{produtos.length === 1 ? "" : "s"}
+          {totalProdutos} produto{totalProdutos === 1 ? "" : "s"}
           {categoria ? ` em ${categoria}` : departamento ? ` em ${departamento}` : ""}
         </p>
         <div className="flex shrink-0 items-center gap-2">
@@ -126,12 +140,24 @@ export default async function LojaPage({
         </div>
       </div>
 
-      {produtos.length === 0 ? (
+      {totalProdutos === 0 ? (
         <p className="py-16 text-center text-black/50 dark:text-white/50">
           {filtroAtivo
             ? "Nenhum produto encontrado."
             : "Nenhum produto disponível no catálogo ainda."}
         </p>
+      ) : semFiltro ? (
+        // Isolado num Server Component próprio + Suspense pelo mesmo motivo
+        // da grade plana abaixo: o resto da página não depende dela pra
+        // streamar primeiro.
+        <Suspense fallback={<GradeSkeleton />}>
+          <CategoriasEmLinha
+            slug={slug}
+            empresaId={empresa.id}
+            enderecoEmpresa={enderecoEmpresa}
+            moderno={moderno}
+          />
+        </Suspense>
       ) : (
         // Isolado num Server Component próprio + Suspense: a busca de variantes
         // (getVariantesEmLote) é a parte mais lenta do carregamento desta página,
@@ -144,8 +170,6 @@ export default async function LojaPage({
             empresaId={empresa.id}
             enderecoEmpresa={enderecoEmpresa}
             moderno={moderno}
-            filtroAtivo={filtroAtivo}
-            ordenar={ordenar}
           />
         </Suspense>
       )}

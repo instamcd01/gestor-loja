@@ -114,6 +114,58 @@ export async function getMarcaCatalogo(
   return padrao;
 }
 
+/**
+ * Só a contagem (head:true, zero linhas trafegadas) — usada no resumo
+ * "X produtos" da home SEM filtro, onde `getProdutosHomeAgrupados` já
+ * traz uma amostra por categoria, não o catálogo inteiro (ver comentário
+ * lá). Com filtro ativo, o componente usa `produtos.length` direto,
+ * não esta função.
+ */
+export async function getContagemProdutosCatalogo(empresaId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("*", { count: "exact", head: true })
+    .eq("empresa_id", empresaId)
+    .is("produto_pai_id", null);
+
+  if (error) {
+    console.error("Erro ao contar produtos do catálogo:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/**
+ * Home do catálogo SEM filtro: em vez de trazer os ~424 produtos-pai da
+ * empresa inteira pra montar as seções por categoria (o que a página
+ * fazia antes — todo o catálogo renderizado de uma vez, achado como a
+ * causa real de lentidão persistente mesmo depois de otimizar as demais
+ * consultas), traz só as `limitePorCategoria` primeiras opções de CADA
+ * categoria (ordenadas por destaque/nome, mesmo critério do catálogo
+ * completo) numa única ida ao banco — RPC `catalogo_produtos_home` usa
+ * `row_number() over (partition by categoria ...)` no Postgres em vez de
+ * N consultas (uma por categoria) ou trazer tudo pra filtrar em JS.
+ * Categoria inteira só é buscada por completo quando o cliente clica em
+ * "Ver mais" (cai no fluxo já existente de `?categoria=`).
+ */
+export async function getProdutosHomeAgrupados(
+  empresaId: string,
+  limitePorCategoria = 10,
+): Promise<ProdutoCatalogo[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("catalogo_produtos_home", {
+    p_empresa_id: empresaId,
+    p_limite_por_categoria: limitePorCategoria,
+  });
+
+  if (error) {
+    console.error("Erro ao buscar produtos da home:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getProdutosCatalogo(
   empresaId: string,
   filtros?: {
