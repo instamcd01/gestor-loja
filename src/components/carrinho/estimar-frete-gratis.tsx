@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { SugestaoCompletaFrete } from "@/components/carrinho/sugestao-completa-frete";
 import { calcularFretePorEndereco } from "@/lib/checkout";
 import { getEnderecoCliente } from "@/lib/cliente";
@@ -24,22 +25,24 @@ import { formatarEnderecoCompleto } from "@/lib/utils";
  * completo + geolocalização em vez de só CEP, que geocodifica mal em
  * ruas longas/numéricas e pode errar a zona por vários km.
  *
- * Não mostra mais a barra de progresso de frete grátis aqui — virou
- * redundante depois que as opções de entrega (SeletorMetodoEntrega, mais
- * abaixo na tela de carrinho) passaram a indicar "Grátis" por opção; ela
- * continua existindo só na barra fixa do checkout (ver entrega-form.tsx).
- * O endereço usado pra calcular fica sempre visível aqui, pra o cliente
- * confirmar que é o endereço certo antes de trocar.
+ * A barra de progresso fica sempre visível (gaveta, carrinho de
+ * visitante e carrinho logado) — é o que incentiva o cliente a completar
+ * o carrinho pra desbloquear frete grátis, então repetir a mesma
+ * informação do ResumoTotais logo abaixo vale a pena aqui, não é
+ * duplicação inútil. O endereço usado pra calcular fica sempre visível
+ * também, pra o cliente confirmar que é o endereço certo antes de trocar.
  */
 export function EstimarFreteGratis({
   empresaId,
   enderecoEmpresa,
+  subtotal,
   categoriasCarrinho,
   idsNoCarrinho,
   onAdicionarSugestao,
 }: {
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  subtotal: number;
   /** Categorias e ids já no carrinho — usados só pra priorizar a sugestão de completar o frete grátis (ver SugestaoCompletaFrete). Ignorados quando `onAdicionarSugestao` não é passado. */
   categoriasCarrinho?: string[];
   idsNoCarrinho?: string[];
@@ -113,6 +116,9 @@ export function EstimarFreteGratis({
   if (estimado) {
     return (
       <div className="flex flex-col gap-2">
+        {estimado.valorMinimoFreteGratis != null && (
+          <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
+        )}
         {/* Continua aparecendo mesmo depois do frete grátis desbloqueado —
             o cliente pode querer aumentar o pedido mesmo já tendo atingido
             o mínimo. Some sozinho quando não há mais complementares (ver

@@ -118,9 +118,10 @@ export function ResumoTotais({
 
       {(freteGratisComoDesconto || (!!descontoCupom && descontoCupom > 0) || (!!descontoProdutos && descontoProdutos > 0)) && (
         <div className="flex flex-col gap-1 border-t border-black/10 pt-1.5 dark:border-white/10">
+          <p className="text-xs font-medium text-black/50 dark:text-white/50">Descontos</p>
           {freteGratisComoDesconto && (
             <div className="flex justify-between text-[var(--color-success)]">
-              <span>Frete grátis</span>
+              <span>Valor da entrega</span>
               <span>-{formatarPreco(entregaValorOriginal!)}</span>
             </div>
           )}
@@ -137,7 +138,7 @@ export function ResumoTotais({
             </div>
           )}
           {totalEconomizado > 0 && (
-            <div className="flex justify-between font-semibold text-[var(--color-success)]">
+            <div className="mt-0.5 flex justify-between border-t border-black/10 pt-1 font-semibold text-[var(--color-success)] dark:border-white/10">
               <span>Você economizou</span>
               <span>{formatarPreco(totalEconomizado)}</span>
             </div>

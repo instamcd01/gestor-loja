@@ -316,11 +316,10 @@ export function EntregaForm({
             <p className="text-sm text-black/50 dark:text-white/50">Calculando frete...</p>
           )}
 
-          {frete && frete.disponivel && (
-            <p className="text-sm font-medium text-[var(--color-success)]">
-              {entregaGratisAgora ? "Frete grátis!" : `Frete: ${formatarPreco(valorBaseEntrega)}`}
-            </p>
-          )}
+          {/* Sem confirmação de valor aqui de propósito — vira redundante
+              com as opções de entrega logo abaixo (SeletorMetodoEntrega),
+              que já mostram "Grátis"/preço por opção assim que o frete
+              resolve. */}
           {frete && !frete.disponivel && (
             <p className="text-sm text-[var(--color-danger)]">
               {frete.motivo === "fora_de_area"
