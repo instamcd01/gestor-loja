@@ -36,6 +36,12 @@ export interface EmpresaCatalogo {
   valor_minimo_parcela: number;
 }
 
+/** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */
+export interface MarcaPosicaoCatalogo {
+  modo: "texto" | "imagem";
+  url: string | null;
+}
+
 export interface BannerCatalogo {
   id: string;
   empresa_id: string;

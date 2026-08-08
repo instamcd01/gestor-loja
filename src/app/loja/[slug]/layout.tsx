@@ -8,7 +8,7 @@ import { FavoritosLink } from "@/components/favoritos/favoritos-link";
 import { FavoritosProvider } from "@/components/favoritos/favoritos-provider";
 import { Sidebar, SidebarProvider, SidebarToggleButton } from "@/components/loja/sidebar";
 import { WhatsappSuporteButton } from "@/components/loja/whatsapp-suporte-button";
-import { getDepartamentosComContagem, getEmpresaPorSlug } from "@/lib/catalogo";
+import { getDepartamentosComContagem, getEmpresaPorSlug, getMarcaCatalogo } from "@/lib/catalogo";
 
 export const revalidate = 300; // dados de branding mudam raramente
 
@@ -24,7 +24,10 @@ export default async function LojaLayout({
 
   if (!empresa) notFound();
 
-  const departamentos = await getDepartamentosComContagem(empresa.id);
+  const [departamentos, marca] = await Promise.all([
+    getDepartamentosComContagem(empresa.id),
+    getMarcaCatalogo(empresa.id),
+  ]);
 
   const corPrimaria = empresa.cor_primaria ?? "#0087FD";
   const corSecundaria = empresa.cor_secundaria ?? "#F74D05";
@@ -43,7 +46,7 @@ export default async function LojaLayout({
     >
       <FavoritosProvider slug={slug} empresaId={empresa.id}>
         <SidebarProvider>
-          <Sidebar departamentos={departamentos} slug={slug} moderno={moderno} />
+          <Sidebar departamentos={departamentos} slug={slug} moderno={moderno} marca={marca.site_sidebar} nomeEmpresa={empresa.nome} />
 
           {/* min-w-0 é obrigatório aqui: item flex numa linha não encolhe abaixo do
               min-content do próprio conteúdo por padrão (min-width:auto), então sem
@@ -60,10 +63,10 @@ export default async function LojaLayout({
                   </div>
 
                   <Link href={`/loja/${slug}`} className="flex min-w-0 items-center justify-center justify-self-center">
-                    {empresa.logo_url ? (
+                    {marca.site_header.url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={empresa.logo_url}
+                        src={marca.site_header.url}
                         alt={empresa.nome}
                         className="h-10 max-w-[160px] shrink-0 object-contain"
                       />

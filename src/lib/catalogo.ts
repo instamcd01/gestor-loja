@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import type { BannerCatalogo, CategoriaCatalogo, EmpresaCatalogo, ProdutoCatalogo, VarianteProduto } from "@/lib/types";
+import type {
+  BannerCatalogo,
+  CategoriaCatalogo,
+  EmpresaCatalogo,
+  MarcaPosicaoCatalogo,
+  ProdutoCatalogo,
+  VarianteProduto,
+} from "@/lib/types";
 import { chaveOrdenacaoRotulo, extrairPeso } from "@/lib/variantes";
 
 /**
@@ -60,6 +67,40 @@ export async function getBannersCatalogo(empresaId: string): Promise<BannerCatal
     return [];
   }
   return data ?? [];
+}
+
+/**
+ * O que mostrar em cada posição de marca do site (header/sidebar) — kit de
+ * marca configurado no app Gestor (Configurações > Kit de Marca, só dono).
+ * `catalogo_marca_publico` já resolve o join posição→ativo; posição sem
+ * linha configurada (empresa nunca abriu a tela) cai no default abaixo.
+ */
+export async function getMarcaCatalogo(
+  empresaId: string,
+): Promise<Record<"site_header" | "site_sidebar", MarcaPosicaoCatalogo>> {
+  const padrao: Record<"site_header" | "site_sidebar", MarcaPosicaoCatalogo> = {
+    site_header: { modo: "texto", url: null },
+    site_sidebar: { modo: "texto", url: null },
+  };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_marca_publico")
+    .select("posicao, modo, url")
+    .eq("empresa_id", empresaId);
+
+  if (error) {
+    console.error("Erro ao buscar kit de marca:", error.message);
+    return padrao;
+  }
+
+  for (const linha of data ?? []) {
+    const posicao: string = linha.posicao;
+    if (posicao === "site_header" || posicao === "site_sidebar") {
+      padrao[posicao] = { modo: linha.modo, url: linha.url };
+    }
+  }
+  return padrao;
 }
 
 export async function getProdutosCatalogo(

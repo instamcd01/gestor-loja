@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { DepartamentoComContagem } from "@/lib/catalogo";
+import type { MarcaPosicaoCatalogo } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,17 @@ function useSidebarContext() {
   return contexto;
 }
 
+/** Topo da sidebar — imagem configurada pro Kit de Marca (posição "Barra lateral do site") ou o nome da loja em texto. */
+function MarcaSidebar({ marca, nomeEmpresa }: { marca: MarcaPosicaoCatalogo; nomeEmpresa: string }) {
+  if (!marca.url) {
+    return <span className="min-w-0 truncate text-sm font-semibold">{nomeEmpresa}</span>;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={marca.url} alt={nomeEmpresa} className="h-9 max-w-[160px] shrink-0 object-contain" />
+  );
+}
+
 /** Ícone de hambúrguer no header — só visível no mobile (desktop já mostra a barra fixa). */
 export function SidebarToggleButton() {
   const { abrir } = useSidebarContext();
@@ -85,10 +97,14 @@ export function Sidebar({
   departamentos,
   slug,
   moderno,
+  marca,
+  nomeEmpresa,
 }: {
   departamentos: DepartamentoComContagem[];
   slug: string;
   moderno: boolean;
+  marca: MarcaPosicaoCatalogo;
+  nomeEmpresa: string;
 }) {
   // "montada" só vira true dentro do clique que abre a gaveta pela primeira
   // vez (ver SidebarProvider.abrir) — no carregamento inicial o painel nem
@@ -121,12 +137,12 @@ export function Sidebar({
             )}
           >
             <div className="flex items-center justify-between border-b border-black/5 p-4 dark:border-white/10">
-              <span className="text-sm font-semibold">Menu</span>
+              <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
               <button
                 type="button"
                 onClick={fechar}
                 aria-label="Fechar menu"
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -140,6 +156,9 @@ export function Sidebar({
 
       {/* Desktop — coluna fixa, sempre visível. */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/5 lg:flex dark:border-white/10">
+        <div className="border-b border-black/5 p-4 dark:border-white/10">
+          <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
+        </div>
         {conteudo}
       </aside>
     </>
@@ -226,7 +245,11 @@ function SidebarConteudo({
         </div>
       )}
 
-      <div className="mt-auto flex flex-col gap-0.5 border-t border-black/5 pt-3 dark:border-white/10">
+      {/* Sem mt-auto de propósito: a coluna é sticky h-screen (altura da tela
+          inteira), então empurrar esse bloco pro fundo deixava um vão enorme
+          no meio sempre que a lista de departamentos era mais curta que a
+          tela — menu agora segue direto depois dos departamentos. */}
+      <div className="mt-4 flex flex-col gap-0.5 border-t border-black/5 pt-3 dark:border-white/10">
         <Link href={`/loja/${slug}/${logado ? "conta" : "entrar"}`} onClick={onNavegar} className={linkClasse(false, moderno)}>
           {logado ? "Minha conta" : "Entrar"}
         </Link>
