@@ -70,7 +70,7 @@ export function SeletorMetodoEntrega({
   }
 
   const cartaoBase =
-    "relative flex flex-1 flex-col items-start gap-0.5 rounded-[var(--radius-md)] border p-3 text-left transition-colors";
+    "relative flex w-full items-center justify-between gap-3 rounded-[var(--radius-md)] border p-3 text-left transition-colors";
   function cartao(ativo: boolean) {
     return `${cartaoBase} ${
       ativo ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10" : "border-black/10 dark:border-white/10"
@@ -82,35 +82,41 @@ export function SeletorMetodoEntrega({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-semibold">Quando você quer receber?</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         <button type="button" onClick={() => selecionar("expressa")} className={cartao(metodo === "expressa")}>
           {gratis && <span className={selo}>Grátis</span>}
-          <span className="text-sm font-medium">Expressa</span>
-          <span className="text-xs text-black/60 dark:text-white/60">
-            {estimativaExpressa ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min` : "A mais rápida"}
-          </span>
-          <span className="mt-1 text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium">Expressa</span>
+            <span className="text-xs text-black/60 dark:text-white/60">
+              {estimativaExpressa ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min` : "A mais rápida"}
+            </span>
+          </div>
+          <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
         </button>
 
         {economicoValor != null && (
           <button type="button" onClick={() => selecionar("economica")} className={cartao(metodo === "economica")}>
             {gratis && <span className={selo}>Grátis</span>}
-            <span className="text-sm font-medium">Econômica</span>
-            <span className="text-xs text-black/60 dark:text-white/60">
-              {economicoPrazoDias != null
-                ? `Chega até ${formatarDataPrevista(calcularDataUtilFutura(economicoPrazoDias))}`
-                : "Mais barata"}
-            </span>
-            <span className="mt-1 text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(economicoValor)}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium">Econômica</span>
+              <span className="text-xs text-black/60 dark:text-white/60">
+                {economicoPrazoDias != null
+                  ? `Chega até ${formatarDataPrevista(calcularDataUtilFutura(economicoPrazoDias))}`
+                  : "Mais barata"}
+              </span>
+            </div>
+            <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(economicoValor)}</span>
           </button>
         )}
 
         {opcoesData.length > 0 && (
           <button type="button" onClick={() => selecionar("agendada")} className={cartao(metodo === "agendada")}>
             {gratis && <span className={selo}>Grátis</span>}
-            <span className="text-sm font-medium">Agendada</span>
-            <span className="text-xs text-black/60 dark:text-white/60">Você escolhe o dia e horário</span>
-            <span className="mt-1 text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium">Agendada</span>
+              <span className="text-xs text-black/60 dark:text-white/60">Você escolhe o dia e horário</span>
+            </div>
+            <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
           </button>
         )}
       </div>
