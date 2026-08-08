@@ -116,14 +116,17 @@ export async function getMarcaCatalogo(
 
 /**
  * Só a contagem (head:true, zero linhas trafegadas) — usada no resumo
- * "X produtos" da home/tela de espécie SEM outro filtro, onde
- * `getProdutosHomeAgrupados` já traz uma amostra por categoria, não o
- * catálogo inteiro (ver comentário lá). `especie` opcional restringe a
- * mesma contagem pras telas de Cães/Gatos/Pássaros/Outros. Com filtro de
- * categoria/departamento/busca ativo, o componente usa `produtos.length`
- * direto, não esta função.
+ * "X produtos" da home/tela de espécie/departamento sem categoria final
+ * escolhida, onde `getProdutosHomeAgrupados` já traz uma amostra por
+ * categoria, não o conjunto inteiro (ver comentário lá). `especie`/
+ * `departamento` opcionais restringem a mesma contagem. Com uma categoria
+ * final (ou busca/marca/fase/faixa de preço) ativa, o componente usa
+ * `produtos.length` direto, não esta função.
  */
-export async function getContagemProdutosCatalogo(empresaId: string, especie?: string): Promise<number> {
+export async function getContagemProdutosCatalogo(
+  empresaId: string,
+  filtros?: { especie?: string; departamento?: string },
+): Promise<number> {
   const supabase = await createClient();
   let query = supabase
     .from("catalogo_produtos_publico")
@@ -131,8 +134,14 @@ export async function getContagemProdutosCatalogo(empresaId: string, especie?: s
     .eq("empresa_id", empresaId)
     .is("produto_pai_id", null);
 
-  if (especie) {
-    query = query.ilike("especie", `%${especie}%`);
+  if (filtros?.especie) {
+    query = query.ilike("especie", `%${filtros.especie}%`);
+  }
+  if (filtros?.departamento) {
+    const categoriasDoDept = await getCategoriasDoDepartamento(empresaId, filtros.departamento);
+    if (categoriasDoDept.length > 0) {
+      query = query.in("categoria", categoriasDoDept);
+    }
   }
 
   const { count, error } = await query;
@@ -145,31 +154,41 @@ export async function getContagemProdutosCatalogo(empresaId: string, especie?: s
 }
 
 /**
- * Home do catálogo (ou tela de espécie Cães/Gatos/Pássaros/Outros) SEM
- * outro filtro: em vez de trazer os ~424 produtos-pai da empresa inteira
- * pra montar as seções por categoria (o que a página fazia antes — todo o
- * catálogo renderizado de uma vez, achado como a causa real de lentidão
- * persistente mesmo depois de otimizar as demais consultas), traz só as
- * `limitePorCategoria` primeiras opções de CADA categoria (ordenadas por
- * destaque/nome, mesmo critério do catálogo completo) numa única ida ao
- * banco — RPC `catalogo_produtos_home` usa `row_number() over (partition
- * by categoria ...)` no Postgres em vez de N consultas (uma por
- * categoria) ou trazer tudo pra filtrar em JS. `especie` opcional (mesmo
- * `ilike` de substring já usado em `getProdutosCatalogo`) restringe as
- * linhas às espécies daquele animal. Categoria inteira só é buscada por
- * completo quando o cliente clica em "Ver mais" (cai no fluxo já
- * existente de `?categoria=`, preservando `?especie=` quando presente).
+ * Home do catálogo, tela de espécie (Cães/Gatos/Pássaros/Outros) ou "Tudo
+ * em {departamento}" SEM categoria final escolhida: em vez de trazer todo
+ * o conjunto (até ~424 produtos-pai na home solta) pra montar as seções
+ * por categoria — o que a página fazia antes, achado como a causa real de
+ * lentidão persistente mesmo depois de otimizar as demais consultas —
+ * traz só as `limitePorCategoria` primeiras opções de CADA categoria
+ * (ordenadas por destaque/nome, mesmo critério do catálogo completo) numa
+ * única ida ao banco — RPC `catalogo_produtos_home` usa `row_number()
+ * over (partition by categoria ...)` no Postgres em vez de N consultas
+ * (uma por categoria) ou trazer tudo pra filtrar em JS. `especie`
+ * restringe por espécie do animal; `departamento` resolve a lista de
+ * categorias daquele departamento (mesmo helper que `getProdutosCatalogo`
+ * usa no filtro flat) e passa pra RPC filtrar só essas. Categoria
+ * específica só é buscada por completo quando o cliente clica em "Ver
+ * mais" (cai no fluxo já existente de `?categoria=`, preservando
+ * `?especie=`/`?departamento=` quando presentes).
  */
 export async function getProdutosHomeAgrupados(
   empresaId: string,
   limitePorCategoria = 10,
-  especie?: string,
+  filtros?: { especie?: string; departamento?: string },
 ): Promise<ProdutoCatalogo[]> {
   const supabase = await createClient();
+
+  let categorias: string[] | null = null;
+  if (filtros?.departamento) {
+    const categoriasDoDept = await getCategoriasDoDepartamento(empresaId, filtros.departamento);
+    categorias = categoriasDoDept.length > 0 ? categoriasDoDept : null;
+  }
+
   const { data, error } = await supabase.rpc("catalogo_produtos_home", {
     p_empresa_id: empresaId,
     p_limite_por_categoria: limitePorCategoria,
-    p_especie: especie ?? null,
+    p_especie: filtros?.especie ?? null,
+    p_categorias: categorias,
   });
 
   if (error) {

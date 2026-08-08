@@ -60,16 +60,15 @@ export default async function LojaPage({
   const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
   const moderno = empresa.catalogo_modelo === "moderno";
 
-  // Linhas por categoria (CategoriasEmLinha) valem tanto pra home solta
-  // quanto pra tela de espécie (Cães/Gatos/Pássaros/Outros) — nos dois
-  // casos não há um recorte fino o bastante pra justificar buscar a lista
-  // completa só pra jogar fora e usar apenas a contagem. Qualquer OUTRO
-  // filtro (busca, departamento, categoria, marca, fase, faixa de preço)
-  // ou ordenação explícita precisa da lista real (grade plana renderiza
-  // exatamente o que veio), então busca completa mesmo nesses casos.
-  const outrosFiltrosAlemDeEspecie =
-    !!q || !!departamento || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
-  const usaLinhasPorCategoria = !outrosFiltrosAlemDeEspecie;
+  // Linhas por categoria (CategoriasEmLinha) valem pra home solta, pra tela
+  // de espécie (Cães/Gatos/Pássaros/Outros) E pra "Tudo em {departamento}"
+  // (departamento setado mas sem categoria final escolhida ainda) — nos 3
+  // casos ainda não há um recorte fino o bastante pra justificar buscar a
+  // lista completa só pra jogar fora e usar apenas a contagem. Só quando
+  // uma CATEGORIA final (ou busca/marca/fase/faixa de preço/ordenação) é
+  // escolhida a grade plana precisa da lista real (é o que ela renderiza).
+  const exigeGradeFinal = !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
+  const usaLinhasPorCategoria = !exigeGradeFinal;
 
   const [produtos, totalSemOutrosFiltros, { marcas, especies, fases, faixasPreco }, freteGratisMinimo, banners] =
     await Promise.all([
@@ -86,7 +85,7 @@ export default async function LojaPage({
             precoMax: precoMax ? Number(precoMax) : undefined,
             ordenar,
           }),
-      usaLinhasPorCategoria ? getContagemProdutosCatalogo(empresa.id, especie) : Promise.resolve(0),
+      usaLinhasPorCategoria ? getContagemProdutosCatalogo(empresa.id, { especie, departamento }) : Promise.resolve(0),
       getFiltrosCatalogo(empresa.id),
       getMenorValorFreteGratis(empresa.id),
       getBannersCatalogo(empresa.id),
@@ -168,6 +167,7 @@ export default async function LojaPage({
             enderecoEmpresa={enderecoEmpresa}
             moderno={moderno}
             especie={especie}
+            departamento={departamento}
           />
         </Suspense>
       ) : (

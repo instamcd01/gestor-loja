@@ -3,13 +3,14 @@ import { ProdutoCard } from "@/components/produto-card";
 import { getProdutosHomeAgrupados, getVariantesEmLote } from "@/lib/catalogo";
 
 /**
- * Home do catálogo (ou tela de espécie Cães/Gatos/Pássaros/Outros) sem
- * outro filtro, estilo iFood: cada categoria vira uma linha com scroll
- * horizontal (só uma amostra de produtos) + "Ver mais" pra tela filtrada
- * daquela categoria — em vez da grade vertical antiga, que renderizava o
- * catálogo (ou toda a espécie) inteiro numa carga só. Server Component
- * assíncrono próprio (mesmo motivo de `grade-de-produtos.tsx`: poder
- * streamar dentro de um <Suspense> sem bloquear o resto da página).
+ * Home do catálogo, tela de espécie (Cães/Gatos/Pássaros/Outros) ou "Tudo
+ * em {departamento}" (sem categoria final escolhida ainda), estilo iFood:
+ * cada categoria vira uma linha com scroll horizontal (só uma amostra de
+ * produtos) + "Ver mais" pra tela filtrada daquela categoria — em vez da
+ * grade vertical antiga, que renderizava o conjunto inteiro numa carga só.
+ * Server Component assíncrono próprio (mesmo motivo de
+ * `grade-de-produtos.tsx`: poder streamar dentro de um <Suspense> sem
+ * bloquear o resto da página).
  */
 export async function CategoriasEmLinha({
   slug,
@@ -17,6 +18,7 @@ export async function CategoriasEmLinha({
   enderecoEmpresa,
   moderno,
   especie,
+  departamento,
 }: {
   slug: string;
   empresaId: string;
@@ -24,11 +26,15 @@ export async function CategoriasEmLinha({
   moderno: boolean;
   /** Restringe as linhas à espécie escolhida (Cães/Gatos/Pássaros/Outros) — mesma tela de casa, só filtrada. */
   especie?: string;
+  /** Restringe as linhas às categorias do departamento escolhido ("Tudo em X" do menu). */
+  departamento?: string;
 }) {
-  const produtos = await getProdutosHomeAgrupados(empresaId, 10, especie);
+  const produtos = await getProdutosHomeAgrupados(empresaId, 10, { especie, departamento });
   const variantesPorPai = await getVariantesEmLote(empresaId, produtos);
   const destino = `/loja/${slug}`;
-  const sufixoEspecie = especie ? `&especie=${encodeURIComponent(especie)}` : "";
+  const sufixoFiltros =
+    (especie ? `&especie=${encodeURIComponent(especie)}` : "") +
+    (departamento ? `&departamento=${encodeURIComponent(departamento)}` : "");
 
   const porCategoria = new Map<string, typeof produtos>();
   for (const produto of produtos) {
@@ -43,7 +49,7 @@ export async function CategoriasEmLinha({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">{categoria}</h2>
             <Link
-              href={`${destino}?categoria=${encodeURIComponent(categoria)}${sufixoEspecie}`}
+              href={`${destino}?categoria=${encodeURIComponent(categoria)}${sufixoFiltros}`}
               className="shrink-0 text-sm font-medium text-[var(--brand-primary)] hover:underline"
             >
               Ver mais →
