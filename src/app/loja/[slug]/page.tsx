@@ -12,10 +12,7 @@ import { SelosConfianca } from "@/components/selos-confianca";
 import {
   getBannersCatalogo,
   getEmpresaPorSlug,
-  getEspeciesComContagem,
-  getFaixasPrecoComContagem,
-  getFasesComContagem,
-  getMarcasComContagem,
+  getFiltrosCatalogo,
   getMenorValorFreteGratis,
   getProdutosCatalogo,
   getVariantesEmLote,
@@ -61,7 +58,7 @@ export default async function LojaPage({
   const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
   const moderno = empresa.catalogo_modelo === "moderno";
 
-  const [produtos, marcas, especies, fases, faixasPreco, freteGratisMinimo, banners] = await Promise.all([
+  const [produtos, { marcas, especies, fases, faixasPreco }, freteGratisMinimo, banners] = await Promise.all([
     getProdutosCatalogo(empresa.id, {
       busca: q,
       departamento,
@@ -73,10 +70,7 @@ export default async function LojaPage({
       precoMax: precoMax ? Number(precoMax) : undefined,
       ordenar,
     }),
-    getMarcasComContagem(empresa.id),
-    getEspeciesComContagem(empresa.id),
-    getFasesComContagem(empresa.id),
-    getFaixasPrecoComContagem(empresa.id),
+    getFiltrosCatalogo(empresa.id),
     getMenorValorFreteGratis(empresa.id),
     getBannersCatalogo(empresa.id),
   ]);

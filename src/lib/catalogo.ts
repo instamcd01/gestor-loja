@@ -372,62 +372,6 @@ export interface FaixaPreco {
   total: number;
 }
 
-export async function getFaixasPrecoComContagem(empresaId: string): Promise<FaixaPreco[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("catalogo_produtos_publico")
-    .select("preco")
-    .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null);
-
-  if (error) {
-    console.error("Erro ao buscar faixas de preço:", error.message);
-    return [];
-  }
-
-  return FAIXAS_PRECO_BASE.map((faixa) => ({
-    ...faixa,
-    total: (data ?? []).filter(
-      ({ preco }) => preco >= faixa.min && (faixa.max == null || preco < faixa.max),
-    ).length,
-  })).filter((faixa) => faixa.total > 0);
-}
-
-/**
- * "Marca" pro cliente é a marca/fabricante de verdade (Vetnil, Ourofino,
- * Agener União...) — lê `fabricante`, não `produtos.marca`, que nesse
- * banco historicamente guarda o FORNECEDOR/distribuidora (Tecnew,
- * Seropec, Pet2Pet...), não uma marca que o cliente reconheceria (ver
- * [[gestor_padrao_nome_produto]]). Mantém o nome da função/formato de
- * retorno (`marca`) porque é assim que a UI já trata o conceito.
- */
-export async function getMarcasComContagem(
-  empresaId: string,
-): Promise<{ marca: string; total: number }[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("catalogo_produtos_publico")
-    .select("fabricante")
-    .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
-    .not("fabricante", "is", null);
-
-  if (error) {
-    console.error("Erro ao buscar marcas com contagem:", error.message);
-    return [];
-  }
-
-  const contagem = new Map<string, number>();
-  for (const { fabricante } of data ?? []) {
-    if (!fabricante) continue;
-    contagem.set(fabricante, (contagem.get(fabricante) ?? 0) + 1);
-  }
-
-  return [...contagem.entries()]
-    .map(([marca, total]) => ({ marca, total }))
-    .sort((a, b) => b.total - a.total);
-}
-
 /**
  * Espécie/fase são texto livre no banco ("Cães", "Cães e Gatos", "Cães
  * Geriátricos", "Adultos", "Sênior +7"...) — em vez de listar cada
@@ -438,50 +382,70 @@ export async function getMarcasComContagem(
 const ESPECIES_FILTRO = ["Cães", "Gatos", "Pássaros"];
 const FASES_FILTRO = ["Filhotes", "Adultos", "Sênior", "Castrados"];
 
-export async function getEspeciesComContagem(
-  empresaId: string,
-): Promise<{ especie: string; total: number }[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("catalogo_produtos_publico")
-    .select("especie")
-    .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
-    .not("especie", "is", null);
-
-  if (error) {
-    console.error("Erro ao buscar espécies com contagem:", error.message);
-    return [];
-  }
-
-  const valores = (data ?? []).map((linha) => linha.especie ?? "");
-  return ESPECIES_FILTRO.map((especie) => ({
-    especie,
-    total: valores.filter((v) => v.toLowerCase().includes(especie.toLowerCase())).length,
-  })).filter((linha) => linha.total > 0);
+export interface FiltrosCatalogo {
+  faixasPreco: FaixaPreco[];
+  marcas: { marca: string; total: number }[];
+  especies: { especie: string; total: number }[];
+  fases: { fase: string; total: number }[];
 }
 
-export async function getFasesComContagem(
-  empresaId: string,
-): Promise<{ fase: string; total: number }[]> {
+/**
+ * Contagem pros 4 filtros da grade (preço/marca/espécie/fase) numa ÚNICA
+ * consulta em vez de 4 separadas — as 4 antigas (`getFaixasPrecoComContagem`,
+ * `getMarcasComContagem`, `getEspeciesComContagem`, `getFasesComContagem`)
+ * liam exatamente a mesma tabela com o mesmo filtro (`empresa_id` +
+ * "só produto-pai"), cada uma trazendo só 1 coluna — 4 idas ao Postgres
+ * fazendo essencialmente o mesmo scan. Achado investigando TTFB de ~1,5s
+ * na home do catálogo (reportado como "site lento"). Toda a agregação
+ * continua em memória (JS), só a busca virou uma só.
+ */
+export async function getFiltrosCatalogo(empresaId: string): Promise<FiltrosCatalogo> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("fase")
+    .select("preco, fabricante, especie, fase")
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
-    .not("fase", "is", null);
+    .is("produto_pai_id", null);
 
   if (error) {
-    console.error("Erro ao buscar fases com contagem:", error.message);
-    return [];
+    console.error("Erro ao buscar filtros do catálogo:", error.message);
+    return { faixasPreco: [], marcas: [], especies: [], fases: [] };
   }
 
-  const valores = (data ?? []).map((linha) => linha.fase ?? "");
-  return FASES_FILTRO.map((fase) => ({
+  const linhas = data ?? [];
+
+  const faixasPreco = FAIXAS_PRECO_BASE.map((faixa) => ({
+    ...faixa,
+    total: linhas.filter(({ preco }) => preco >= faixa.min && (faixa.max == null || preco < faixa.max)).length,
+  })).filter((faixa) => faixa.total > 0);
+
+  // "Marca" pro cliente é a marca/fabricante de verdade (Vetnil, Ourofino,
+  // Agener União...) — lê `fabricante`, não `produtos.marca`, que nesse
+  // banco historicamente guarda o FORNECEDOR/distribuidora (Tecnew,
+  // Seropec, Pet2Pet...), não uma marca que o cliente reconheceria (ver
+  // [[gestor_padrao_nome_produto]]).
+  const contagemMarcas = new Map<string, number>();
+  for (const { fabricante } of linhas) {
+    if (!fabricante) continue;
+    contagemMarcas.set(fabricante, (contagemMarcas.get(fabricante) ?? 0) + 1);
+  }
+  const marcas = [...contagemMarcas.entries()]
+    .map(([marca, total]) => ({ marca, total }))
+    .sort((a, b) => b.total - a.total);
+
+  const valoresEspecie = linhas.map((l) => l.especie ?? "");
+  const especies = ESPECIES_FILTRO.map((especie) => ({
+    especie,
+    total: valoresEspecie.filter((v) => v.toLowerCase().includes(especie.toLowerCase())).length,
+  })).filter((l) => l.total > 0);
+
+  const valoresFase = linhas.map((l) => l.fase ?? "");
+  const fases = FASES_FILTRO.map((fase) => ({
     fase,
-    total: valores.filter((v) => v.toLowerCase().includes(fase.toLowerCase())).length,
-  })).filter((linha) => linha.total > 0);
+    total: valoresFase.filter((v) => v.toLowerCase().includes(fase.toLowerCase())).length,
+  })).filter((l) => l.total > 0);
+
+  return { faixasPreco, marcas, especies, fases };
 }
 
 /**
