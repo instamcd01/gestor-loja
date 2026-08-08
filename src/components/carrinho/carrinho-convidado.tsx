@@ -114,7 +114,7 @@ export function CarrinhoConvidado({
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {itens.map((item) => (
-          <div key={item.produtoId} className="flex items-center gap-4 py-4">
+          <div key={item.produtoId} className="flex gap-3 py-4">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
               <ProdutoImagem
                 src={item.imagemUrl}
@@ -124,64 +124,68 @@ export function CarrinhoConvidado({
               />
             </div>
 
-            <div className="flex-1">
-              <p className="text-sm font-medium">{item.nome}</p>
-              <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)} cada</p>
-            </div>
-
-            {confirmandoRemocaoId === item.produtoId ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-black/60 dark:text-white/60">Remover?</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmandoRemocaoId(null);
-                    mudarQuantidade(item.produtoId, 0);
-                  }}
-                  className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
-                >
-                  Sim
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmandoRemocaoId(null)}
-                  className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
-                >
-                  Não
-                </button>
+            {/* Mesmo layout do ItemCarrinhoRow (carrinho logado): nome em
+                cima ocupando a largura toda, quantidade e subtotal numa
+                segunda linha embaixo — evita nome grande apertar/desalinhar
+                o resto quando quebra em mais de uma linha. */}
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div>
+                <p className="text-sm leading-snug font-medium">{item.nome}</p>
+                <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)} cada</p>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
+
+              {confirmandoRemocaoId === item.produtoId ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-black/60 dark:text-white/60">Remover item?</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      item.quantidade === 1
-                        ? setConfirmandoRemocaoId(item.produtoId)
-                        : mudarQuantidade(item.produtoId, item.quantidade - 1)
-                    }
-                    className="flex h-7 w-7 items-center justify-center text-lg leading-none"
-                    aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+                    onClick={() => {
+                      setConfirmandoRemocaoId(null);
+                      mudarQuantidade(item.produtoId, 0);
+                    }}
+                    className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
                   >
-                    {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+                    Sim
                   </button>
-                  <span className="w-6 text-center text-sm">{item.quantidade}</span>
                   <button
                     type="button"
-                    onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
-                    disabled={item.quantidade >= item.estoqueDisponivel}
-                    className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
-                    aria-label="Aumentar quantidade"
+                    onClick={() => setConfirmandoRemocaoId(null)}
+                    className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
                   >
-                    +
+                    Não
                   </button>
                 </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        item.quantidade === 1
+                          ? setConfirmandoRemocaoId(item.produtoId)
+                          : mudarQuantidade(item.produtoId, item.quantidade - 1)
+                      }
+                      className="flex h-7 w-7 items-center justify-center text-lg leading-none"
+                      aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+                    >
+                      {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+                    </button>
+                    <span className="w-6 text-center text-sm">{item.quantidade}</span>
+                    <button
+                      type="button"
+                      onClick={() => mudarQuantidade(item.produtoId, item.quantidade + 1)}
+                      disabled={item.quantidade >= item.estoqueDisponivel}
+                      className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
+                      aria-label="Aumentar quantidade"
+                    >
+                      +
+                    </button>
+                  </div>
 
-                <span className="w-20 text-right text-sm font-semibold">
-                  {formatarPreco(item.preco * item.quantidade)}
-                </span>
-              </>
-            )}
+                  <span className="text-sm font-semibold">{formatarPreco(item.preco * item.quantidade)}</span>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </Card>

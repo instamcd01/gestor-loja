@@ -16,7 +16,7 @@ export function ItemCarrinhoRow({
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
 
   return (
-    <div className="flex items-center gap-4 py-4">
+    <div className="flex gap-3 py-4">
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
         <ProdutoImagem
           src={item.produto?.imagem_url ?? null}
@@ -26,64 +26,68 @@ export function ItemCarrinhoRow({
         />
       </div>
 
-      <div className="flex-1">
-        <p className="text-sm font-medium">{item.produto?.nome ?? "Produto"}</p>
-        <p className="text-xs text-black/50 dark:text-white/50">
-          {formatarPreco(item.preco_unitario)} cada
-        </p>
-      </div>
-
-      {confirmandoRemocao ? (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-black/60 dark:text-white/60">Remover?</span>
-          <button
-            type="button"
-            onClick={() => {
-              setConfirmandoRemocao(false);
-              onAlterarQuantidade(item.id, 0);
-            }}
-            className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
-          >
-            Sim
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmandoRemocao(false)}
-            className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
-          >
-            Não
-          </button>
+      {/* Nome em cima, ocupando a largura toda (quebra em quantas linhas
+          precisar) — quantidade e subtotal numa segunda linha embaixo, em
+          vez de tudo numa única linha flex, que apertava/desalinhava a
+          quantidade e o preço quando o nome do produto era grande. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div>
+          <p className="text-sm leading-snug font-medium">{item.produto?.nome ?? "Produto"}</p>
+          <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco_unitario)} cada</p>
         </div>
-      ) : (
-        <>
-          <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
+
+        {confirmandoRemocao ? (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-black/60 dark:text-white/60">Remover item?</span>
             <button
               type="button"
-              onClick={() =>
-                item.quantidade === 1
-                  ? setConfirmandoRemocao(true)
-                  : onAlterarQuantidade(item.id, item.quantidade - 1)
-              }
-              className="flex h-7 w-7 items-center justify-center text-lg leading-none"
-              aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+              onClick={() => {
+                setConfirmandoRemocao(false);
+                onAlterarQuantidade(item.id, 0);
+              }}
+              className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
             >
-              {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+              Sim
             </button>
-            <span className="w-6 text-center text-sm">{item.quantidade}</span>
             <button
               type="button"
-              onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
-              disabled={item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
-              className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
-              aria-label="Aumentar quantidade"
+              onClick={() => setConfirmandoRemocao(false)}
+              className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
             >
-              +
+              Não
             </button>
           </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center rounded-full border border-black/10 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() =>
+                  item.quantidade === 1
+                    ? setConfirmandoRemocao(true)
+                    : onAlterarQuantidade(item.id, item.quantidade - 1)
+                }
+                className="flex h-7 w-7 items-center justify-center text-lg leading-none"
+                aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+              >
+                {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+              </button>
+              <span className="w-6 text-center text-sm">{item.quantidade}</span>
+              <button
+                type="button"
+                onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
+                disabled={item.quantidade >= (item.produto?.estoque_disponivel ?? item.quantidade)}
+                className="flex h-7 w-7 items-center justify-center text-lg leading-none disabled:opacity-30"
+                aria-label="Aumentar quantidade"
+              >
+                +
+              </button>
+            </div>
 
-          <span className="w-20 text-right text-sm font-semibold">{formatarPreco(item.subtotal)}</span>
-        </>
-      )}
+            <span className="text-sm font-semibold">{formatarPreco(item.subtotal)}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
