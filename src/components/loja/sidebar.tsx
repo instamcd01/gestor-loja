@@ -185,6 +185,15 @@ function SidebarConteudo({
   const categoriaAtiva = noCatalogo ? searchParams.get("categoria") : null;
   const temBusca = noCatalogo && !!searchParams.get("q");
 
+  // Expandir/recolher a lista de subcategorias é só um toggle local, sem
+  // navegação — clicar no nome do departamento não deve mais disparar uma
+  // ida ao servidor (era a causa real da demora: mudar a URL pra `?departamento=X`
+  // reprocessava a página inteira, incluindo a busca de produtos, só pra
+  // revelar o menu; escolher a subcategoria final navegava de novo, dobrando
+  // o trabalho). Inicializa a partir da URL (chega direto numa categoria
+  // filtrada já expandida), depois só o clique manual muda.
+  const [departamentoExpandido, setDepartamentoExpandido] = useState<string | null>(() => departamentoAtivo);
+
   const sair = useCallback(async () => {
     setSaindo(true);
     const supabase = createClient();
@@ -203,24 +212,43 @@ function SidebarConteudo({
           </Link>
           {departamentos.map((d) => {
             const ativo = departamentoAtivo === d.nome;
+            const temSubcategorias = d.categorias.length > 1;
+            const expandido = departamentoExpandido === d.nome;
             return (
               <div key={d.nome}>
-                <Link
-                  href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
-                  // Só fecha a gaveta se não houver subcategoria pra revelar — clicar num
-                  // departamento com mais de 1 categoria deve abrir o refinamento abaixo
-                  // dele, não sumir com o menu antes da pessoa conseguir escolher.
-                  onClick={d.categorias.length > 1 ? undefined : onNavegar}
-                  className={linkClasse(ativo, moderno)}
-                >
-                  {d.nome}
-                </Link>
-                {ativo && d.categorias.length > 1 && (
+                {temSubcategorias ? (
+                  <button
+                    type="button"
+                    onClick={() => setDepartamentoExpandido((atual) => (atual === d.nome ? null : d.nome))}
+                    className={cn(linkClasse(ativo, moderno), "flex w-full items-center justify-between gap-2 text-left")}
+                  >
+                    {d.nome}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      className={cn("h-3.5 w-3.5 shrink-0 transition-transform", expandido && "rotate-180")}
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                ) : (
+                  <Link
+                    href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
+                    onClick={onNavegar}
+                    className={linkClasse(ativo, moderno)}
+                  >
+                    {d.nome}
+                  </Link>
+                )}
+                {temSubcategorias && expandido && (
                   <div className="mt-0.5 mb-1 ml-3 flex flex-col gap-0.5 border-l border-black/10 pl-3 dark:border-white/10">
                     <Link
                       href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
                       onClick={onNavegar}
-                      className={subLinkClasse(!categoriaAtiva)}
+                      className={subLinkClasse(ativo && !categoriaAtiva)}
                     >
                       Tudo em {d.nome}
                     </Link>
@@ -229,7 +257,7 @@ function SidebarConteudo({
                         key={categoria}
                         href={`${destino}?departamento=${encodeURIComponent(d.nome)}&categoria=${encodeURIComponent(categoria)}`}
                         onClick={onNavegar}
-                        className={subLinkClasse(categoriaAtiva === categoria)}
+                        className={subLinkClasse(ativo && categoriaAtiva === categoria)}
                       >
                         {categoria}
                       </Link>
