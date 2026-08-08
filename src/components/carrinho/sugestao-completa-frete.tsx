@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { ProdutoImagem } from "@/components/produto-imagem";
-import { buscarProdutosParaFreteGratis } from "@/lib/produtos-sugeridos";
+import { buscarProdutosComplementares } from "@/lib/produtos-sugeridos";
 import type { ProdutoCatalogo } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
 
+const TAMANHO_PAGINA = 10;
+
 /**
- * Carrossel horizontal (desliza pro lado) em vez de um produto único fixo —
- * dá mais opções pro cliente escolher o que combina, em vez de aceitar ou
- * ignorar uma sugestão só. Prioriza produtos das mesmas categorias já no
- * carrinho (ver buscarProdutosParaFreteGratis). Cada tela do carrinho passa
+ * Carrossel horizontal de produtos COMPLEMENTARES ao carrinho (categorias
+ * diferentes, nunca "mais do mesmo" — ver buscarProdutosComplementares),
+ * pra aumentar o ticket ou ajudar a fechar a venda quando o frete é
+ * objeção. Preço não entra na escolha (nem precisa ser perto do valor
+ * faltante pro frete grátis). Card "Ver mais" no fim busca a próxima
+ * leva em vez de carregar tudo de uma vez. Cada tela do carrinho passa
  * sua PRÓPRIA função de adicionar (`onAdicionar`) — não usa o hook de
  * adicionar-rápido do catálogo de propósito, porque esse hook devolve o
  * carrinho pra uma gaveta separada em vez de atualizar a lista que já está
@@ -19,42 +23,54 @@ import { formatarPreco } from "@/lib/utils";
  */
 export function SugestaoCompletaFrete({
   empresaId,
-  falta,
   categorias,
   idsNoCarrinho,
   onAdicionar,
 }: {
   empresaId: string;
-  falta: number;
   categorias: string[];
   idsNoCarrinho: string[];
   onAdicionar: (produto: ProdutoCatalogo) => void | Promise<void>;
 }) {
-  const [produtos, setProdutos] = useState<ProdutoCatalogo[] | null>(null);
+  const [produtos, setProdutos] = useState<ProdutoCatalogo[]>([]);
+  const [temMais, setTemMais] = useState(false);
+  const [carregandoMais, setCarregandoMais] = useState(false);
   const [adicionandoId, setAdicionandoId] = useState<string | null>(null);
   const [adicionadosIds, setAdicionadosIds] = useState<Set<string>>(new Set());
 
-  // Arredonda a faixa (múltiplos de R$5) antes de refazer a busca — sem
-  // isso, cada centavo que o "falta" muda (ex: cliente mexeu na
-  // quantidade de outro item) disparava uma busca nova.
-  const faixaFalta = Math.ceil(falta / 5) * 5;
   const chaveCategorias = categorias.join(",");
   const chaveExcluir = idsNoCarrinho.join(",");
 
   useEffect(() => {
     let cancelado = false;
-    buscarProdutosParaFreteGratis(empresaId, faixaFalta, categorias, idsNoCarrinho).then((encontrados) => {
-      if (!cancelado) setProdutos(encontrados);
+    buscarProdutosComplementares(empresaId, categorias, idsNoCarrinho, 0, TAMANHO_PAGINA).then((resultado) => {
+      if (cancelado) return;
+      setProdutos(resultado.produtos);
+      setTemMais(resultado.temMais);
     });
     return () => {
       cancelado = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empresaId, faixaFalta, chaveCategorias, chaveExcluir]);
+  }, [empresaId, chaveCategorias, chaveExcluir]);
+
+  async function carregarMais() {
+    setCarregandoMais(true);
+    const resultado = await buscarProdutosComplementares(
+      empresaId,
+      categorias,
+      idsNoCarrinho,
+      produtos.length,
+      TAMANHO_PAGINA,
+    );
+    setProdutos((atual) => [...atual, ...resultado.produtos]);
+    setTemMais(resultado.temMais);
+    setCarregandoMais(false);
+  }
 
   // Não reseta `adicionadosIds` de propósito: uma vez aceita, uma sugestão
-  // não volta a aparecer só porque o valor que falta mudou de novo.
-  const visiveis = (produtos ?? []).filter((produto) => !adicionadosIds.has(produto.id));
+  // não volta a aparecer só porque a lista mudou.
+  const visiveis = produtos.filter((produto) => !adicionadosIds.has(produto.id));
   if (visiveis.length === 0) return null;
 
   async function adicionar(produto: ProdutoCatalogo) {
@@ -66,7 +82,7 @@ export function SugestaoCompletaFrete({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-medium text-black/60 dark:text-white/60">Complete e ganhe frete grátis</p>
+      <p className="text-xs font-medium text-black/60 dark:text-white/60">Combina com o que você já pediu</p>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visiveis.map((produto) => {
           const preco = produto.preco_promocional ?? produto.preco;
@@ -96,6 +112,18 @@ export function SugestaoCompletaFrete({
             </div>
           );
         })}
+
+        {temMais && (
+          <button
+            type="button"
+            onClick={carregarMais}
+            disabled={carregandoMais}
+            className="flex w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border border-dashed border-black/15 text-xs font-medium text-black/60 disabled:opacity-60 dark:border-white/15 dark:text-white/60"
+          >
+            <span className="text-lg leading-none">→</span>
+            {carregandoMais ? "..." : "Ver mais"}
+          </button>
+        )}
       </div>
     </div>
   );

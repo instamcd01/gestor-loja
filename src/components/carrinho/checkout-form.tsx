@@ -5,7 +5,7 @@ import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { SeletorAgendamento } from "@/components/carrinho/seletor-agendamento";
-import { SeletorModalidadeEntrega } from "@/components/carrinho/seletor-modalidade-entrega";
+import { SeletorMetodoEntrega } from "@/components/carrinho/seletor-metodo-entrega";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -118,7 +118,13 @@ export function CheckoutForm({
   const [erroCupom, setErroCupom] = useState<string | null>(null);
   const [janelaAgendamento, setJanelaAgendamento] = useState<JanelaHorarioAgendamento | null>(null);
   const [parcelaEscolhida, setParcelaEscolhida] = useState(1);
-  const [modalidadeEntrega, setModalidadeEntrega] = useState<"expressa" | "economica">("expressa");
+  // Cobre "modalidade" (expressa/econômica) E "quando" (agendada) numa
+  // escolha só — eram dois controles separados antes (relatado como
+  // ambíguo: dava pra escolher "Econômica" e "Quero agora" ao mesmo
+  // tempo, por exemplo). Agendada usa o mesmo preço da expressa —
+  // agendar não é um desconto, só escolhe a hora de chegada.
+  const [metodoEntrega, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">("expressa");
+  const modalidadeEntrega: "expressa" | "economica" = metodoEntrega === "economica" ? "economica" : "expressa";
 
   async function aplicarCupom() {
     if (!cupomTexto.trim()) return;
@@ -387,9 +393,9 @@ export function CheckoutForm({
       )}
 
       {tipoEntrega === "entrega" && freteResolvido && (
-        <SeletorModalidadeEntrega
-          modalidade={modalidadeEntrega}
-          onMudar={setModalidadeEntrega}
+        <SeletorMetodoEntrega
+          metodo={metodoEntrega}
+          onMudarMetodo={setMetodoEntrega}
           valorExpressa={freteResolvido.valor}
           estimativaExpressa={
             freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null
@@ -399,22 +405,23 @@ export function CheckoutForm({
           economicoValor={freteResolvido.economico_valor}
           economicoPrazoDias={freteResolvido.economico_prazo_dias}
           gratis={entregaGratisAgora}
+          horarioFuncionamento={horarioFuncionamento}
+          janela={janelaAgendamento}
+          onMudarJanela={setJanelaAgendamento}
         />
       )}
 
-      <SeletorAgendamento
-        horarioFuncionamento={horarioFuncionamento}
-        janela={janelaAgendamento}
-        onMudarJanela={setJanelaAgendamento}
-        estimativa={
-          modalidadeEntrega === "expressa" &&
-          freteResolvido &&
-          freteResolvido.estimativa_min_min != null &&
-          freteResolvido.estimativa_min_max != null
-            ? { min: freteResolvido.estimativa_min_min, max: freteResolvido.estimativa_min_max }
-            : null
-        }
-      />
+      {/* Retirada não tem modalidade (só um jeito de buscar) — mantém o
+          seletor simples "quero agora vs agendar", sem ambiguidade
+          nenhuma com outro controle (essa é a única escolha de tempo). */}
+      {tipoEntrega === "retirada" && (
+        <SeletorAgendamento
+          horarioFuncionamento={horarioFuncionamento}
+          janela={janelaAgendamento}
+          onMudarJanela={setJanelaAgendamento}
+          estimativa={null}
+        />
+      )}
 
       {saldoCliente > 0 && (
         <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">

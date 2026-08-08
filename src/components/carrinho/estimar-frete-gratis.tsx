@@ -125,7 +125,6 @@ export function EstimarFreteGratis({
         {onAdicionarSugestao && falta > 0 && (
           <SugestaoCompletaFrete
             empresaId={empresaId}
-            falta={falta}
             categorias={categoriasCarrinho ?? []}
             idsNoCarrinho={idsNoCarrinho ?? []}
             onAdicionar={onAdicionarSugestao}
