@@ -124,13 +124,14 @@ export function Sidebar({
               aberta ? "translate-x-0" : "-translate-x-full",
             )}
           >
-            <div className="flex items-center justify-between border-b border-black/5 p-4 dark:border-white/10">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-black/5 p-4 dark:border-white/10">
+              <span />
               <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
               <button
                 type="button"
                 onClick={fechar}
                 aria-label="Fechar menu"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+                className="flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full hover:bg-black/5 dark:hover:bg-white/10"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -204,7 +205,8 @@ function SidebarConteudo({
   }, [destino, onNavegar, router]);
 
   return (
-    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+    <>
+    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
       {departamentos.length > 0 && (
         <div className="flex flex-col gap-0.5">
           <Link href={destino} onClick={onNavegar} className={linkClasse(!departamentoAtivo && !temBusca, moderno)}>
@@ -269,12 +271,12 @@ function SidebarConteudo({
           })}
         </div>
       )}
+    </nav>
 
-      {/* Sem mt-auto de propósito: a coluna é sticky h-screen (altura da tela
-          inteira), então empurrar esse bloco pro fundo deixava um vão enorme
-          no meio sempre que a lista de departamentos era mais curta que a
-          tela — menu agora segue direto depois dos departamentos. */}
-      <div className="mt-4 flex flex-col gap-0.5 border-t border-black/5 pt-3 dark:border-white/10">
+      {/* Fora do <nav> rolável, de propósito: fica sempre visível colado no
+          rodapé do menu (não sai de vista quando a lista de departamentos é
+          longa/expandida), enquanto só os departamentos rolam por dentro. */}
+      <div className="flex shrink-0 flex-col gap-0.5 border-t border-black/5 p-3 dark:border-white/10">
         <Link href={`/loja/${slug}/${logado ? "conta" : "entrar"}`} onClick={onNavegar} className={linkClasse(false, moderno)}>
           {logado ? "Minha conta" : "Entrar"}
         </Link>
@@ -292,7 +294,7 @@ function SidebarConteudo({
           </button>
         )}
       </div>
-    </nav>
+    </>
   );
 }
 
