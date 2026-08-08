@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   BannerCatalogo,
@@ -39,7 +40,17 @@ export type Ordenacao =
   | "nome_za"
   | "maior_desconto";
 
-export async function getEmpresaPorSlug(slug: string): Promise<EmpresaCatalogo | null> {
+/**
+ * `cache()` do React (dedup só DENTRO da mesma requisição, nunca entre
+ * requisições diferentes — sem risco de dado desatualizado) — toda página
+ * dentro de `/loja/[slug]` chama isso pelo menos 2x (`layout.tsx` +
+ * `generateMetadata`/o próprio componente da página), sempre buscando
+ * exatamente o mesmo registro. Sem esse cache, cada carregamento de
+ * página fazia 2-3 idas idênticas ao Postgres só pra dados da empresa —
+ * achado investigando TTFB de ~1,4s reportado como "site ainda lento"
+ * mesmo depois de zerar o loop de auth e unificar os filtros da home.
+ */
+export const getEmpresaPorSlug = cache(async (slug: string): Promise<EmpresaCatalogo | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_empresas_publico")
@@ -52,7 +63,7 @@ export async function getEmpresaPorSlug(slug: string): Promise<EmpresaCatalogo |
     return null;
   }
   return data;
-}
+});
 
 export async function getBannersCatalogo(empresaId: string): Promise<BannerCatalogo[]> {
   const supabase = await createClient();
