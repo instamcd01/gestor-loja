@@ -15,7 +15,6 @@ import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-es
 import { salvarEndereco } from "@/lib/cliente";
 import {
   assinarEnderecoEstimado,
-  limparEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
   salvarEnderecoEstimado,
@@ -101,6 +100,13 @@ export function EntregaForm({
   const [calculando, setCalculando] = useState(false);
   const [avancando, setAvancando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  // Controla só a exibição (form de digitação vs. linha compacta de
+  // leitura) — independente do cache. Precisa ser um estado próprio: o
+  // endereço "ativo" pode vir do fallback `enderecoSalvo` (conta) mesmo
+  // com o cache local vazio, então só limpar o cache no clique de "Trocar
+  // endereço" não bastava pra sumir com a leitura (o fallback reaparecia
+  // na hora, e o clique parecia não fazer nada).
+  const [editandoEndereco, setEditandoEndereco] = useState(false);
   const [janelaAgendamento, setJanelaAgendamento] = useState<JanelaHorarioAgendamento | null>(null);
   // Cobre "modalidade" (expressa/econômica) E "quando" (agendada) numa
   // escolha só — eram dois controles separados antes (relatado como
@@ -143,6 +149,7 @@ export function EntregaForm({
     // confirmar o endereço aqui já atualiza a barra sozinha, sem precisar
     // de nenhuma lógica de conciliação entre os dois.
     if (resultado.disponivel) {
+      setEditandoEndereco(false);
       const novoEstimado: EnderecoEstimado = {
         endereco: novoEndereco,
         zonaId: resultado.opcao.zona_id,
@@ -290,12 +297,12 @@ export function EntregaForm({
 
       {tipoEntrega === "entrega" && (
         <Card className="flex flex-col gap-3 p-4">
-          {endereco ? (
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm">📍 {formatarEnderecoCompleto(endereco)}</span>
+          {endereco && !editandoEndereco ? (
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-sm">📍 {formatarEnderecoCompleto(endereco)}</span>
               <button
                 type="button"
-                onClick={() => limparEnderecoEstimado(empresaId)}
+                onClick={() => setEditandoEndereco(true)}
                 className="shrink-0 text-xs text-black/40 hover:underline dark:text-white/40"
               >
                 Trocar endereço

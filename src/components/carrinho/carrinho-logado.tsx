@@ -122,7 +122,6 @@ export function CarrinhoLogado({
       <EstimarFreteGratis
         empresaId={empresaId}
         enderecoEmpresa={enderecoEmpresa}
-        subtotal={carrinho.valorTotal}
         categoriasCarrinho={[
           ...new Set(carrinho.itens.map((item) => item.produto?.categoria).filter((c): c is string => !!c)),
         ]}

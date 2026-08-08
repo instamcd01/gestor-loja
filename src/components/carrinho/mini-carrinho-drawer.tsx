@@ -116,7 +116,7 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
-        <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={valorTotal} />
+        <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} />
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {itens.map((item) => (
