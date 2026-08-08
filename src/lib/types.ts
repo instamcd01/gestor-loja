@@ -27,6 +27,8 @@ export interface EmpresaCatalogo {
   cep: string | null;
   chave_pix: string | null;
   aceita_retirada: boolean;
+  /** Prazo em minutos pra retirada ficar pronta — null = não mostra prazo nenhum. */
+  retirada_prazo_min: number | null;
   mostrar_estoque_baixo: boolean;
   /** Chaves: visa, mastercard, elo, amex, hipercard, diners — só exibição, sem validação real. */
   bandeiras_aceitas: string[] | null;
@@ -150,4 +152,7 @@ export interface OpcaoFrete {
   /** Faixa configurada na zona (Configuração de Entrega no app) — mesma usada na venda presencial pra gravar a previsão do pedido. */
   estimativa_min_min: number | null;
   estimativa_min_max: number | null;
+  /** Modalidade "Econômica" (config única da loja, não por zona) — null = loja não configurou, não oferece essa modalidade. */
+  economico_valor: number | null;
+  economico_prazo_dias: number | null;
 }

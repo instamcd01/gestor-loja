@@ -5,6 +5,7 @@ import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { SeletorAgendamento } from "@/components/carrinho/seletor-agendamento";
+import { SeletorModalidadeEntrega } from "@/components/carrinho/seletor-modalidade-entrega";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export function CheckoutForm({
   empresaId,
   metodosPagamento,
   aceitaRetirada,
+  retiradaPrazoMin,
   enderecoEmpresa,
   horarioFuncionamento,
   bandeirasAceitas,
@@ -53,6 +55,8 @@ export function CheckoutForm({
   empresaId: string;
   metodosPagamento: string[];
   aceitaRetirada: boolean;
+  /** Prazo em minutos pra retirada ficar pronta — null = não mostra prazo nenhum. */
+  retiradaPrazoMin: number | null;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
@@ -114,6 +118,7 @@ export function CheckoutForm({
   const [erroCupom, setErroCupom] = useState<string | null>(null);
   const [janelaAgendamento, setJanelaAgendamento] = useState<JanelaHorarioAgendamento | null>(null);
   const [parcelaEscolhida, setParcelaEscolhida] = useState(1);
+  const [modalidadeEntrega, setModalidadeEntrega] = useState<"expressa" | "economica">("expressa");
 
   async function aplicarCupom() {
     if (!cupomTexto.trim()) return;
@@ -246,7 +251,14 @@ export function CheckoutForm({
     (freteResolvido.valor_minimo_frete_gratis != null
       ? subtotal >= freteResolvido.valor_minimo_frete_gratis
       : freteResolvido.frete_gratis);
-  const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : freteResolvido.valor) : 0;
+  // Econômica é config única da loja (não por zona) — usa o valor fixo da
+  // empresa em vez do valor da zona, mas continua sob o mesmo limite de
+  // frete grátis da zona (entregaGratisAgora acima vale pras duas).
+  const valorBaseEntrega =
+    modalidadeEntrega === "economica" && freteResolvido?.economico_valor != null
+      ? freteResolvido.economico_valor
+      : (freteResolvido?.valor ?? 0);
+  const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : valorBaseEntrega) : 0;
   const descontoCupom = cupomAplicado?.valorDesconto ?? 0;
   const valorAntesDoSaldo = Math.max(0, subtotal + valorEntrega - descontoCupom);
   const saldoAplicado = usarSaldo ? Math.min(saldoCliente, valorAntesDoSaldo) : 0;
@@ -306,6 +318,7 @@ export function CheckoutForm({
       cupomAplicado?.codigo ?? null,
       janelaAgendamento ? { inicio: janelaAgendamento.inicio, fim: janelaAgendamento.fim } : null,
       tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 ? parcelaEscolhida : null,
+      modalidadeEntrega,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -341,6 +354,12 @@ export function CheckoutForm({
               </button>
             ))}
           </div>
+          {tipoEntrega === "retirada" && retiradaPrazoMin != null && (
+            <p className="mt-2 text-xs text-black/50 dark:text-white/50">
+              <span className="font-medium text-[var(--color-success)]">Grátis</span> — pronto pra retirar em até{" "}
+              {retiradaPrazoMin} min
+            </p>
+          )}
         </div>
       )}
 
@@ -354,9 +373,7 @@ export function CheckoutForm({
 
           {frete && frete.disponivel && (
             <p className="text-sm font-medium text-[var(--color-success)]">
-              {entregaGratisAgora
-                ? "Frete grátis!"
-                : `Frete (${frete.opcao.zona_nome}): ${formatarPreco(frete.opcao.valor)}`}
+              {entregaGratisAgora ? "Frete grátis!" : `Frete: ${formatarPreco(valorBaseEntrega)}`}
             </p>
           )}
           {frete && !frete.disponivel && (
@@ -369,12 +386,31 @@ export function CheckoutForm({
         </Card>
       )}
 
+      {tipoEntrega === "entrega" && freteResolvido && (
+        <SeletorModalidadeEntrega
+          modalidade={modalidadeEntrega}
+          onMudar={setModalidadeEntrega}
+          valorExpressa={freteResolvido.valor}
+          estimativaExpressa={
+            freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null
+              ? { min: freteResolvido.estimativa_min_min, max: freteResolvido.estimativa_min_max }
+              : null
+          }
+          economicoValor={freteResolvido.economico_valor}
+          economicoPrazoDias={freteResolvido.economico_prazo_dias}
+          gratis={entregaGratisAgora}
+        />
+      )}
+
       <SeletorAgendamento
         horarioFuncionamento={horarioFuncionamento}
         janela={janelaAgendamento}
         onMudarJanela={setJanelaAgendamento}
         estimativa={
-          freteResolvido && freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null
+          modalidadeEntrega === "expressa" &&
+          freteResolvido &&
+          freteResolvido.estimativa_min_min != null &&
+          freteResolvido.estimativa_min_max != null
             ? { min: freteResolvido.estimativa_min_min, max: freteResolvido.estimativa_min_max }
             : null
         }
@@ -561,7 +597,7 @@ export function CheckoutForm({
           subtotal={subtotal}
           entregaLabel={tipoEntrega === "entrega" ? "Entrega" : "Retirada na loja"}
           entregaValor={tipoEntrega === "entrega" ? (freteResolvido ? valorEntrega : null) : null}
-          entregaValorOriginal={freteResolvido?.valor}
+          entregaValorOriginal={freteResolvido ? valorBaseEntrega : undefined}
           faltaParaFreteGratis={faltaParaFreteGratis}
           descontoCupom={descontoCupom}
           saldoAplicado={saldoAplicado}

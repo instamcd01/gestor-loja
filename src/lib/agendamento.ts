@@ -48,6 +48,27 @@ export function estimarChegada(min: number, max: number): { inicio: string; fim:
 }
 
 /**
+ * Data prevista pulando sábado/domingo — mesma regra usada em
+ * finalizar_pedido_site (SQL) pra modalidade "Econômica" (config única da
+ * loja, valor fixo + prazo em dias úteis) — transforma "até X dias úteis"
+ * numa data real em vez de deixar o cliente contar de cabeça.
+ */
+export function calcularDataUtilFutura(diasUteis: number): Date {
+  let data = new Date();
+  let restantes = diasUteis;
+  while (restantes > 0) {
+    data = new Date(data.getFullYear(), data.getMonth(), data.getDate() + 1);
+    const diaSemana = data.getDay(); // 0 = domingo, 6 = sábado
+    if (diaSemana !== 0 && diaSemana !== 6) restantes--;
+  }
+  return data;
+}
+
+export function formatarDataPrevista(data: Date): string {
+  return data.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+}
+
+/**
  * Dias em que dá pra agendar — hoje até +3 dias, pulando os que a loja
  * marcou como fechado em Configurações > Horário de Funcionamento.
  */

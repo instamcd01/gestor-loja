@@ -25,6 +25,7 @@ export function CarrinhoLogado({
   empresaId,
   metodosPagamento,
   aceitaRetirada,
+  retiradaPrazoMin,
   enderecoEmpresa,
   horarioFuncionamento,
   bandeirasAceitas,
@@ -38,6 +39,7 @@ export function CarrinhoLogado({
   empresaId: string;
   metodosPagamento: string[];
   aceitaRetirada: boolean;
+  retiradaPrazoMin: number | null;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
@@ -147,6 +149,7 @@ export function CarrinhoLogado({
         empresaId={empresaId}
         metodosPagamento={metodosPagamento}
         aceitaRetirada={aceitaRetirada}
+        retiradaPrazoMin={retiradaPrazoMin}
         enderecoEmpresa={enderecoEmpresa}
         horarioFuncionamento={horarioFuncionamento}
         bandeirasAceitas={bandeirasAceitas}

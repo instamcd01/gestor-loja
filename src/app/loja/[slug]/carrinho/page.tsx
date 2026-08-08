@@ -66,6 +66,7 @@ export default async function CarrinhoPage({
         METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
       )}
       aceitaRetirada={empresa.aceita_retirada}
+      retiradaPrazoMin={empresa.retirada_prazo_min}
       enderecoEmpresa={enderecoEmpresa}
       horarioFuncionamento={empresa.horario_funcionamento}
       bandeirasAceitas={empresa.bandeiras_aceitas}
