@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CarrinhoLogado } from "@/components/carrinho/carrinho-logado";
-import { getEmpresaPorSlug, getProdutosCatalogo } from "@/lib/catalogo";
+import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
@@ -58,31 +58,6 @@ export default async function CarrinhoPage({
     );
   }
 
-  // "Quem viu, também viu" adaptado pro carrinho: mesmas categorias dos
-  // itens já no carrinho (até 2, pra não multiplicar consultas à toa),
-  // excluindo o que já está lá — incentiva completar a compra em vez de
-  // só finalizar com o que já tinha decidido antes de entrar no site.
-  const categoriasNoCarrinho = [
-    ...new Set(carrinho.itens.map((item) => item.produto?.categoria).filter((c): c is string => !!c)),
-  ].slice(0, 2);
-  const idsNoCarrinho = new Set(carrinho.itens.map((item) => item.produto_id));
-  const relacionadosBrutos =
-    categoriasNoCarrinho.length > 0
-      ? (
-          await Promise.all(
-            categoriasNoCarrinho.map((categoria) => getProdutosCatalogo(empresa.id, { categoria })),
-          )
-        ).flat()
-      : [];
-  const relacionadosVistos = new Set<string>();
-  const relacionados = relacionadosBrutos
-    .filter((produto) => {
-      if (idsNoCarrinho.has(produto.id) || relacionadosVistos.has(produto.id)) return false;
-      relacionadosVistos.add(produto.id);
-      return true;
-    })
-    .slice(0, 8);
-
   return (
     <CarrinhoLogado
       slug={slug}
@@ -99,8 +74,6 @@ export default async function CarrinhoPage({
       enderecoSalvo={enderecoSalvo}
       saldoCliente={saldoCliente}
       carrinhoInicial={carrinho}
-      relacionados={relacionados}
-      moderno={empresa.catalogo_modelo === "moderno"}
     />
   );
 }

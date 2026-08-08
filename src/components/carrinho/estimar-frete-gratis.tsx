@@ -36,13 +36,18 @@ export function EstimarFreteGratis({
   empresaId,
   enderecoEmpresa,
   subtotal,
+  categoriasCarrinho,
+  idsNoCarrinho,
   onAdicionarSugestao,
 }: {
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   subtotal: number;
+  /** Categorias e ids já no carrinho — usados só pra priorizar a sugestão de completar o frete grátis (ver SugestaoCompletaFrete). Ignorados quando `onAdicionarSugestao` não é passado. */
+  categoriasCarrinho?: string[];
+  idsNoCarrinho?: string[];
   /**
-   * Quando informado, mostra um produto pra completar o frete grátis
+   * Quando informado, mostra produtos pra completar o frete grátis
    * (ver SugestaoCompletaFrete) — cada tela passa sua própria lógica de
    * adicionar (atualiza a lista que já está na tela), por isso é opcional
    * e não vem com um padrão embutido aqui. Omitido = sem sugestão (ex: na
@@ -118,7 +123,13 @@ export function EstimarFreteGratis({
           <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
         )}
         {onAdicionarSugestao && falta > 0 && (
-          <SugestaoCompletaFrete empresaId={empresaId} falta={falta} onAdicionar={onAdicionarSugestao} />
+          <SugestaoCompletaFrete
+            empresaId={empresaId}
+            falta={falta}
+            categorias={categoriasCarrinho ?? []}
+            idsNoCarrinho={idsNoCarrinho ?? []}
+            onAdicionar={onAdicionarSugestao}
+          />
         )}
         <div className="flex items-center justify-between gap-2 text-xs text-black/50 dark:text-white/50">
           <span className="truncate">📍 {formatarEnderecoCompleto(estimado.endereco)}</span>

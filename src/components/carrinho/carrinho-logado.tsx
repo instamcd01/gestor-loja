@@ -5,7 +5,6 @@ import { CheckoutForm } from "@/components/carrinho/checkout-form";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
-import { ProdutosRelacionados } from "@/components/loja/produtos-relacionados";
 import { Card } from "@/components/ui/card";
 import { adicionarAoCarrinho, atualizarQuantidade, limparCarrinho } from "@/lib/carrinho";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
@@ -34,8 +33,6 @@ export function CarrinhoLogado({
   enderecoSalvo,
   saldoCliente,
   carrinhoInicial,
-  relacionados,
-  moderno,
 }: {
   slug: string;
   empresaId: string;
@@ -49,8 +46,6 @@ export function CarrinhoLogado({
   enderecoSalvo: EnderecoCliente | null;
   saldoCliente: number;
   carrinhoInicial: Carrinho;
-  relacionados: ProdutoCatalogo[];
-  moderno: boolean;
 }) {
   const [carrinho, setCarrinho] = useState(carrinhoInicial);
   const { agendar: agendarSync, flushTudo } = useDebounceQuantidade();
@@ -122,9 +117,8 @@ export function CarrinhoLogado({
 
   return (
     // pb-24 reserva espaço pra barra fixa de total/confirmar do
-    // CheckoutForm não cobrir o fim do conteúdo (ex: "Quem viu, também
-    // viu" ou o aviso final) — a barra em si é `fixed`, então não empurra
-    // o layout sozinha.
+    // CheckoutForm não cobrir o fim do conteúdo (ex: o aviso final) — a
+    // barra em si é `fixed`, então não empurra o layout sozinha.
     <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-24 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
@@ -135,6 +129,10 @@ export function CarrinhoLogado({
         empresaId={empresaId}
         enderecoEmpresa={enderecoEmpresa}
         subtotal={carrinho.valorTotal}
+        categoriasCarrinho={[
+          ...new Set(carrinho.itens.map((item) => item.produto?.categoria).filter((c): c is string => !!c)),
+        ]}
+        idsNoCarrinho={carrinho.itens.map((item) => item.produto_id)}
         onAdicionarSugestao={adicionarSugestao}
       />
 
@@ -159,14 +157,6 @@ export function CarrinhoLogado({
         enderecoSalvo={enderecoSalvo}
         saldoCliente={saldoCliente}
         aoConfirmarAntes={flushTudo}
-      />
-
-      <ProdutosRelacionados
-        produtos={relacionados}
-        slug={slug}
-        empresaId={empresaId}
-        enderecoEmpresa={enderecoEmpresa}
-        moderno={moderno}
       />
     </div>
   );

@@ -107,6 +107,8 @@ export function CarrinhoConvidado({
         empresaId={empresaId}
         enderecoEmpresa={enderecoEmpresa}
         subtotal={total}
+        categoriasCarrinho={[...new Set(itens.map((item) => item.categoria).filter((c): c is string => !!c))]}
+        idsNoCarrinho={itens.map((item) => item.produtoId)}
         onAdicionarSugestao={adicionarSugestao}
       />
 
