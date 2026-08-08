@@ -76,27 +76,24 @@ export function SeletorMetodoEntrega({
       ativo ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10" : "border-black/10 dark:border-white/10"
     }`;
   }
-  const selo =
-    "absolute top-2 right-2 rounded-full bg-[var(--color-success)]/15 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-success)]";
-
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-semibold">Quando você quer receber?</p>
       <div className="flex flex-col gap-2">
         <button type="button" onClick={() => selecionar("expressa")} className={cartao(metodo === "expressa")}>
-          {gratis && <span className={selo}>Grátis</span>}
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium">Expressa</span>
             <span className="text-xs text-black/60 dark:text-white/60">
               {estimativaExpressa ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min` : "A mais rápida"}
             </span>
           </div>
-          <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
+          <span className={`text-sm font-semibold ${gratis ? "text-[var(--color-success)]" : ""}`}>
+            {gratis ? "Grátis" : formatarPreco(valorExpressa)}
+          </span>
         </button>
 
         {economicoValor != null && (
           <button type="button" onClick={() => selecionar("economica")} className={cartao(metodo === "economica")}>
-            {gratis && <span className={selo}>Grátis</span>}
             <div className="flex flex-col gap-0.5">
               <span className="text-sm font-medium">Econômica</span>
               <span className="text-xs text-black/60 dark:text-white/60">
@@ -105,18 +102,21 @@ export function SeletorMetodoEntrega({
                   : "Mais barata"}
               </span>
             </div>
-            <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(economicoValor)}</span>
+            <span className={`text-sm font-semibold ${gratis ? "text-[var(--color-success)]" : ""}`}>
+              {gratis ? "Grátis" : formatarPreco(economicoValor)}
+            </span>
           </button>
         )}
 
         {opcoesData.length > 0 && (
           <button type="button" onClick={() => selecionar("agendada")} className={cartao(metodo === "agendada")}>
-            {gratis && <span className={selo}>Grátis</span>}
             <div className="flex flex-col gap-0.5">
               <span className="text-sm font-medium">Agendada</span>
               <span className="text-xs text-black/60 dark:text-white/60">Você escolhe o dia e horário</span>
             </div>
-            <span className="text-sm font-semibold">{gratis ? "Grátis" : formatarPreco(valorExpressa)}</span>
+            <span className={`text-sm font-semibold ${gratis ? "text-[var(--color-success)]" : ""}`}>
+              {gratis ? "Grátis" : formatarPreco(valorExpressa)}
+            </span>
           </button>
         )}
       </div>

@@ -118,10 +118,12 @@ export function CarrinhoLogado({
   }
 
   return (
-    // pb-24 reserva espaço pra barra fixa de total/confirmar do
-    // CheckoutForm não cobrir o fim do conteúdo (ex: o aviso final) — a
-    // barra em si é `fixed`, então não empurra o layout sozinha.
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-24 pt-6">
+    // pb-40 reserva espaço pra barra fixa de total/confirmar do
+    // CheckoutForm + o indicador de progresso de frete grátis que flutua
+    // logo acima dela (ver EstimarFreteGratis, prop `progressoFixo`) não
+    // cobrirem o fim do conteúdo — as duas são `fixed`, então não empurram
+    // o layout sozinhas.
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-40 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
         <LimparCarrinhoButton onConfirmar={esvaziar} />
@@ -136,6 +138,7 @@ export function CarrinhoLogado({
         ]}
         idsNoCarrinho={carrinho.itens.map((item) => item.produto_id)}
         onAdicionarSugestao={adicionarSugestao}
+        progressoFixo
       />
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
