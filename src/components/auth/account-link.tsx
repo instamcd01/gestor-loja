@@ -1,27 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useSessao } from "@/components/auth/sessao-provider";
 
 /**
  * Client component de propósito: o layout de /loja/[slug] é ISR (cacheado
  * entre visitantes, revalidate=300s) — não dá pra ler cookies/sessão ali
  * sem forçar a rota inteira a virar dinâmica e perder esse cache. Aqui o
  * estado de login é resolvido no browser de cada visitante, não assado no
- * HTML compartilhado.
+ * HTML compartilhado. `useSessao` (SessaoProvider, ver comentário lá)
+ * resolve isso UMA VEZ pra página inteira, compartilhado com todo mundo
+ * que precisa saber se o cliente está logado.
  */
 export function AccountLink({ slug }: { slug: string }) {
-  const [logado, setLogado] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogado(!!session?.user);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  const logado = useSessao();
 
   if (logado === null) {
     return <span className="h-9 w-9 animate-pulse rounded-full bg-black/5 dark:bg-white/10" />;

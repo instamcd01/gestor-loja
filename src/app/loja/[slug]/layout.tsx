@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountLink } from "@/components/auth/account-link";
+import { SessaoProvider } from "@/components/auth/sessao-provider";
 import { BuscaCatalogo } from "@/components/catalogo/busca-catalogo";
 import { CarrinhoLink } from "@/components/carrinho/carrinho-link";
 import { FavoritosLink } from "@/components/favoritos/favoritos-link";
@@ -44,6 +45,7 @@ export default async function LojaLayout({
       }
       className="flex min-h-screen"
     >
+      <SessaoProvider>
       <FavoritosProvider slug={slug} empresaId={empresa.id}>
         <SidebarProvider>
           <Sidebar departamentos={departamentos} slug={slug} moderno={moderno} marca={marca.site_sidebar} nomeEmpresa={empresa.nome} />
@@ -93,6 +95,7 @@ export default async function LojaLayout({
           </div>
         </SidebarProvider>
       </FavoritosProvider>
+      </SessaoProvider>
 
       <WhatsappSuporteButton nomeEmpresa={empresa.nome} whatsapp={empresa.whatsapp_catalogo} />
     </div>

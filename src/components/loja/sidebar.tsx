@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { useSessao } from "@/components/auth/sessao-provider";
 import type { DepartamentoComContagem } from "@/lib/catalogo";
 import type { MarcaPosicaoCatalogo } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -59,7 +60,7 @@ function MarcaSidebar({ marca, nomeEmpresa }: { marca: MarcaPosicaoCatalogo; nom
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={marca.url} alt={nomeEmpresa} className="h-9 max-w-[160px] shrink-0 object-contain" />
+    <img src={marca.url} alt={nomeEmpresa} className="h-16 max-w-[200px] shrink-0 object-contain" />
   );
 }
 
@@ -78,19 +79,6 @@ export function SidebarToggleButton() {
       </svg>
     </button>
   );
-}
-
-function useLogado() {
-  const [logado, setLogado] = useState<boolean | null>(null);
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogado(!!session?.user);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-  return logado;
 }
 
 export function Sidebar({
@@ -154,9 +142,18 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Desktop — coluna fixa, sempre visível. */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/5 lg:flex dark:border-white/10">
-        <div className="border-b border-black/5 p-4 dark:border-white/10">
+      {/* Desktop — coluna fixa, sempre visível. `self-start` é o pulo do gato:
+          por padrão um item de `flex` linha estica (`align-items: stretch`)
+          pra bater a altura do irmão mais alto — como a coluna de conteúdo
+          (catálogo inteiro) é bem mais alta que a tela, a sidebar esticava
+          junto e ficava gigante mesmo com poucos departamentos, sobrando um
+          vão enorme em branco embaixo do menu. `self-start` tira ela dessa
+          esticada, ela some do tamanho que o próprio conteúdo pede;
+          `max-h-screen` + `overflow-y-auto` no <nav> seguram o caso de MUITOS
+          departamentos (não deixa passar da tela, rola por dentro). `sticky`
+          continua funcionando igual, independe da altura do elemento. */}
+      <aside className="sticky top-0 hidden max-h-screen w-60 shrink-0 self-start flex-col border-r border-black/5 lg:flex dark:border-white/10">
+        <div className="flex items-center justify-center border-b border-black/5 p-4 dark:border-white/10">
           <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
         </div>
         {conteudo}
@@ -179,7 +176,7 @@ function SidebarConteudo({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const logado = useLogado();
+  const logado = useSessao();
   const [saindo, setSaindo] = useState(false);
 
   const destino = `/loja/${slug}`;

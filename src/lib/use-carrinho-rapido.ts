@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ItemMiniCarrinho } from "@/components/carrinho/mini-carrinho-drawer";
+import { useSessao } from "@/components/auth/sessao-provider";
 import { adicionarAoCarrinho, atualizarQuantidade } from "@/lib/carrinho";
 import { adicionarItemConvidado, atualizarItemConvidado, lerCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
-import { createClient } from "@/lib/supabase/client";
 import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 export interface EstadoDrawerCarrinho {
@@ -41,16 +41,12 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
 
   // Mesmo motivo do AccountLink: as páginas de produto/catálogo são ISR
   // compartilhadas entre visitantes, então o estado de login é resolvido
-  // no browser, não no servidor — senão perderia o cache.
-  const [logado, setLogado] = useState<boolean | null>(null);
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogado(!!session?.user);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  // no browser, não no servidor — senão perderia o cache. `useSessao`
+  // (SessaoProvider) resolve isso UMA VEZ pra página inteira — antes esse
+  // hook (chamado por CARD de produto, um por vez num catálogo com
+  // centenas de itens) fazia sua própria checagem independente, virando
+  // centenas de chamadas simultâneas a cada troca de filtro/departamento.
+  const logado = useSessao();
 
   async function adicionar(produtoId: string, quantidade: number, produto: ProdutoParaAdicionar) {
     setCarregando(true);

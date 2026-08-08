@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSessao } from "@/components/auth/sessao-provider";
 import { getContagemCarrinho } from "@/lib/carrinho";
 import { assinarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
 import { lerCarrinhoConvidado } from "@/lib/carrinho-convidado";
-import { createClient } from "@/lib/supabase/client";
 
 /**
  * Client component pelo mesmo motivo do AccountLink (layout ISR, ver
@@ -15,17 +15,8 @@ import { createClient } from "@/lib/supabase/client";
  * uma causa real da confusão "não consigo adicionar outros produtos").
  */
 export function CarrinhoLink({ slug, empresaId }: { slug: string; empresaId: string }) {
-  const [logado, setLogado] = useState<boolean | null>(null);
+  const logado = useSessao();
   const [contagem, setContagem] = useState(0);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogado(!!session?.user);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     let cancelado = false;
