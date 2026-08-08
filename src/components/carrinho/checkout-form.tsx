@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { SeletorAgendamento } from "@/components/carrinho/seletor-agendamento";
@@ -627,26 +628,36 @@ export function CheckoutForm({
           bandeiras, parcelamento, cupom...) — reduz a sensação de "quanto
           falta" até finalizar, sem tirar o botão/resumo que já existiam
           no fluxo normal (redundância intencional, padrão comum em
-          checkout longo). Some no dark/light theme igual ao resto do
-          card. z-30 fica acima do botão do WhatsApp (z-20, que também
-          sobe mais alto nesta página — ver whatsapp-suporte-button.tsx).
-          Altura aproximada ~76px: se mudar padding/tamanho de fonte aqui,
-          ajustar o offset `bottom-[88px]` do indicador de progresso de
-          frete grátis que flutua logo acima (EstimarFreteGratis, prop
-          `progressoFixo`) e o `bottom-44` do WhatsApp nesta página. */}
+          checkout longo). Leva também o indicador de progresso de frete
+          grátis (mesmo componente do topo do carrinho, ver
+          EstimarFreteGratis) empilhado por cima da linha de total —
+          pedido do usuário: precisa continuar visível mesmo depois de
+          rolar a tela pra baixo, junto da própria barra, sem flutuar
+          separado dela. Some no dark/light theme igual ao resto do card.
+          z-30 fica acima do botão do WhatsApp (z-20, que também sobe mais
+          alto nesta página — ver whatsapp-suporte-button.tsx). Altura
+          total varia com o indicador (aparece só com tipoEntrega ===
+          "entrega" e frete resolvido): se mudar padding/conteúdo aqui,
+          ajustar o `pb-*` reservado em carrinho-logado.tsx e o
+          `bottom-*` do WhatsApp nesta página. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10">
-        <div className="mx-auto flex max-w-2xl items-center gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-black/50 dark:text-white/50">Total</p>
-            <p className="truncate text-lg font-bold">{formatarPreco(valorFinal)}</p>
+        <div className="mx-auto flex max-w-2xl flex-col gap-3">
+          {tipoEntrega === "entrega" && freteResolvido?.valor_minimo_frete_gratis != null && (
+            <FreteGratisProgresso subtotal={subtotal} minimo={freteResolvido.valor_minimo_frete_gratis} />
+          )}
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-black/50 dark:text-white/50">Total</p>
+              <p className="truncate text-lg font-bold">{formatarPreco(valorFinal)}</p>
+            </div>
+            <Button
+              onClick={confirmar}
+              disabled={!podeConfirmar || confirmando}
+              className="flex-1 py-3 text-base"
+            >
+              {confirmando ? "Confirmando..." : "Confirmar pedido"}
+            </Button>
           </div>
-          <Button
-            onClick={confirmar}
-            disabled={!podeConfirmar || confirmando}
-            className="flex-1 py-3 text-base"
-          >
-            {confirmando ? "Confirmando..." : "Confirmar pedido"}
-          </Button>
         </div>
       </div>
     </div>

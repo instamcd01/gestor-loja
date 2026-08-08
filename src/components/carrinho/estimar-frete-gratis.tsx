@@ -39,7 +39,6 @@ export function EstimarFreteGratis({
   categoriasCarrinho,
   idsNoCarrinho,
   onAdicionarSugestao,
-  progressoFixo,
 }: {
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
@@ -56,14 +55,6 @@ export function EstimarFreteGratis({
    * ação de adicionar).
    */
   onAdicionarSugestao?: (produto: ProdutoCatalogo) => void | Promise<void>;
-  /**
-   * true = a barra de progresso flutua fixa acima da barra fixa de
-   * total/confirmar do CheckoutForm (telas de carrinho cheias, que têm
-   * essa barra). false/omitido = renderiza em fluxo normal, como sempre
-   * (gaveta de confirmação rápida, que não tem barra fixa nenhuma pra
-   * flutuar acima).
-   */
-  progressoFixo?: boolean;
 }) {
   const estimado = useSyncExternalStore(
     assinarEnderecoEstimado,
@@ -125,16 +116,9 @@ export function EstimarFreteGratis({
   if (estimado) {
     return (
       <div className="flex flex-col gap-2">
-        {estimado.valorMinimoFreteGratis != null &&
-          (progressoFixo ? (
-            <div className="fixed inset-x-0 bottom-[88px] z-20 px-4">
-              <div className="mx-auto max-w-2xl">
-                <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
-              </div>
-            </div>
-          ) : (
-            <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
-          ))}
+        {estimado.valorMinimoFreteGratis != null && (
+          <FreteGratisProgresso subtotal={subtotal} minimo={estimado.valorMinimoFreteGratis} />
+        )}
         {/* Continua aparecendo mesmo depois do frete grátis desbloqueado —
             o cliente pode querer aumentar o pedido mesmo já tendo atingido
             o mínimo. Some sozinho quando não há mais complementares (ver
