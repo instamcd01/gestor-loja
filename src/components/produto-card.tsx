@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
+import { ModalSelecionarVariante } from "@/components/carrinho/modal-selecionar-variante";
 import { Badge } from "@/components/ui/badge";
 import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { ProdutoImagem } from "@/components/produto-imagem";
@@ -56,17 +57,37 @@ export function ProdutoCard({
   // interromper pra visitar cada página. Mesma gaveta de confirmação do
   // botão da página do produto (useCarrinhoRapido é compartilhado).
   const carrinhoRapido = useCarrinhoRapido(slug, empresaId);
+  // Só entra em jogo aqui na grade/relacionados/favoritos — na página do
+  // próprio produto, o SeletorVariante (navega pra URL da variante) + o
+  // card de quantidade já cumprem esse papel, não precisa de confirmação.
+  const [modalVarianteAberto, setModalVarianteAberto] = useState(false);
 
-  async function adicionarRapido(e: React.MouseEvent) {
+  function abrirAdicionar(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    await carrinhoRapido.adicionar(selecionada.id, 1, {
-      nome: selecionada.nome,
+    if (temVariantes) {
+      setModalVarianteAberto(true);
+      return;
+    }
+    void adicionar(selecionada, 1);
+  }
+
+  async function adicionar(opcao: VarianteProduto, quantidade: number) {
+    const opcaoTemPromocao = opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
+    await carrinhoRapido.adicionar(opcao.id, quantidade, {
+      nome: opcao.nome,
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
-      preco: temPromocao ? selecionada.preco_promocional! : selecionada.preco,
-      estoqueDisponivel: selecionada.estoque_disponivel,
+      preco: opcaoTemPromocao ? opcao.preco_promocional! : opcao.preco,
+      estoqueDisponivel: opcao.estoque_disponivel,
     });
+  }
+
+  async function confirmarVariante(varianteId: string, quantidade: number) {
+    const opcao = opcoes.find((o) => o.id === varianteId);
+    if (!opcao) return;
+    await adicionar(opcao, quantidade);
+    setModalVarianteAberto(false);
   }
 
   return (
@@ -97,7 +118,7 @@ export function ProdutoCard({
               cards "cortados"). Aqui, bem mais alto, o cruzamento é raro. */}
           <button
             type="button"
-            onClick={adicionarRapido}
+            onClick={abrirAdicionar}
             disabled={carrinhoRapido.carregando || selecionada.estoque_disponivel === 0}
             aria-label="Adicionar ao carrinho"
             className="absolute right-2 bottom-2 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary)] text-lg leading-none text-white shadow-md transition-opacity hover:opacity-90 disabled:opacity-30"
@@ -147,6 +168,19 @@ export function ProdutoCard({
           )}
         </div>
       </Link>
+
+      {modalVarianteAberto && (
+        <ModalSelecionarVariante
+          nome={produto.nome}
+          imagemUrl={produto.imagem_url}
+          categoria={produto.categoria}
+          opcoes={opcoes}
+          varianteInicialId={selecionada.id}
+          carregando={carrinhoRapido.carregando}
+          onConfirmar={confirmarVariante}
+          onFechar={() => setModalVarianteAberto(false)}
+        />
+      )}
 
       {carrinhoRapido.drawer && (
         <MiniCarrinhoDrawer
