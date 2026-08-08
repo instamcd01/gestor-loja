@@ -36,6 +36,10 @@ export interface EmpresaCatalogo {
   taxas_parcelamento: Record<string, number> | null;
   /** Abaixo disso, a parcela (2x em diante) não é oferecida no checkout. */
   valor_minimo_parcela: number;
+  /** null = sem taxa de serviço configurada. Cobrada em qualquer pedido do site (entrega ou retirada). */
+  taxa_servico_tipo: "percentual" | "fixo" | null;
+  /** Percentual (ex: 5 = 5%) quando tipo é "percentual", ou valor em R$ quando "fixo". */
+  taxa_servico_valor: number | null;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */
@@ -109,6 +113,9 @@ export interface ItemCarrinho {
     subcategoria: string | null;
     fabricante: string | null;
     estoque_disponivel: number;
+    /** Preço de catálogo atual (pode ter mudado desde que o item entrou no carrinho) — usado só pra calcular "quanto você economizou" no resumo, não pro que é cobrado (isso é `preco_unitario`, travado na hora de adicionar). */
+    preco: number;
+    preco_promocional: number | null;
   } | null;
 }
 

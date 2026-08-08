@@ -3,14 +3,8 @@ import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
 import { CarrinhoLogado } from "@/components/carrinho/carrinho-logado";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
-import { getEnderecoCliente, getSaldoCliente } from "@/lib/cliente";
+import { getEnderecoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
-
-// "Link de Pagamento" e "Outros" só fazem sentido com um atendente
-// mediando (gerar/enviar link, decidir o que é "outros") — no
-// autoatendimento do site, o cliente escolhe sozinho, então só faz
-// sentido oferecer os métodos que se resolvem na entrega/retirada.
-const METODOS_SEM_MEDIACAO_DE_ATENDENTE = new Set(["Dinheiro", "Pix", "Cartão de Débito", "Cartão de Crédito"]);
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +35,7 @@ export default async function CarrinhoPage({
     return <CarrinhoConvidado slug={slug} empresaId={empresa.id} enderecoEmpresa={enderecoEmpresa} />;
   }
 
-  const [carrinho, enderecoSalvo, saldoCliente] = await Promise.all([
-    getCarrinho(empresa.id),
-    getEnderecoCliente(empresa.id),
-    getSaldoCliente(empresa.id),
-  ]);
+  const [carrinho, enderecoSalvo] = await Promise.all([getCarrinho(empresa.id), getEnderecoCliente(empresa.id)]);
 
   if (!carrinho.id || carrinho.itens.length === 0) {
     return (
@@ -62,18 +52,11 @@ export default async function CarrinhoPage({
     <CarrinhoLogado
       slug={slug}
       empresaId={empresa.id}
-      metodosPagamento={(empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
-        METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
-      )}
       aceitaRetirada={empresa.aceita_retirada}
       retiradaPrazoMin={empresa.retirada_prazo_min}
       enderecoEmpresa={enderecoEmpresa}
       horarioFuncionamento={empresa.horario_funcionamento}
-      bandeirasAceitas={empresa.bandeiras_aceitas}
-      taxasParcelamento={empresa.taxas_parcelamento}
-      valorMinimoParcela={empresa.valor_minimo_parcela}
       enderecoSalvo={enderecoSalvo}
-      saldoCliente={saldoCliente}
       carrinhoInicial={carrinho}
     />
   );

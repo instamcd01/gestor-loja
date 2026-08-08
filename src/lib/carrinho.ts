@@ -54,7 +54,7 @@ async function recarregarCarrinho(supabase: SupabaseClient, carrinhoId: string):
   const [{ data: produtos }] = await Promise.all([
     supabase
       .from("catalogo_produtos_publico")
-      .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel")
+      .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel, preco, preco_promocional")
       .in(
         "id",
         itensBrutos.map((i) => i.produto_id),
@@ -228,7 +228,7 @@ export async function getCarrinho(empresaId: string): Promise<Carrinho> {
 
   const { data: produtos } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel")
+    .select("id, nome, imagem_url, categoria, subcategoria, fabricante, estoque_disponivel, preco, preco_promocional")
     .in(
       "id",
       itens.map((i) => i.produto_id),

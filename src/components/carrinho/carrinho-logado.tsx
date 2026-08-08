@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CheckoutForm } from "@/components/carrinho/checkout-form";
+import { EntregaForm } from "@/components/carrinho/entrega-form";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
@@ -23,30 +23,20 @@ import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 export function CarrinhoLogado({
   slug,
   empresaId,
-  metodosPagamento,
   aceitaRetirada,
   retiradaPrazoMin,
   enderecoEmpresa,
   horarioFuncionamento,
-  bandeirasAceitas,
-  taxasParcelamento,
-  valorMinimoParcela,
   enderecoSalvo,
-  saldoCliente,
   carrinhoInicial,
 }: {
   slug: string;
   empresaId: string;
-  metodosPagamento: string[];
   aceitaRetirada: boolean;
   retiradaPrazoMin: number | null;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
-  bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
-  taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
-  valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
   enderecoSalvo: EnderecoCliente | null;
-  saldoCliente: number;
   carrinhoInicial: Carrinho;
 }) {
   const [carrinho, setCarrinho] = useState(carrinhoInicial);
@@ -118,11 +108,11 @@ export function CarrinhoLogado({
   }
 
   return (
-    // pb-44 reserva espaço pra barra fixa de total/confirmar do
-    // CheckoutForm não cobrir o fim do conteúdo — a barra é `fixed`,
-    // então não empurra o layout sozinha. Generoso de propósito porque a
-    // barra cresce quando leva o indicador de progresso de frete grátis
-    // embutido (ver comentário em checkout-form.tsx).
+    // pb-44 reserva espaço pra barra fixa de total/"Ir para pagamento" do
+    // EntregaForm não cobrir o fim do conteúdo — a barra é `fixed`, então
+    // não empurra o layout sozinha. Generoso de propósito porque a barra
+    // cresce quando leva o indicador de progresso de frete grátis
+    // embutido (ver comentário em entrega-form.tsx).
     <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-44 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
@@ -146,21 +136,16 @@ export function CarrinhoLogado({
         ))}
       </Card>
 
-      <CheckoutForm
+      <EntregaForm
         slug={slug}
         empresaId={empresaId}
-        metodosPagamento={metodosPagamento}
         aceitaRetirada={aceitaRetirada}
         retiradaPrazoMin={retiradaPrazoMin}
         enderecoEmpresa={enderecoEmpresa}
         horarioFuncionamento={horarioFuncionamento}
-        bandeirasAceitas={bandeirasAceitas}
-        taxasParcelamento={taxasParcelamento}
-        valorMinimoParcela={valorMinimoParcela}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
-        saldoCliente={saldoCliente}
         aoConfirmarAntes={flushTudo}
       />
     </div>
