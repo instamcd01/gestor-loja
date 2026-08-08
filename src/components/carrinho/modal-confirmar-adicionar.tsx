@@ -43,6 +43,8 @@ export function ModalConfirmarAdicionar({
   const temOpcoes = opcoes.length > 1;
 
   const escolhida = opcoes.find((o) => o.id === varianteId) ?? opcoes[0];
+  const temPromocaoEscolhida =
+    escolhida.preco_promocional != null && escolhida.preco_promocional < escolhida.preco;
 
   function selecionar(opcao: VarianteProduto) {
     setVarianteId(opcao.id);
@@ -75,7 +77,19 @@ export function ModalConfirmarAdicionar({
           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
             <ProdutoImagem src={imagemUrl} alt={nome} categoria={categoria} className="object-cover" />
           </div>
-          <p className="line-clamp-2 text-sm font-medium">{nome}</p>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium">{escolhida.nome}</p>
+            <span className="flex items-baseline gap-1.5">
+              <span className="font-semibold">
+                {formatarPreco(temPromocaoEscolhida ? escolhida.preco_promocional! : escolhida.preco)}
+              </span>
+              {temPromocaoEscolhida && (
+                <span className="text-xs text-black/40 line-through dark:text-white/40">
+                  {formatarPreco(escolhida.preco)}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
 
         {temOpcoes && (

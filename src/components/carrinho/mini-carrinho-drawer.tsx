@@ -85,7 +85,10 @@ export function MiniCarrinhoDrawer({
       : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    // No mobile é gaveta inferior (mais fácil de alcançar com o polegar,
+    // igual ao modal de confirmar variante); no desktop (sm+) continua
+    // gaveta lateral em tela cheia, como sempre foi.
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-stretch sm:justify-end">
       <button
         type="button"
         aria-label="Fechar"
@@ -97,7 +100,7 @@ export function MiniCarrinhoDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Adicionado ao carrinho"
-        className="relative flex h-full w-full max-w-sm flex-col gap-4 bg-[var(--surface)] p-5 shadow-xl"
+        className="relative flex max-h-[85vh] w-full max-w-sm flex-col gap-4 rounded-t-[var(--radius-lg)] bg-[var(--surface)] p-5 shadow-xl sm:h-full sm:max-h-full sm:rounded-none"
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">
