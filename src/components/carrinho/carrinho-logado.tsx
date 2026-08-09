@@ -113,7 +113,7 @@ export function CarrinhoLogado({
     // não empurra o layout sozinha. Generoso de propósito porque a barra
     // cresce quando leva o indicador de progresso de frete grátis
     // embutido (ver comentário em entrega-form.tsx).
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-44 pt-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-44 pt-3">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
         <LimparCarrinhoButton onConfirmar={esvaziar} />

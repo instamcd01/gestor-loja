@@ -108,7 +108,7 @@ export function CarrinhoConvidado({
   );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-3 pb-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
         <LimparCarrinhoButton onConfirmar={() => limparCarrinhoConvidado(empresaId)} />
