@@ -22,7 +22,7 @@ interface RespostaTokenMercadoPago {
 }
 
 function redirectUriPadrao(): string {
-  return `${process.env.NEXT_PUBLIC_SITE_URL}/mp/callback`;
+  return `${process.env.SITE_URL}/mp/callback`;
 }
 
 /**
@@ -170,7 +170,7 @@ export async function cobrarPagamentoOnline(
         // O SDK espera number; o Payment Brick devolve string no formData.
         issuer_id: dados.issuer_id != null ? Number(dados.issuer_id) : undefined,
         external_reference: pedidoId,
-        notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/mercadopago/webhook`,
+        notification_url: `${process.env.SITE_URL}/api/mercadopago/webhook`,
       },
     });
   } catch {
