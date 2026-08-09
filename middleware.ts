@@ -20,14 +20,22 @@ export async function middleware(request: NextRequest) {
   // só ganha o prefixo /loja/[slug] depois da reescrita mais abaixo — uma
   // checagem `pathname.startsWith("/loja/")` aqui nunca bateria pra esse
   // caso, deixando o rate limit inteiro sem efeito no domínio do cliente.
-  // O matcher abaixo já exclui assets estáticos, e esta app não tem
-  // nenhuma rota POST fora do namespace da loja, então limitar por
-  // método é seguro.
+  // O matcher abaixo já exclui assets estáticos. A única rota POST fora
+  // do namespace da loja é o webhook do Mercado Pago — o limite aqui é
+  // generoso o bastante (40/min) pra não incomodar as notificações dele.
   if (request.method === "POST") {
     const ip = ipDaRequisicao(request.headers);
     if (!permitido(`post:${ip}`, LIMITE_POST_POR_IP, JANELA_MS)) {
       return new NextResponse("Muitas requisições — espera um instante e tenta de novo.", { status: 429 });
     }
+  }
+
+  // Rotas globais do Mercado Pago (callback OAuth e webhook) não pertencem
+  // a nenhuma loja — não podem ser reescritas pro namespace /loja/[slug]
+  // quando acessadas por um domínio próprio, senão 404 (não existem lá).
+  const rotaGlobal = request.nextUrl.pathname === "/mp/callback" || request.nextUrl.pathname.startsWith("/api/");
+  if (rotaGlobal) {
+    return updateSession(request);
   }
 
   const host = request.headers.get("host")?.split(":")[0];
