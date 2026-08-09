@@ -173,7 +173,8 @@ export async function cobrarPagamentoOnline(
         notification_url: `${process.env.SITE_URL}/api/mercadopago/webhook`,
       },
     });
-  } catch {
+  } catch (erro) {
+    console.error("Erro ao criar pagamento no Mercado Pago:", erro);
     return { ok: false, erro: "Não foi possível processar o pagamento. Tente de novo." };
   }
 
