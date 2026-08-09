@@ -65,12 +65,14 @@ export function CarrinhoConvidado({
   // — grava direto no MESMO storage que `itens` já lê via useSyncExternalStore,
   // então a lista reage sozinha, sem precisar de gaveta/popup separado.
   function adicionarSugestao(produto: ProdutoCatalogo) {
+    const emPromocao = produto.preco_promocional != null && produto.preco_promocional < produto.preco;
     adicionarItemConvidado(empresaId, {
       produtoId: produto.id,
       nome: produto.nome,
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
-      preco: produto.preco_promocional ?? produto.preco,
+      preco: emPromocao ? produto.preco_promocional! : produto.preco,
+      precoOriginal: emPromocao ? produto.preco : null,
       estoqueDisponivel: produto.estoque_disponivel,
       quantidade: 1,
     });
@@ -92,9 +94,18 @@ export function CarrinhoConvidado({
   const entregaGratis =
     !!estimado &&
     (estimado.valorMinimoFreteGratis != null ? total >= estimado.valorMinimoFreteGratis : estimado.freteGratis);
-  const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
+  // valorCheio, não `valor` (ver mesmo comentário em mini-carrinho-drawer.tsx)
+  // — `valor` vem zerado da RPC quando o subtotal de QUANDO O ENDEREÇO FOI
+  // CONFIRMADO já batia o mínimo, e fica preso nesse 0 mesmo que o
+  // carrinho depois caia abaixo do mínimo de novo. Fallback pro `valor`
+  // antigo cobre um cache já salvo no navegador antes desse campo existir.
+  const entregaValor = estimado ? (entregaGratis ? 0 : (estimado.valorCheio ?? estimado.valor)) : null;
   const faltaParaFreteGratis =
     estimado?.valorMinimoFreteGratis != null && !entregaGratis ? estimado.valorMinimoFreteGratis - total : null;
+  const descontoProdutos = itens.reduce(
+    (soma, item) => (item.precoOriginal != null ? soma + (item.precoOriginal - item.preco) * item.quantidade : soma),
+    0,
+  );
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6">
@@ -195,8 +206,9 @@ export function CarrinhoConvidado({
           subtotal={total}
           entregaLabel="Entrega"
           entregaValor={entregaValor}
-          entregaValorOriginal={estimado?.valor}
+          entregaValorOriginal={estimado?.valorCheio ?? estimado?.valor}
           faltaParaFreteGratis={faltaParaFreteGratis}
+          descontoProdutos={descontoProdutos}
           total={total + (entregaValor ?? 0)}
         />
       </div>

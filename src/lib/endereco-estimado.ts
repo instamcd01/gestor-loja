@@ -24,7 +24,10 @@ export interface EnderecoEstimado {
   endereco: EnderecoCliente;
   zonaId: string;
   zonaNome: string;
+  /** O que seria cobrado NESTE cálculo — pode vir 0 se o subtotal de quando foi salvo já batia o mínimo. Pra "quanto custaria sem desconto", usar valorCheio. */
   valor: number;
+  /** Valor cheio da zona, nunca zerado por frete grátis — estável mesmo depois do carrinho mudar. */
+  valorCheio: number;
   freteGratis: boolean;
   valorMinimoFreteGratis: number | null;
   estimativaMinMin: number | null;

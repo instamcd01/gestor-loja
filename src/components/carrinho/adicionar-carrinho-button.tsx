@@ -19,7 +19,15 @@ export function AdicionarCarrinhoButton({
   produtoId: string;
   /** Configurável em Configurações > Catálogo Online no app — desligado por padrão, revelar estoque baixo de cada item pode passar imagem de loja pequena. */
   mostrarEstoqueBaixo: boolean;
-  produto: { nome: string; imagemUrl: string | null; categoria: string | null; preco: number; estoqueDisponivel: number };
+  produto: {
+    nome: string;
+    imagemUrl: string | null;
+    categoria: string | null;
+    preco: number;
+    /** Preço de catálogo original quando `preco` já é o promocional — null = não está em promoção. */
+    precoOriginal: number | null;
+    estoqueDisponivel: number;
+  };
 }) {
   const [quantidade, setQuantidade] = useState(1);
   const { carregando, erro, drawer, logado, adicionar, alterarQuantidade, flushTudo, fecharDrawer } =

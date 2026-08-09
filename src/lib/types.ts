@@ -153,7 +153,10 @@ export interface CandidatoEndereco {
 export interface OpcaoFrete {
   zona_id: string;
   zona_nome: string;
+  /** O que seria cobrado NESTE cálculo — já vem 0 quando o subtotal usado na chamada bate o mínimo. Não confiável como "preço cheio" (ver valor_cheio). */
   valor: number;
+  /** Valor cheio da zona, nunca zerado por frete grátis — use este pra saber "quanto custaria sem desconto", independente do subtotal usado no cálculo. */
+  valor_cheio: number;
   frete_gratis: boolean;
   valor_minimo_frete_gratis: number | null;
   /** Faixa configurada na zona (Configuração de Entrega no app) — mesma usada na venda presencial pra gravar a previsão do pedido. */

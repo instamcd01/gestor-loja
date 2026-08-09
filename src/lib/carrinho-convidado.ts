@@ -18,6 +18,8 @@ export type ItemCarrinhoConvidado = {
   imagemUrl: string | null;
   categoria: string | null;
   preco: number;
+  /** Preço de catálogo original quando `preco` já é o promocional — null = não está em promoção. Só pra mostrar "quanto economizou" no resumo. */
+  precoOriginal: number | null;
   quantidade: number;
   /** Estoque no momento em que foi adicionado — usado só pra limitar o stepper aqui no navegador; revalidado de verdade contra o catálogo ao logar (mesclarCarrinhoConvidado) e de novo no checkout. */
   estoqueDisponivel: number;

@@ -21,6 +21,8 @@ export interface ItemMiniCarrinho {
   imagemUrl: string | null;
   categoria: string | null;
   preco: number;
+  /** Preço de catálogo original quando `preco` já é o promocional — null = não está em promoção. */
+  precoOriginal: number | null;
   quantidade: number;
   estoqueDisponivel: number;
 }
@@ -78,11 +80,23 @@ export function MiniCarrinhoDrawer({
     (estimado.valorMinimoFreteGratis != null
       ? valorTotal >= estimado.valorMinimoFreteGratis
       : estimado.freteGratis);
-  const entregaValor = estimado ? (entregaGratis ? 0 : estimado.valor) : null;
+  // valorCheio (não `valor`) — `valor` vem zerado da RPC quando o subtotal
+  // de QUANDO O ENDEREÇO FOI CONFIRMADO já batia o mínimo, e fica preso
+  // nesse 0 mesmo que o carrinho depois caia abaixo do mínimo de novo
+  // (mostrava "grátis" mesmo faltando valor). `entregaGratis` acima já é
+  // sempre recalculado ao vivo, então só falta usar um valor "cheio" que
+  // não fica estagnado igual ao `valor` da RPC. Fallback pro `valor`
+  // antigo cobre um cache já salvo no navegador ANTES desse campo existir
+  // (até o cliente trocar/reconfirmar o endereço, o que reescreve o cache).
+  const entregaValor = estimado ? (entregaGratis ? 0 : (estimado.valorCheio ?? estimado.valor)) : null;
   const faltaParaFreteGratis =
     estimado?.valorMinimoFreteGratis != null && !entregaGratis
       ? estimado.valorMinimoFreteGratis - valorTotal
       : null;
+  const descontoProdutos = itens.reduce(
+    (soma, item) => (item.precoOriginal != null ? soma + (item.precoOriginal - item.preco) * item.quantidade : soma),
+    0,
+  );
 
   return (
     // No mobile é gaveta inferior (mais fácil de alcançar com o polegar,
@@ -196,8 +210,9 @@ export function MiniCarrinhoDrawer({
             subtotal={valorTotal}
             entregaLabel="Entrega"
             entregaValor={entregaValor}
-            entregaValorOriginal={estimado?.valor}
+            entregaValorOriginal={estimado?.valorCheio ?? estimado?.valor}
             faltaParaFreteGratis={faltaParaFreteGratis}
+            descontoProdutos={descontoProdutos}
             total={valorTotal + (entregaValor ?? 0)}
           />
         </div>

@@ -80,6 +80,7 @@ export function ProdutoCard({
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
       preco: opcaoTemPromocao ? opcao.preco_promocional! : opcao.preco,
+      precoOriginal: opcaoTemPromocao ? opcao.preco : null,
       estoqueDisponivel: opcao.estoque_disponivel,
     });
     setModalAberto(false);

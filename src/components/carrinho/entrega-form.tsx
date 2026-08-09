@@ -155,6 +155,7 @@ export function EntregaForm({
         zonaId: resultado.opcao.zona_id,
         zonaNome: resultado.opcao.zona_nome,
         valor: resultado.opcao.valor,
+        valorCheio: resultado.opcao.valor_cheio,
         freteGratis: resultado.opcao.frete_gratis,
         valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
         estimativaMinMin: resultado.opcao.estimativa_min_min,
@@ -203,10 +204,16 @@ export function EntregaForm({
   // Econômica é config única da loja (não por zona) — usa o valor fixo da
   // empresa em vez do valor da zona, mas continua sob o mesmo limite de
   // frete grátis da zona (entregaGratisAgora acima vale pras duas).
+  // Usa `valor_cheio` (nunca zerado pela RPC), não `valor` (que já vem 0
+  // quando o subtotal DESTE cálculo bateu o mínimo) — sem isso, depois
+  // que o frete grátis era desbloqueado uma vez, o valor "cheio" ficava
+  // preso em 0 pra sempre nesse endereço, mesmo que o carrinho depois
+  // caísse abaixo do mínimo de novo (mostrava "grátis" errado) ou
+  // que o resumo não conseguisse mostrar quanto a entrega "economizou".
   const valorBaseEntrega =
     modalidadeEntrega === "economica" && freteResolvido?.economico_valor != null
       ? freteResolvido.economico_valor
-      : (freteResolvido?.valor ?? 0);
+      : (freteResolvido?.valor_cheio ?? 0);
   const valorEntrega = freteResolvido ? (entregaGratisAgora ? 0 : valorBaseEntrega) : 0;
   const faltaParaFreteGratis =
     freteResolvido && !entregaGratisAgora && freteResolvido.valor_minimo_frete_gratis != null
@@ -334,7 +341,7 @@ export function EntregaForm({
         <SeletorMetodoEntrega
           metodo={metodoEntrega}
           onMudarMetodo={setMetodoEntrega}
-          valorExpressa={freteResolvido.valor}
+          valorExpressa={freteResolvido.valor_cheio}
           estimativaExpressa={
             freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null
               ? { min: freteResolvido.estimativa_min_min, max: freteResolvido.estimativa_min_max }

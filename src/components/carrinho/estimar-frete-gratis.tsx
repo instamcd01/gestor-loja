@@ -105,6 +105,7 @@ export function EstimarFreteGratis({
       zonaId: resultado.opcao.zona_id,
       zonaNome: resultado.opcao.zona_nome,
       valor: resultado.opcao.valor,
+      valorCheio: resultado.opcao.valor_cheio,
       freteGratis: resultado.opcao.frete_gratis,
       valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
       estimativaMinMin: resultado.opcao.estimativa_min_min,

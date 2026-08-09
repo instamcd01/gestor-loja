@@ -6,6 +6,7 @@ import { useSessao } from "@/components/auth/sessao-provider";
 import { adicionarAoCarrinho, atualizarQuantidade } from "@/lib/carrinho";
 import { adicionarItemConvidado, atualizarItemConvidado, lerCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
+import type { ItemCarrinho } from "@/lib/types";
 import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 export interface EstadoDrawerCarrinho {
@@ -20,8 +21,16 @@ type ProdutoParaAdicionar = {
   imagemUrl: string | null;
   categoria: string | null;
   preco: number;
+  /** Preço de catálogo original quando `preco` já é o promocional — null = não está em promoção. */
+  precoOriginal: number | null;
   estoqueDisponivel: number;
 };
+
+function precoOriginalDoItem(item: ItemCarrinho): number | null {
+  const produto = item.produto;
+  if (!produto) return null;
+  return produto.preco_promocional != null && produto.preco_promocional < produto.preco ? produto.preco : null;
+}
 
 /**
  * Lógica de "adicionar ao carrinho + abrir a gaveta de confirmação",
@@ -68,6 +77,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
         imagemUrl: produto.imagemUrl,
         categoria: produto.categoria,
         preco: produto.preco,
+        precoOriginal: produto.precoOriginal,
         quantidade,
         estoqueDisponivel: produto.estoqueDisponivel,
       });
@@ -88,6 +98,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
           imagemUrl: item.imagemUrl,
           categoria: item.categoria,
           preco: item.preco,
+          precoOriginal: item.precoOriginal,
           quantidade: item.quantidade,
           estoqueDisponivel: item.estoqueDisponivel,
         })),
@@ -129,6 +140,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
         imagemUrl: item.produto?.imagem_url ?? null,
         categoria: item.produto?.categoria ?? null,
         preco: item.preco_unitario,
+        precoOriginal: precoOriginalDoItem(item),
         quantidade: item.quantidade,
         estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
       })),
@@ -159,6 +171,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
                 imagemUrl: item.imagemUrl,
                 categoria: item.categoria,
                 preco: item.preco,
+                precoOriginal: item.precoOriginal,
                 quantidade: item.quantidade,
                 estoqueDisponivel: item.estoqueDisponivel,
               })),
@@ -206,6 +219,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
                 imagemUrl: item.produto?.imagem_url ?? null,
                 categoria: item.produto?.categoria ?? null,
                 preco: item.preco_unitario,
+                precoOriginal: precoOriginalDoItem(item),
                 quantidade: item.quantidade,
                 estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
               })),
