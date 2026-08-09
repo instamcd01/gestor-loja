@@ -152,7 +152,14 @@ export function MiniCarrinhoDrawer({
               </div>
               <div className="flex-1">
                 <p className="line-clamp-2 text-sm font-medium">{item.nome}</p>
-                <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)}</p>
+                <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
+                  {formatarPreco(item.preco)}
+                  {item.precoOriginal != null && (
+                    <span className="text-black/40 line-through dark:text-white/40">
+                      {formatarPreco(item.precoOriginal)}
+                    </span>
+                  )}
+                </p>
               </div>
               {confirmandoRemocaoId === item.id ? (
                 <div className="flex items-center gap-2 text-xs">

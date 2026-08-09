@@ -142,7 +142,14 @@ export function CarrinhoConvidado({
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <div>
                 <p className="text-sm leading-snug font-medium">{item.nome}</p>
-                <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco)} cada</p>
+                <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
+                  {formatarPreco(item.preco)} cada
+                  {item.precoOriginal != null && (
+                    <span className="text-black/40 line-through dark:text-white/40">
+                      {formatarPreco(item.precoOriginal)}
+                    </span>
+                  )}
+                </p>
               </div>
 
               {confirmandoRemocaoId === item.produtoId ? (

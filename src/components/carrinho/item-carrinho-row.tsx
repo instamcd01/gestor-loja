@@ -33,7 +33,12 @@ export function ItemCarrinhoRow({
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div>
           <p className="text-sm leading-snug font-medium">{item.produto?.nome ?? "Produto"}</p>
-          <p className="text-xs text-black/50 dark:text-white/50">{formatarPreco(item.preco_unitario)} cada</p>
+          <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
+            {formatarPreco(item.preco_unitario)} cada
+            {!!item.produto?.preco_promocional && item.produto.preco_promocional < item.produto.preco && (
+              <span className="text-black/40 line-through dark:text-white/40">{formatarPreco(item.produto.preco)}</span>
+            )}
+          </p>
         </div>
 
         {confirmandoRemocao ? (
