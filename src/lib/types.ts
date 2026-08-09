@@ -40,6 +40,8 @@ export interface EmpresaCatalogo {
   taxa_servico_tipo: "percentual" | "fixo" | null;
   /** Percentual (ex: 5 = 5%) quando tipo é "percentual", ou valor em R$ quando "fixo". */
   taxa_servico_valor: number | null;
+  /** Configurado pelo lojista (app Gestor) — "entrega" = comportamento de sempre (só métodos na entrega); "online"/"ambos" só valem de verdade se a loja já conectou o Mercado Pago (ver getMercadoPagoPublicKey). */
+  pagamento_online_disponibilidade: "entrega" | "online" | "ambos";
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */

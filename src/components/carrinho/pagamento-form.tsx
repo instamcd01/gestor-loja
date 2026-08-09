@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { Button } from "@/components/ui/button";
@@ -12,15 +13,16 @@ import {
   obterSnapshotCheckoutEstimado,
   obterSnapshotServidorCheckoutEstimado,
 } from "@/lib/checkout-estimado";
-import { finalizarPedido } from "@/lib/checkout";
+import { finalizarPedido, finalizarPedidoOnline } from "@/lib/checkout";
 import { validarCupom } from "@/lib/cupom";
 import {
   assinarEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
   obterSnapshotServidorEnderecoEstimado,
 } from "@/lib/endereco-estimado";
+import type { DadosPagamentoOnline } from "@/lib/mercadopago";
 import type { EmpresaCatalogo, ItemCarrinho } from "@/lib/types";
-import { formatarEnderecoCompleto, formatarPreco, parseValorMonetarioBr } from "@/lib/utils";
+import { formatarEnderecoCompleto, formatarPreco, NOME_PAGAMENTO_ONLINE, parseValorMonetarioBr } from "@/lib/utils";
 
 const NOME_BANDEIRA: Record<string, string> = {
   visa: "Visa",
@@ -42,6 +44,7 @@ export function PagamentoForm({
   slug,
   empresaId,
   metodosPagamento,
+  mpPublicKey,
   bandeirasAceitas,
   taxasParcelamento,
   valorMinimoParcela,
@@ -54,6 +57,8 @@ export function PagamentoForm({
   slug: string;
   empresaId: string;
   metodosPagamento: string[];
+  /** null = loja não conectou o Mercado Pago — "Pagamento Online" não aparece em `metodosPagamento` nesse caso (ver pagamento/page.tsx), mas o tipo continua opcional aqui por segurança. */
+  mpPublicKey: string | null;
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
@@ -64,6 +69,10 @@ export function PagamentoForm({
   saldoCliente: number;
 }) {
   const router = useRouter();
+
+  useEffect(() => {
+    if (mpPublicKey) initMercadoPago(mpPublicKey, { locale: "pt-BR" });
+  }, [mpPublicKey]);
 
   const checkoutEstimado = useSyncExternalStore(
     assinarCheckoutEstimado,
@@ -216,6 +225,57 @@ export function PagamentoForm({
     setErro(resultado.erro);
   }
 
+  /**
+   * onSubmit do Payment Brick — chamado depois que o próprio Brick já
+   * tokenizou o cartão (ou montou os dados do Pix) no browser. Cria o
+   * pedido e cobra na mesma chamada (ver finalizarPedidoOnline em
+   * checkout.ts); precisa devolver/rejeitar a Promise pro Brick saber se
+   * mostra o próprio estado de erro.
+   */
+  async function pagarOnline({
+    formData,
+  }: {
+    formData: {
+      token?: string;
+      issuer_id?: string;
+      payment_method_id: string;
+      transaction_amount: number;
+      installments?: number;
+      payer: { email: string; identification?: { type: string; number: string } };
+    };
+  }) {
+    if (!checkoutEstimado) return;
+    setConfirmando(true);
+    setErro(null);
+
+    const dados: DadosPagamentoOnline = {
+      token: formData.token,
+      issuer_id: formData.issuer_id,
+      payment_method_id: formData.payment_method_id,
+      transaction_amount: formData.transaction_amount,
+      installments: formData.installments,
+      payer: formData.payer,
+    };
+
+    const resultado = await finalizarPedidoOnline(
+      slug,
+      empresaId,
+      checkoutEstimado.tipoEntrega,
+      checkoutEstimado.zonaId,
+      observacoes,
+      saldoAplicado,
+      cupomAplicado?.codigo ?? null,
+      checkoutEstimado.janelaAgendamento,
+      checkoutEstimado.modalidadeEntrega,
+      dados,
+    );
+
+    // se chegou aqui, deu erro — sucesso já redireciona e não retorna
+    setConfirmando(false);
+    setErro(resultado.erro);
+    throw new Error(resultado.erro);
+  }
+
   // Dinheiro sem valor informado (ou insuficiente) não confirma — mesma
   // regra já usada na venda presencial do app (pagamento_dinheiro_screen.dart:
   // "Pagamento incompleto!" bloqueia até o valor recebido cobrir o total).
@@ -250,7 +310,7 @@ export function PagamentoForm({
       )}
 
       <div>
-        <p className="mb-2 text-sm font-semibold">Forma de pagamento (na retirada/entrega)</p>
+        <p className="mb-2 text-sm font-semibold">Forma de pagamento</p>
         <div className="flex flex-wrap gap-2">
           {metodosPagamento.map((metodo) => (
             <label
@@ -356,6 +416,25 @@ export function PagamentoForm({
         </p>
       )}
 
+      {/* Botão de envio é o próprio do Brick (não o "Confirmar pedido" da
+          barra fixa, que fica escondido pra esse método — ver mais
+          abaixo) — ele já cuida de tokenizar cartão/montar Pix no
+          browser antes de chegar em pagarOnline(). */}
+      {tipoPagamento === NOME_PAGAMENTO_ONLINE && mpPublicKey && (
+        <Card className="p-4">
+          <Payment
+            key={valorFinal}
+            initialization={{ amount: valorFinal }}
+            customization={{
+              paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" },
+              visual: { style: { theme: "dark" } },
+            }}
+            onSubmit={pagarOnline}
+            onError={() => setErro("Não foi possível processar o pagamento. Tente de novo.")}
+          />
+        </Card>
+      )}
+
       <div>
         <label htmlFor="observacoes" className="mb-1 block text-sm font-semibold">
           Observações (opcional)
@@ -431,24 +510,34 @@ export function PagamentoForm({
 
       {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
-      <p className="text-center text-xs text-black/40 dark:text-white/40">
-        Pedido é confirmado direto com o lojista — sem pagamento online por enquanto.
-      </p>
+      {tipoPagamento !== NOME_PAGAMENTO_ONLINE && (
+        <p className="text-center text-xs text-black/40 dark:text-white/40">
+          Pedido é confirmado direto com o lojista — pagamento só na entrega/retirada.
+        </p>
+      )}
 
       {/* Barra fixa: total final + único botão "Confirmar pedido" — sem
           duplicar em fluxo (pedido do usuário: só o da barra fixa). Mesmo
           padrão visual da barra da etapa de entrega (ver entrega-form.tsx).
           z-30 fica acima do botão do WhatsApp (z-20 — ver
-          whatsapp-suporte-button.tsx). */}
+          whatsapp-suporte-button.tsx). Some pro método "Pagamento Online":
+          o Payment Brick (acima, no fluxo normal) já tem o próprio botão
+          de envio — dois botões fariam parecer que são ações diferentes. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-xs text-black/50 dark:text-white/50">Total</p>
             <p className="truncate text-lg font-bold">{formatarPreco(valorFinal)}</p>
           </div>
-          <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="flex-1 py-3 text-base">
-            {confirmando ? "Confirmando..." : "Confirmar pedido"}
-          </Button>
+          {tipoPagamento === NOME_PAGAMENTO_ONLINE ? (
+            <p className="flex-1 text-right text-xs text-black/40 dark:text-white/40">
+              Use o botão de pagamento acima
+            </p>
+          ) : (
+            <Button onClick={confirmar} disabled={!podeConfirmar || confirmando} className="flex-1 py-3 text-base">
+              {confirmando ? "Confirmando..." : "Confirmar pedido"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

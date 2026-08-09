@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
-import { getEmpresaPorSlug } from "@/lib/catalogo";
+import { getEmpresaPorSlug, getMercadoPagoPublicKey } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getSaldoCliente } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
+import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 
 // "Link de Pagamento" e "Outros" só fazem sentido com um atendente
 // mediando (gerar/enviar link, decidir o que é "outros") — no
@@ -48,6 +49,24 @@ export default async function CarrinhoPagamentoPage({
     redirect(`/loja/${slug}/carrinho`);
   }
 
+  // Só busca a public_key se a loja realmente pode oferecer pagamento
+  // online (evita uma ida ao banco à toa nas lojas que nunca vão usar
+  // isso). Se a loja configurou "online"/"ambos" mas nunca conectou o
+  // Mercado Pago (public_key null), cai pros métodos na entrega — nunca
+  // deixa o cliente sem opção nenhuma de pagamento.
+  const mpPublicKey =
+    empresa.pagamento_online_disponibilidade !== "entrega" ? await getMercadoPagoPublicKey(empresa.id) : null;
+
+  const metodosEntrega = (empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
+    METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
+  );
+  const metodosPagamento =
+    mpPublicKey && empresa.pagamento_online_disponibilidade === "online"
+      ? [NOME_PAGAMENTO_ONLINE]
+      : mpPublicKey && empresa.pagamento_online_disponibilidade === "ambos"
+        ? [...metodosEntrega, NOME_PAGAMENTO_ONLINE]
+        : metodosEntrega;
+
   return (
     <div className="mx-auto max-w-2xl pb-44 pt-3">
       <div className="mb-6 flex items-center gap-3">
@@ -65,9 +84,8 @@ export default async function CarrinhoPagamentoPage({
       <PagamentoForm
         slug={slug}
         empresaId={empresa.id}
-        metodosPagamento={(empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
-          METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
-        )}
+        metodosPagamento={metodosPagamento}
+        mpPublicKey={mpPublicKey}
         bandeirasAceitas={empresa.bandeiras_aceitas}
         taxasParcelamento={empresa.taxas_parcelamento}
         valorMinimoParcela={empresa.valor_minimo_parcela}

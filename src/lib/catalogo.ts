@@ -65,6 +65,24 @@ export const getEmpresaPorSlug = cache(async (slug: string): Promise<EmpresaCata
   return data;
 });
 
+/**
+ * Public_key do Mercado Pago da loja — único dado seguro de expor no
+ * client (usado pelo Payment Brick pra tokenizar cartão no browser). O
+ * access_token/refresh_token ficam travados em `empresa_mercadopago`,
+ * sem policy nenhuma de RLS pra anon/authenticated — só essa view
+ * (`catalogo_mercadopago_publico`) expõe algo, e só o public_key. `null`
+ * = loja ainda não conectou o Mercado Pago.
+ */
+export async function getMercadoPagoPublicKey(empresaId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("catalogo_mercadopago_publico")
+    .select("public_key")
+    .eq("empresa_id", empresaId)
+    .maybeSingle();
+  return data?.public_key ?? null;
+}
+
 export async function getBannersCatalogo(empresaId: string): Promise<BannerCatalogo[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

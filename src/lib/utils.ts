@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Nome do método de pagamento online (Mercado Pago) — usado tanto na
+ * lista de opções (`pagamento/page.tsx`/`pagamento-form.tsx`) quanto em
+ * `p_tipo_pagamento` (`finalizarPedidoOnline`, `src/lib/checkout.ts`).
+ * Fica aqui (não em `mercadopago.ts`) porque esse módulo tem
+ * `import "server-only"` e essa constante precisa ser importável tanto
+ * no server quanto no client component do checkout.
+ */
+export const NOME_PAGAMENTO_ONLINE = "Pagamento Online";
+
 /** Mesmo formato de Cliente.enderecoCompleto no app Gestor (lib/models/cliente.dart). */
 export function formatarEnderecoCompleto(e: EnderecoCliente): string {
   const partes: string[] = [];

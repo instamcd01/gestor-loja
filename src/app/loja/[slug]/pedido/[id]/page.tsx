@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
+import { AutoAtualizarPedido } from "@/components/pedido/auto-atualizar-pedido";
 import { PixPagamento } from "@/components/pedido/pix-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ButtonLink } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default async function PedidoPage({
   const { data: pedido } = await supabase
     .from("pedidos")
     .select(
-      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata, previsao_entrega_inicio, previsao_entrega_fim",
+      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, gateway_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata, previsao_entrega_inicio, previsao_entrega_fim",
     )
     .eq("id", id)
     .eq("empresa_id", empresa.id)
@@ -68,6 +69,14 @@ export default async function PedidoPage({
       : { data: [] };
   const nomesPorId = new Map((produtos ?? []).map((p) => [p.id, p.nome]));
 
+  // Pagamento online (Mercado Pago) ainda não confirmado — o Payment
+  // Brick já cobrou (ou mostrou o QR do Pix), mas a confirmação de
+  // verdade só chega depois, pelo webhook (ver mercadopago.ts). Estado
+  // visual mais chamativo que o normal porque o cliente acabou de sair
+  // de um fluxo de pagamento, diferente de "pendente" nos métodos na
+  // entrega (onde pendente é só o estado default, sem nada de errado).
+  const aguardandoPagamentoOnline = pedido.gateway_pagamento === "mercado_pago" && pedido.status_pagamento !== "pago";
+
   const mostrarPix =
     pedido.tipo_pagamento === "Pix" && pedido.status_pagamento !== "pago" && !!empresa.chave_pix;
 
@@ -91,6 +100,14 @@ export default async function PedidoPage({
         <p className="mt-1 text-sm text-black/50 dark:text-white/50">
           {STATUS_LABEL[pedido.status] ?? pedido.status}
         </p>
+        {aguardandoPagamentoOnline && (
+          <>
+            <p className="mt-2 text-sm font-medium text-[var(--color-warning)]">
+              ⏳ Aguardando confirmação do pagamento — atualiza sozinho, sem precisar recarregar a página.
+            </p>
+            <AutoAtualizarPedido />
+          </>
+        )}
         {temEntrega &&
           pedido.status !== "cancelado" &&
           pedido.previsao_entrega_inicio &&

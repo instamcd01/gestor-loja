@@ -3,13 +3,22 @@
 import { redirect } from "next/navigation";
 import { calcularFrete, type ResultadoFrete } from "@/lib/frete";
 import { geocodificarEndereco, geocodificarReverso } from "@/lib/geocoding";
+import { cobrarPagamentoOnline, type DadosPagamentoOnline } from "@/lib/mercadopago";
 import { createClient } from "@/lib/supabase/server";
 import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
+import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 
 export type ResultadoCheckout = { ok: false; erro: string };
 
-export async function finalizarPedido(
-  slug: string,
+/**
+ * Só a parte de gravar o pedido (chama o RPC, que revalida tudo de
+ * verdade — cupom, agendamento, estoque — nunca confiando no que o
+ * client mostrou como preview). Compartilhada pelos dois fluxos de
+ * finalização: `finalizarPedido` (métodos na entrega, redireciona na
+ * hora) e `finalizarPedidoOnline` (Mercado Pago, precisa do pedido já
+ * criado ANTES de cobrar, pra usar o id como `external_reference`).
+ */
+async function criarPedido(
   empresaId: string,
   tipoPagamento: string,
   tipoEntrega: "retirada" | "entrega",
@@ -21,7 +30,7 @@ export async function finalizarPedido(
   agendamento: { inicio: string; fim: string } | null,
   parcelas: number | null,
   modalidadeEntrega: "expressa" | "economica",
-): Promise<ResultadoCheckout> {
+): Promise<{ ok: true; pedidoId: string } | ResultadoCheckout> {
   const supabase = await createClient();
 
   // Server Action é chamável direto (não só pelo clique no botão), sem
@@ -31,12 +40,6 @@ export async function finalizarPedido(
   const observacoesLimitadas = observacoes.trim().slice(0, 1000) || null;
   const cupomLimitado = cupomCodigo?.trim().slice(0, 40) || null;
 
-  // O RPC revalida o cupom de verdade (validar_cupom) antes de aplicar —
-  // o valor de desconto mostrado no checkout é só preview, nunca é
-  // enviado/confiado aqui, só o código. O agendamento também é
-  // revalidado lá (precisa ser no futuro, janela coerente) — o site só
-  // oferece horários dentro do expediente, mas quem decide se aceita é
-  // sempre o servidor, nunca confia cegamente no que o navegador manda.
   const { data: pedidoId, error } = await supabase.rpc("finalizar_pedido_site", {
     p_empresa_id: empresaId,
     p_tipo_pagamento: tipoPagamento,
@@ -55,8 +58,88 @@ export async function finalizarPedido(
   if (error) {
     return { ok: false, erro: error.message };
   }
+  return { ok: true, pedidoId };
+}
 
-  redirect(`/loja/${slug}/pedido/${pedidoId}`);
+export async function finalizarPedido(
+  slug: string,
+  empresaId: string,
+  tipoPagamento: string,
+  tipoEntrega: "retirada" | "entrega",
+  zonaId: string | null,
+  observacoes: string,
+  saldoUsado: number,
+  trocoPara: number | null,
+  cupomCodigo: string | null,
+  agendamento: { inicio: string; fim: string } | null,
+  parcelas: number | null,
+  modalidadeEntrega: "expressa" | "economica",
+): Promise<ResultadoCheckout> {
+  const resultado = await criarPedido(
+    empresaId,
+    tipoPagamento,
+    tipoEntrega,
+    zonaId,
+    observacoes,
+    saldoUsado,
+    trocoPara,
+    cupomCodigo,
+    agendamento,
+    parcelas,
+    modalidadeEntrega,
+  );
+  if (!resultado.ok) return resultado;
+
+  redirect(`/loja/${slug}/pedido/${resultado.pedidoId}`);
+}
+
+/**
+ * Pagamento online (Mercado Pago) — cria o pedido normalmente (mesmo RPC,
+ * mesma revalidação de cupom/estoque/agendamento) e SÓ DEPOIS cobra na
+ * API do Mercado Pago, usando o id do pedido recém-criado como
+ * `external_reference` (é assim que o webhook encontra de volta qual
+ * pedido atualizar). Sem parcelamento "informativo" nem troco — isso é
+ * só sentido pra pagamento na entrega; parcelas de cartão aqui vêm do
+ * próprio Payment Brick.
+ */
+export async function finalizarPedidoOnline(
+  slug: string,
+  empresaId: string,
+  tipoEntrega: "retirada" | "entrega",
+  zonaId: string | null,
+  observacoes: string,
+  saldoUsado: number,
+  cupomCodigo: string | null,
+  agendamento: { inicio: string; fim: string } | null,
+  modalidadeEntrega: "expressa" | "economica",
+  dadosPagamento: DadosPagamentoOnline,
+): Promise<ResultadoCheckout> {
+  const resultado = await criarPedido(
+    empresaId,
+    NOME_PAGAMENTO_ONLINE,
+    tipoEntrega,
+    zonaId,
+    observacoes,
+    saldoUsado,
+    null,
+    cupomCodigo,
+    agendamento,
+    null,
+    modalidadeEntrega,
+  );
+  if (!resultado.ok) return resultado;
+
+  const cobranca = await cobrarPagamentoOnline(empresaId, resultado.pedidoId, dadosPagamento);
+  if (!cobranca.ok) {
+    // O pedido já existe (mesmo tratamento de "pagamento recusado depois
+    // de criado" que qualquer outro método já tem hoje — lojista cancela
+    // na mão) — mas aqui a cobrança nem chegou a ser tentada de verdade
+    // (ex: token inválido), então ainda faz sentido mostrar o erro em
+    // vez de mandar pra confirmação como se tivesse dado certo.
+    return { ok: false, erro: cobranca.erro };
+  }
+
+  redirect(`/loja/${slug}/pedido/${resultado.pedidoId}`);
 }
 
 /**
