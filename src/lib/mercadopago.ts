@@ -183,11 +183,18 @@ export async function cobrarPagamentoOnline(
   // outras chaves ali (entregaSelecionada, modalidadeEntrega, cupom...)
   // e um .update() direto substituiria o objeto inteiro.
   const { data: pedidoAtual } = await supabase.from("pedidos").select("metadata").eq("id", pedidoId).maybeSingle();
+  const statusPagamento = mapearStatusMercadoPago(pagamento.status);
   await supabase
     .from("pedidos")
     .update({
       gateway_pagamento: "mercado_pago",
-      status_pagamento: mapearStatusMercadoPago(pagamento.status),
+      status_pagamento: statusPagamento,
+      // Aprovação síncrona (comum em cartão) já libera o pedido pra fila
+      // do lojista agora — sem isso ficaria preso em "aguardando_pagamento"
+      // até o webhook chegar, mesmo já sabendo que foi aprovado. Pix/outros
+      // meios assíncronos ficam mesmo em "aguardando_pagamento" até o
+      // webhook confirmar (ver `atualizarStatusPagamento`).
+      ...(statusPagamento === "pago" ? { status: "pendente" } : {}),
       metadata: { ...(pedidoAtual?.metadata ?? {}), mercadoPagoPaymentId: String(pagamento.id) },
     })
     .eq("id", pedidoId);
@@ -218,11 +225,23 @@ export async function atualizarStatusPagamento(paymentId: string): Promise<void>
 
   const client = new MercadoPagoConfig({ accessToken });
   const pagamento = await new Payment(client).get({ id: paymentId });
+  const statusPagamento = mapearStatusMercadoPago(pagamento.status);
 
-  await supabase
-    .from("pedidos")
-    .update({ status_pagamento: mapearStatusMercadoPago(pagamento.status) })
-    .eq("id", pedido.id);
+  if (statusPagamento === "pago") {
+    // Libera pra fila do lojista só agora que o pagamento foi confirmado de
+    // verdade — comum em Pix, onde a criação do pagamento
+    // (`cobrarPagamentoOnline`) só devolve "pendente", e é esse webhook que
+    // avisa quando o cliente efetivamente pagou. O `.eq("status", ...)`
+    // evita reabrir um pedido que o lojista já cancelou manualmente
+    // enquanto esperava.
+    await supabase
+      .from("pedidos")
+      .update({ status_pagamento: statusPagamento, status: "pendente" })
+      .eq("id", pedido.id)
+      .eq("status", "aguardando_pagamento");
+  } else {
+    await supabase.from("pedidos").update({ status_pagamento: statusPagamento }).eq("id", pedido.id);
+  }
 }
 
 /**

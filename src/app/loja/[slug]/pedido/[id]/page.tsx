@@ -12,6 +12,7 @@ import { formatarHora, formatarPreco } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, string> = {
+  aguardando_pagamento: "Aguardando confirmação do pagamento",
   pendente: "Aguardando confirmação da loja",
   preparando: "Em preparo",
   saiu_para_entrega: "Saiu para entrega",
