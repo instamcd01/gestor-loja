@@ -50,13 +50,15 @@ export default async function CarrinhoPagamentoPage({
 
   return (
     <div className="mx-auto max-w-2xl pb-44 pt-3">
-      <div className="mb-6 flex items-center gap-2">
+      <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/loja/${slug}/carrinho`}
           aria-label="Voltar ao carrinho"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-black/50 hover:bg-black/5 hover:text-black/80 dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white/80"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-black/60 transition-colors hover:border-black/20 hover:bg-black/5 hover:text-black/80 dark:border-white/15 dark:text-white/60 dark:hover:border-white/25 dark:hover:bg-white/10 dark:hover:text-white/80"
         >
-          ←
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
         </Link>
         <h1 className="text-xl font-semibold">Pagamento</h1>
       </div>
