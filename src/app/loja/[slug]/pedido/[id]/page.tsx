@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
+import { horarioFechamentoNoDia } from "@/lib/agendamento";
 import { AutoAtualizarPedido } from "@/components/pedido/auto-atualizar-pedido";
 import { PixPagamento } from "@/components/pedido/pix-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
@@ -7,9 +8,33 @@ import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { gerarPixCopiaECola } from "@/lib/pix";
 import { createClient } from "@/lib/supabase/server";
+import type { EmpresaCatalogo } from "@/lib/types";
 import { formatarHora, formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * "sexta-feira, 14 de agosto às 21:00" — mesmo formato usado na tela de
+ * escolha de entrega (ver formatarDataPrevista em agendamento.ts), com
+ * hora junto, pra previsão de entrega econômica (que pode ser dias no
+ * futuro, diferente da hora-hora usada pros outros métodos). Usa o
+ * horário de FECHAMENTO da loja nesse dia (`horarioFechamentoNoDia`,
+ * mesma função usada na tela de escolha), não a hora crua de
+ * `previsao_entrega_fim` — esse timestamp guarda a mesma hora-do-dia em
+ * que o pedido foi feito (ex: 18:37), não o fechamento, e mostrar isso
+ * aqui destoaria do que a tela de escolha já prometeu antes de confirmar.
+ */
+function formatarDataHoraPrevista(iso: string, horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"]): string {
+  const data = new Date(iso);
+  const dataFormatada = data.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    timeZone: "America/Sao_Paulo",
+  });
+  const fechamento = horarioFechamentoNoDia(data, horarioFuncionamento) ?? formatarHora(iso);
+  return `${dataFormatada} às ${fechamento}`;
+}
 
 const STATUS_LABEL: Record<string, string> = {
   aguardando_pagamento: "Aguardando confirmação do pagamento",
@@ -51,6 +76,7 @@ export default async function PedidoPage({
     saldoAplicado?: number;
     trocoPara?: number;
     entregaSelecionada?: string;
+    modalidadeEntrega?: "expressa" | "economica";
     mercadoPagoPixQrCode?: string;
     mercadoPagoPixQrCodeBase64?: string;
   };
@@ -126,12 +152,22 @@ export default async function PedidoPage({
         {temEntrega &&
           pedido.status !== "cancelado" &&
           pedido.previsao_entrega_inicio &&
-          pedido.previsao_entrega_fim && (
+          pedido.previsao_entrega_fim &&
+          (metadata.modalidadeEntrega === "economica" ? (
+            // Econômica pode ser dias depois de hoje (previsao_entrega_inicio
+            // fica em "agora", só previsao_entrega_fim avança) — mostrar as
+            // duas como hora-hora ("14:32–17:00") fica enganoso quando na
+            // real são dias de diferença. Mostra só a data+hora final, no
+            // mesmo formato já usado na tela de escolha de entrega.
+            <p className="mt-1 text-sm font-medium text-[var(--brand-primary)]">
+              🕐 Previsão de entrega: até {formatarDataHoraPrevista(pedido.previsao_entrega_fim, empresa.horario_funcionamento)}
+            </p>
+          ) : (
             <p className="mt-1 text-sm font-medium text-[var(--brand-primary)]">
               🕐 Previsão de entrega: {formatarHora(pedido.previsao_entrega_inicio)}–
               {formatarHora(pedido.previsao_entrega_fim)}
             </p>
-          )}
+          ))}
       </div>
 
       <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
