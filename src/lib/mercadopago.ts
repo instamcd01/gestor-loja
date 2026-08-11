@@ -52,6 +52,26 @@ export async function trocarCodigoPorToken(
   }
 
   const dados = (await resposta.json()) as RespostaTokenMercadoPago;
+
+  // Só pra identificação na tela de conexão (qual conta está conectada,
+  // ver mercado_pago_conectar_screen.dart) — achado direto nesta sessão:
+  // sem isso a tela só mostra "Conta conectada" sem dizer qual, o que já
+  // causou confusão real entre a conta de teste e a conta de produção.
+  // Best-effort: se essa chamada falhar, segue sem email em vez de
+  // travar a conexão em si.
+  let email: string | null = null;
+  try {
+    const respostaUsuario = await fetch("https://api.mercadopago.com/users/me", {
+      headers: { Authorization: `Bearer ${dados.access_token}` },
+    });
+    if (respostaUsuario.ok) {
+      const usuario = (await respostaUsuario.json()) as { email?: string };
+      email = usuario.email ?? null;
+    }
+  } catch {
+    // Segue sem email — não é crítico pra conexão funcionar.
+  }
+
   const supabase = createServiceClient();
   const { error } = await supabase.from("empresa_mercadopago").upsert({
     empresa_id: empresaId,
@@ -59,6 +79,7 @@ export async function trocarCodigoPorToken(
     access_token: dados.access_token,
     refresh_token: dados.refresh_token,
     public_key: dados.public_key,
+    mp_email: email,
     expires_at: new Date(Date.now() + dados.expires_in * 1000).toISOString(),
     updated_at: new Date().toISOString(),
   });
@@ -161,16 +182,47 @@ export async function cobrarPagamentoOnline(
     return { ok: false, erro: "Essa loja ainda não conectou o Mercado Pago." };
   }
 
+  const supabase = createServiceClient();
+  // Nunca confia no `transaction_amount` que vem do Brick — mesma
+  // regra já aplicada a preço/frete/cupom em todo o resto do checkout
+  // (ver finalizar_pedido_site). Achado testando: o Brick com
+  // `locale: "pt-BR"` devolve o valor formatado (vírgula decimal), que a
+  // API do MP rejeita com "Invalid transaction_amount" (causa 4037) — o
+  // valor real e já validado é o `valor_total` que o RPC gravou no pedido.
+  const { data: pedidoAtual } = await supabase
+    .from("pedidos")
+    .select("metadata, valor_total, numero_sequencial")
+    .eq("id", pedidoId)
+    .maybeSingle();
+  if (!pedidoAtual?.valor_total) {
+    return { ok: false, erro: "Não foi possível confirmar o valor do pedido. Tente de novo." };
+  }
+
+  // Só pra aparecer algo legível no extrato/painel do Mercado Pago
+  // (por padrão o `description` vem vazio e a transação lá só mostra o
+  // valor) — não afeta nada da lógica de cobrança em si.
+  const { data: itens } = await supabase
+    .from("itens_pedido")
+    .select("quantidade, produtos(nome)")
+    .eq("pedido_id", pedidoId);
+  const resumoItens = (itens ?? [])
+    .map((item) => `${item.quantidade}x ${(item.produtos as unknown as { nome: string } | null)?.nome ?? "item"}`)
+    .join(", ")
+    .slice(0, 200);
+  const description = `Pedido #${pedidoAtual.numero_sequencial}${resumoItens ? ` - ${resumoItens}` : ""}`;
+
   const client = new MercadoPagoConfig({ accessToken });
   let pagamento;
   try {
     pagamento = await new Payment(client).create({
       body: {
         ...dados,
+        transaction_amount: pedidoAtual.valor_total,
         // O SDK espera number; o Payment Brick devolve string no formData.
         issuer_id: dados.issuer_id != null ? Number(dados.issuer_id) : undefined,
         external_reference: pedidoId,
         notification_url: `${process.env.SITE_URL}/api/mercadopago/webhook`,
+        description,
       },
     });
   } catch (erro) {
@@ -178,11 +230,6 @@ export async function cobrarPagamentoOnline(
     return { ok: false, erro: "Não foi possível processar o pagamento. Tente de novo." };
   }
 
-  const supabase = createServiceClient();
-  // Merge manual em vez de sobrescrever `metadata` — o RPC já grava
-  // outras chaves ali (entregaSelecionada, modalidadeEntrega, cupom...)
-  // e um .update() direto substituiria o objeto inteiro.
-  const { data: pedidoAtual } = await supabase.from("pedidos").select("metadata").eq("id", pedidoId).maybeSingle();
   const statusPagamento = mapearStatusMercadoPago(pagamento.status);
   // Pix (e outros meios via QR) só vêm com isso preenchido — sem gravar
   // aqui, a página de confirmação não tem como mostrar o QR/copia-e-cola
