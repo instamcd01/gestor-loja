@@ -252,6 +252,7 @@ export async function cobrarPagamentoOnline(
     });
   } catch (erro) {
     console.error("Erro ao criar pagamento no Mercado Pago:", erro);
+    await reabrirCarrinhoPagamentoRecusado(pedidoId);
     return { ok: false, erro: "Não foi possível processar o pagamento. Tente de novo." };
   }
 
@@ -303,14 +304,32 @@ export async function cobrarPagamentoOnline(
   // Recusado é diferente de "pendente" (Pix, análise) — sem isso o cliente
   // era jogado pra tela de confirmação achando que só falta confirmar,
   // quando na real a cobrança já falhou de vez e ele precisa tentar outro
-  // cartão/meio agora. O pedido em si continua existindo em
-  // aguardando_pagamento (o lojista/job de expiração cuidam de limpar se o
-  // cliente não tentar de novo — ver cancelar_pedidos_pagamento_abandonado).
+  // cartão/meio agora. Cancela o pedido, repõe estoque/cupom/saldo e reabre
+  // o carrinho com os mesmos itens (ver reabrirCarrinhoPagamentoRecusado) —
+  // sem isso a próxima tentativa falhava com "Carrinho vazio", já que
+  // finalizar_pedido_site já tinha marcado o carrinho como finalizado.
   if (pagamento.status === "rejected") {
+    await reabrirCarrinhoPagamentoRecusado(pedidoId);
     return { ok: false, erro: mapearMotivoRecusa(pagamento.status_detail) };
   }
 
   return { ok: true };
+}
+
+/**
+ * Desfaz `finalizar_pedido_site` (estoque, cupom, saldo) e reabre o mesmo
+ * carrinho, com os mesmos itens, pra próxima tentativa de pagamento não
+ * precisar recomeçar do zero. Best-effort só na captura de erro pra não
+ * quebrar a resposta pro cliente (ele já vai ver a mensagem de recusa de
+ * qualquer forma) — mas loga alto, porque se isso falhar o pedido fica
+ * órfão em aguardando_pagamento e o carrinho não reabre sozinho.
+ */
+async function reabrirCarrinhoPagamentoRecusado(pedidoId: string): Promise<void> {
+  const supabase = createServiceClient();
+  const { error } = await supabase.rpc("reabrir_carrinho_pagamento_recusado", { p_pedido_id: pedidoId });
+  if (error) {
+    console.error("Erro ao reabrir carrinho após pagamento recusado:", error);
+  }
 }
 
 /**
