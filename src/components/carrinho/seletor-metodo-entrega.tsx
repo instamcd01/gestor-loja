@@ -6,6 +6,7 @@ import {
   formatarDataPrevista,
   gerarJanelasHorario,
   gerarOpcoesData,
+  horarioFechamentoNoDia,
   type JanelaHorarioAgendamento,
   type OpcaoDataAgendamento,
 } from "@/lib/agendamento";
@@ -57,6 +58,12 @@ export function SeletorMetodoEntrega({
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
 }) {
   const opcoesData = useMemo(() => gerarOpcoesData(horarioFuncionamento), [horarioFuncionamento]);
+  const labelEconomica = useMemo(() => {
+    if (economicoPrazoDias == null) return "Mais barata";
+    const data = calcularDataUtilFutura(economicoPrazoDias, horarioFuncionamento);
+    const fecha = horarioFechamentoNoDia(data, horarioFuncionamento);
+    return `Chega até ${formatarDataPrevista(data)}${fecha ? ` às ${fecha}` : ""}`;
+  }, [economicoPrazoDias, horarioFuncionamento]);
   const [dataEscolhida, setDataEscolhida] = useState<OpcaoDataAgendamento | null>(opcoesData[0] ?? null);
   const janelasHorario = useMemo(
     () =>
@@ -96,11 +103,7 @@ export function SeletorMetodoEntrega({
           <button type="button" onClick={() => selecionar("economica")} className={cartao(metodo === "economica")}>
             <div className="flex flex-col gap-0.5">
               <span className="text-sm font-medium">Econômica</span>
-              <span className="text-xs text-black/60 dark:text-white/60">
-                {economicoPrazoDias != null
-                  ? `Chega até ${formatarDataPrevista(calcularDataUtilFutura(economicoPrazoDias))}`
-                  : "Mais barata"}
-              </span>
+              <span className="text-xs text-black/60 dark:text-white/60">{labelEconomica}</span>
             </div>
             <span className={`text-sm font-semibold ${gratis ? "text-[var(--color-success)]" : ""}`}>
               {gratis ? "Grátis" : formatarPreco(economicoValor)}

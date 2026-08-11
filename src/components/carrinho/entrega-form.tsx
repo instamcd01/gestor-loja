@@ -9,7 +9,12 @@ import { SeletorAgendamento } from "@/components/carrinho/seletor-agendamento";
 import { SeletorMetodoEntrega } from "@/components/carrinho/seletor-metodo-entrega";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { calcularDataUtilFutura, formatarDataPrevista, type JanelaHorarioAgendamento } from "@/lib/agendamento";
+import {
+  calcularDataUtilFutura,
+  formatarDataPrevista,
+  horarioFechamentoNoDia,
+  type JanelaHorarioAgendamento,
+} from "@/lib/agendamento";
 import { calcularFretePorEndereco } from "@/lib/checkout";
 import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-estimado";
 import { salvarEndereco } from "@/lib/cliente";
@@ -238,7 +243,9 @@ export function EntregaForm({
     }
     if (!freteResolvido) return null;
     if (modalidadeEntrega === "economica" && freteResolvido.economico_prazo_dias != null) {
-      return `Chega até ${formatarDataPrevista(calcularDataUtilFutura(freteResolvido.economico_prazo_dias))}`;
+      const data = calcularDataUtilFutura(freteResolvido.economico_prazo_dias, horarioFuncionamento);
+      const fecha = horarioFechamentoNoDia(data, horarioFuncionamento);
+      return `Chega até ${formatarDataPrevista(data)}${fecha ? ` às ${fecha}` : ""}`;
     }
     if (freteResolvido.estimativa_min_min != null && freteResolvido.estimativa_min_max != null) {
       return `Chega em ${freteResolvido.estimativa_min_min}–${freteResolvido.estimativa_min_max} min`;

@@ -48,20 +48,36 @@ export function estimarChegada(min: number, max: number): { inicio: string; fim:
 }
 
 /**
- * Data prevista pulando sábado/domingo — mesma regra usada em
- * finalizar_pedido_site (SQL) pra modalidade "Econômica" (config única da
- * loja, valor fixo + prazo em dias úteis) — transforma "até X dias úteis"
- * numa data real em vez de deixar o cliente contar de cabeça.
+ * Data prevista pulando os dias em que a LOJA está fechada de verdade
+ * (`horario_funcionamento`) — mesma regra usada em `finalizar_pedido_site`
+ * (SQL) pra modalidade "Econômica" (config única da loja, valor fixo +
+ * prazo em dias úteis) — transforma "até X dias úteis" numa data real em
+ * vez de deixar o cliente contar de cabeça. Achado real: "dias úteis" não
+ * é sinônimo de "segunda a sexta" — uma loja que abre todo dia (comum em
+ * pet shop) não deveria ter o prazo inflado pulando sábado/domingo à toa.
+ * Sem `horario_funcionamento` configurado pro dia, assume aberto.
  */
-export function calcularDataUtilFutura(diasUteis: number): Date {
+export function calcularDataUtilFutura(diasUteis: number, horarioFuncionamento?: HorarioFuncionamento | null): Date {
   let data = new Date();
   let restantes = diasUteis;
   while (restantes > 0) {
     data = new Date(data.getFullYear(), data.getMonth(), data.getDate() + 1);
-    const diaSemana = data.getDay(); // 0 = domingo, 6 = sábado
-    if (diaSemana !== 0 && diaSemana !== 6) restantes--;
+    const diaSemana = DIAS_SEMANA[data.getDay()];
+    const fechado = horarioFuncionamento?.[diaSemana]?.aberto === false;
+    if (!fechado) restantes--;
   }
   return data;
+}
+
+/**
+ * Horário de fechamento da loja no dia informado — pra completar "chega
+ * até <data> às <hora>" em vez de só a data, já que o cliente também quer
+ * saber até que horas esperar a entrega naquele dia. `null` = dia sem
+ * horário configurado (não força um valor padrão, só omite a hora).
+ */
+export function horarioFechamentoNoDia(data: Date, horarioFuncionamento?: HorarioFuncionamento | null): string | null {
+  const diaSemana = DIAS_SEMANA[data.getDay()];
+  return horarioFuncionamento?.[diaSemana]?.fecha ?? null;
 }
 
 export function formatarDataPrevista(data: Date): string {
