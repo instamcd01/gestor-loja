@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 
-export function PixPagamento({ qrCodeDataUrl, copiaECola }: { qrCodeDataUrl: string; copiaECola: string }) {
+export function PixPagamento({
+  qrCodeDataUrl,
+  copiaECola,
+  mensagemRodape = "Escaneie o QR Code ou copie o código no app do seu banco. A loja confirma o recebimento manualmente.",
+}: {
+  qrCodeDataUrl: string;
+  copiaECola: string;
+  mensagemRodape?: string;
+}) {
   const [copiado, setCopiado] = useState(false);
 
   async function copiar() {
@@ -23,10 +31,7 @@ export function PixPagamento({ qrCodeDataUrl, copiaECola }: { qrCodeDataUrl: str
       >
         {copiado ? "Código copiado!" : "Pix Copia e Cola"}
       </button>
-      <p className="text-center text-xs text-black/40 dark:text-white/40">
-        Escaneie o QR Code ou copie o código no app do seu banco. A loja confirma o
-        recebimento manualmente.
-      </p>
+      <p className="text-center text-xs text-black/40 dark:text-white/40">{mensagemRodape}</p>
     </div>
   );
 }

@@ -184,6 +184,12 @@ export async function cobrarPagamentoOnline(
   // e um .update() direto substituiria o objeto inteiro.
   const { data: pedidoAtual } = await supabase.from("pedidos").select("metadata").eq("id", pedidoId).maybeSingle();
   const statusPagamento = mapearStatusMercadoPago(pagamento.status);
+  // Pix (e outros meios via QR) só vêm com isso preenchido — sem gravar
+  // aqui, a página de confirmação não tem como mostrar o QR/copia-e-cola
+  // pro cliente pagar (o Payment Brick não mostra a própria tela de QR
+  // nesse fluxo, já que a gente navega pra /pedido/[id] assim que o
+  // pagamento é criado).
+  const dadosPix = pagamento.point_of_interaction?.transaction_data;
   await supabase
     .from("pedidos")
     .update({
@@ -195,7 +201,13 @@ export async function cobrarPagamentoOnline(
       // meios assíncronos ficam mesmo em "aguardando_pagamento" até o
       // webhook confirmar (ver `atualizarStatusPagamento`).
       ...(statusPagamento === "pago" ? { status: "pendente" } : {}),
-      metadata: { ...(pedidoAtual?.metadata ?? {}), mercadoPagoPaymentId: String(pagamento.id) },
+      metadata: {
+        ...(pedidoAtual?.metadata ?? {}),
+        mercadoPagoPaymentId: String(pagamento.id),
+        ...(dadosPix?.qr_code
+          ? { mercadoPagoPixQrCode: dadosPix.qr_code, mercadoPagoPixQrCodeBase64: dadosPix.qr_code_base64 }
+          : {}),
+      },
     })
     .eq("id", pedidoId);
 

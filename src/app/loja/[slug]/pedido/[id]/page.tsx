@@ -51,6 +51,8 @@ export default async function PedidoPage({
     saldoAplicado?: number;
     trocoPara?: number;
     entregaSelecionada?: string;
+    mercadoPagoPixQrCode?: string;
+    mercadoPagoPixQrCodeBase64?: string;
   };
   const troco =
     metadata.trocoPara != null ? metadata.trocoPara - (pedido.valor_total ?? 0) : null;
@@ -81,9 +83,21 @@ export default async function PedidoPage({
   const mostrarPix =
     pedido.tipo_pagamento === "Pix" && pedido.status_pagamento !== "pago" && !!empresa.chave_pix;
 
+  // Pix pago pelo Payment Brick do Mercado Pago — QR/copia-e-cola vêm
+  // prontos da API do MP (ver `cobrarPagamentoOnline`), diferente do Pix
+  // manual acima (chave estática, QR gerado aqui). Confirmação é
+  // automática via webhook, não manual pelo lojista.
+  const mostrarPixMercadoPago =
+    pedido.gateway_pagamento === "mercado_pago" &&
+    pedido.status_pagamento !== "pago" &&
+    !!metadata.mercadoPagoPixQrCodeBase64;
+
   let qrCodeDataUrl: string | null = null;
   let copiaECola: string | null = null;
-  if (mostrarPix) {
+  if (mostrarPixMercadoPago) {
+    qrCodeDataUrl = `data:image/png;base64,${metadata.mercadoPagoPixQrCodeBase64}`;
+    copiaECola = metadata.mercadoPagoPixQrCode ?? null;
+  } else if (mostrarPix) {
     copiaECola = gerarPixCopiaECola({
       chavePix: empresa.chave_pix!,
       nomeRecebedor: empresa.nome,
@@ -152,8 +166,16 @@ export default async function PedidoPage({
         )}
       </div>
 
-      {mostrarPix && qrCodeDataUrl && copiaECola && (
-        <PixPagamento qrCodeDataUrl={qrCodeDataUrl} copiaECola={copiaECola} />
+      {(mostrarPix || mostrarPixMercadoPago) && qrCodeDataUrl && copiaECola && (
+        <PixPagamento
+          qrCodeDataUrl={qrCodeDataUrl}
+          copiaECola={copiaECola}
+          mensagemRodape={
+            mostrarPixMercadoPago
+              ? "Escaneie o QR Code ou copie o código no app do seu banco. Assim que o pagamento cair, a página atualiza sozinha."
+              : undefined
+          }
+        />
       )}
 
       <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mx-auto w-fit">
