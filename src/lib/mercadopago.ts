@@ -165,6 +165,20 @@ function mapearStatusMercadoPago(status?: string): "pendente" | "pago" {
 }
 
 /**
+ * Taxa que o PRÓPRIO Mercado Pago desconta da loja em cada venda paga
+ * online (split direto na conta do vendedor — não é comissão da
+ * plataforma, aqui `application_fee` é sempre 0). Sem isso, "Lucro Total"
+ * no detalhe da venda (app Gestor) ficava otimista pra pedido pago online,
+ * já que só descontava o custo dos produtos. `fee_details` pode ter mais
+ * de um tipo (`coupon_fee`, `financing_fee` — custo de parcelamento
+ * repassado ao comprador, não à loja); só `mercadopago_fee` é o valor real
+ * cobrado do vendedor.
+ */
+function extrairTaxaMercadoPago(feeDetails?: Array<{ type?: string; amount?: number }>): number | null {
+  return feeDetails?.find((f) => f.type === "mercadopago_fee")?.amount ?? null;
+}
+
+/**
  * `status_detail` da API do Mercado Pago pra recusa de cartão, traduzido
  * pro cliente entender o que fazer — sem isso a mensagem genérica
  * ("não foi possível processar") não diferencia "seu cartão não tem
@@ -282,6 +296,12 @@ export async function cobrarPagamentoOnline(
         // só "Pagamento Online" genérico no detalhe da venda (app Gestor).
         mercadoPagoPaymentTypeId: pagamento.payment_type_id ?? null,
         mercadoPagoInstallments: pagamento.installments ?? null,
+        // Só vem preenchido aqui pra cartão aprovado na hora — Pix ainda
+        // "pending" nesse momento não tem taxa calculada ainda, é capturada
+        // depois em `atualizarStatusPagamento` quando o webhook confirma.
+        ...(extrairTaxaMercadoPago(pagamento.fee_details) != null
+          ? { mercadoPagoTaxa: extrairTaxaMercadoPago(pagamento.fee_details) }
+          : {}),
         ...(dadosPix?.qr_code
           ? { mercadoPagoPixQrCode: dadosPix.qr_code, mercadoPagoPixQrCodeBase64: dadosPix.qr_code_base64 }
           : {}),
@@ -478,7 +498,7 @@ export async function atualizarStatusPagamento(paymentId: string): Promise<void>
   const supabase = createServiceClient();
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("id, empresa_id")
+    .select("id, empresa_id, metadata")
     .eq("metadata->>mercadoPagoPaymentId", paymentId)
     .maybeSingle();
   if (!pedido) return;
@@ -489,6 +509,10 @@ export async function atualizarStatusPagamento(paymentId: string): Promise<void>
   const client = new MercadoPagoConfig({ accessToken });
   const pagamento = await new Payment(client).get({ id: paymentId });
   const statusPagamento = mapearStatusMercadoPago(pagamento.status);
+  // Caminho do Pix: na criação (`cobrarPagamentoOnline`) o pagamento ainda
+  // estava "pending", sem taxa calculada — agora que aprovou, `fee_details`
+  // já vem preenchido.
+  const taxa = extrairTaxaMercadoPago(pagamento.fee_details);
 
   if (statusPagamento === "pago") {
     // Libera pra fila do lojista só agora que o pagamento foi confirmado de
@@ -499,7 +523,11 @@ export async function atualizarStatusPagamento(paymentId: string): Promise<void>
     // enquanto esperava.
     await supabase
       .from("pedidos")
-      .update({ status_pagamento: statusPagamento, status: "pendente" })
+      .update({
+        status_pagamento: statusPagamento,
+        status: "pendente",
+        ...(taxa != null ? { metadata: { ...(pedido.metadata ?? {}), mercadoPagoTaxa: taxa } } : {}),
+      })
       .eq("id", pedido.id)
       .eq("status", "aguardando_pagamento");
   } else {
