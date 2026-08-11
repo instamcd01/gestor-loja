@@ -42,6 +42,8 @@ export interface EmpresaCatalogo {
   taxa_servico_valor: number | null;
   /** Configurado pelo lojista (app Gestor) — "entrega" = comportamento de sempre (só métodos na entrega); "online"/"ambos" só valem de verdade se a loja já conectou o Mercado Pago (ver getMercadoPagoPublicKey). */
   pagamento_online_disponibilidade: "entrega" | "online" | "ambos";
+  /** Pix pelo Mercado Pago cobra taxa (diferente do Pix manual, na entrega, que é grátis) — lojista pode desativar sem desconectar a conta inteira. */
+  mp_pix_ativo: boolean;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */

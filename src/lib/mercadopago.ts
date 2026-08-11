@@ -165,6 +165,31 @@ function mapearStatusMercadoPago(status?: string): "pendente" | "pago" {
 }
 
 /**
+ * `status_detail` da API do Mercado Pago pra recusa de cartão, traduzido
+ * pro cliente entender o que fazer — sem isso a mensagem genérica
+ * ("não foi possível processar") não diferencia "seu cartão não tem
+ * saldo" de "CVV errado" de "essa loja não pode receber esse cartão",
+ * cada um pede uma ação diferente do cliente. Lista oficial:
+ * https://www.mercadopago.com.br/developers/pt/docs/checkout-api/response-handling/collection-results
+ */
+function mapearMotivoRecusa(statusDetail?: string): string {
+  const mensagens: Record<string, string> = {
+    cc_rejected_insufficient_amount: "Saldo insuficiente no cartão.",
+    cc_rejected_bad_filled_security_code: "Código de segurança (CVV) incorreto.",
+    cc_rejected_bad_filled_date: "Data de validade incorreta.",
+    cc_rejected_bad_filled_card_number: "Número do cartão incorreto.",
+    cc_rejected_bad_filled_other: "Dados do cartão incorretos.",
+    cc_rejected_call_for_authorize: "Cartão recusado — ligue pra sua operadora pra autorizar essa compra.",
+    cc_rejected_card_disabled: "Cartão desabilitado — ligue pra sua operadora ou tente outro cartão.",
+    cc_rejected_duplicated_payment: "Já existe um pagamento igual em andamento — aguarde alguns minutos antes de tentar de novo.",
+    cc_rejected_invalid_installments: "Número de parcelas não permitido pra esse cartão.",
+    cc_rejected_max_attempts: "Muitas tentativas com esse cartão. Tente outro cartão ou pague com Pix.",
+    cc_rejected_card_type_not_allowed: "Essa loja não aceita esse tipo de cartão.",
+  };
+  return mensagens[statusDetail ?? ""] ?? "Pagamento recusado pela operadora do cartão. Tente outro cartão ou pague com Pix.";
+}
+
+/**
  * Cria o pagamento na API do Mercado Pago usando o access_token DO
  * VENDEDOR (split — nunca o token da plataforma), sem `application_fee`
  * (comissão da plataforma = 0 por enquanto). Chamada DEPOIS que o pedido
@@ -251,6 +276,11 @@ export async function cobrarPagamentoOnline(
       metadata: {
         ...(pedidoAtual?.metadata ?? {}),
         mercadoPagoPaymentId: String(pagamento.id),
+        // payment_type_id (credit_card/debit_card/bank_transfer) + installments
+        // é o que dá pra mostrar "Cartão de crédito parcelado em 3x" em vez de
+        // só "Pagamento Online" genérico no detalhe da venda (app Gestor).
+        mercadoPagoPaymentTypeId: pagamento.payment_type_id ?? null,
+        mercadoPagoInstallments: pagamento.installments ?? null,
         ...(dadosPix?.qr_code
           ? { mercadoPagoPixQrCode: dadosPix.qr_code, mercadoPagoPixQrCodeBase64: dadosPix.qr_code_base64 }
           : {}),
@@ -268,6 +298,16 @@ export async function cobrarPagamentoOnline(
     } catch (erro) {
       console.error("Erro ao salvar cartão do cliente no Mercado Pago:", erro);
     }
+  }
+
+  // Recusado é diferente de "pendente" (Pix, análise) — sem isso o cliente
+  // era jogado pra tela de confirmação achando que só falta confirmar,
+  // quando na real a cobrança já falhou de vez e ele precisa tentar outro
+  // cartão/meio agora. O pedido em si continua existindo em
+  // aguardando_pagamento (o lojista/job de expiração cuidam de limpar se o
+  // cliente não tentar de novo — ver cancelar_pedidos_pagamento_abandonado).
+  if (pagamento.status === "rejected") {
+    return { ok: false, erro: mapearMotivoRecusa(pagamento.status_detail) };
   }
 
   return { ok: true };
@@ -356,6 +396,54 @@ export async function listarCartoesSalvos(empresaId: string, mpCustomerId: strin
   } catch {
     return [];
   }
+}
+
+/**
+ * Estorna um pagamento online já confirmado — chamado pelo botão "Estornar
+ * pagamento" no app Gestor (ver `/api/mercadopago/estornar`, que valida
+ * dono/gerente antes de chegar aqui). Só grava o resultado no metadata do
+ * pedido; quem marca como cancelado + repõe estoque + estorna saldo é o
+ * próprio app, via RPC `cancelar_pedido` já existente e testada (não
+ * reinventada aqui) — essa função só fala com o Mercado Pago.
+ */
+export async function estornarPagamentoOnline(
+  empresaId: string,
+  pedidoId: string,
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const accessToken = await obterAccessTokenValido(empresaId);
+  if (!accessToken) return { ok: false, erro: "Essa loja não está conectada ao Mercado Pago." };
+
+  const supabase = createServiceClient();
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("metadata, gateway_pagamento, status_pagamento")
+    .eq("id", pedidoId)
+    .eq("empresa_id", empresaId)
+    .maybeSingle();
+
+  const metadata = (pedido?.metadata ?? {}) as Record<string, unknown>;
+  const paymentId = metadata.mercadoPagoPaymentId as string | undefined;
+  if (!pedido || pedido.gateway_pagamento !== "mercado_pago" || pedido.status_pagamento !== "pago" || !paymentId) {
+    return { ok: false, erro: "Esse pedido não tem um pagamento online confirmado pra estornar." };
+  }
+
+  const resposta = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!resposta.ok) {
+    const erroResposta = await resposta.json().catch(() => null);
+    console.error("Erro ao estornar pagamento no Mercado Pago:", erroResposta);
+    return { ok: false, erro: "O Mercado Pago recusou o estorno. Tente de novo ou estorne manualmente pelo painel deles." };
+  }
+
+  const estorno = (await resposta.json()) as { id: number };
+  await supabase
+    .from("pedidos")
+    .update({ metadata: { ...metadata, mercadoPagoRefundId: estorno.id, estornadoEm: new Date().toISOString() } })
+    .eq("id", pedidoId);
+
+  return { ok: true };
 }
 
 /**

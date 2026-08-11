@@ -47,6 +47,7 @@ export function PagamentoForm({
   mpPublicKey,
   mpCustomerId,
   cartoesSalvos,
+  mpPixAtivo,
   bandeirasAceitas,
   taxasParcelamento,
   valorMinimoParcela,
@@ -64,6 +65,8 @@ export function PagamentoForm({
   /** null = cliente nunca pagou online nessa loja ainda (ver getMercadoPagoCustomerId) — Brick mostra formulário de cartão novo normal. */
   mpCustomerId: string | null;
   cartoesSalvos: string[];
+  /** Pix pelo Mercado Pago cobra taxa (0,99%) — desligável sem desconectar a conta (ver empresas.mp_pix_ativo). Pix na entrega (chave fixa, grátis) não é afetado. */
+  mpPixAtivo: boolean;
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
@@ -437,7 +440,15 @@ export function PagamentoForm({
               ...(mpCustomerId ? { payer: { customerId: mpCustomerId, cardsIds: cartoesSalvos } } : {}),
             }}
             customization={{
-              paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" },
+              paymentMethods: {
+                creditCard: "all",
+                debitCard: "all",
+                // Omitir a chave inteira (não só "excluded") é o jeito de
+                // esconder a categoria — Pix aqui é o do Mercado Pago
+                // (cobra 0,99%), diferente do Pix manual (chave fixa,
+                // grátis) que continua disponível nos métodos na entrega.
+                ...(mpPixAtivo ? { bankTransfer: "all" as const } : {}),
+              },
               visual: { style: { theme: "dark" } },
             }}
             onSubmit={pagarOnline}
