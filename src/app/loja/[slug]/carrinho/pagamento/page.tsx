@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
 import { getEmpresaPorSlug, getMercadoPagoPublicKey } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
-import { getSaldoCliente } from "@/lib/cliente";
+import { getMercadoPagoCustomerId, getSaldoCliente } from "@/lib/cliente";
+import { listarCartoesSalvos } from "@/lib/mercadopago";
 import { createClient } from "@/lib/supabase/server";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 
@@ -57,6 +58,13 @@ export default async function CarrinhoPagamentoPage({
   const mpPublicKey =
     empresa.pagamento_online_disponibilidade !== "entrega" ? await getMercadoPagoPublicKey(empresa.id) : null;
 
+  // Cartão salvo (ver salvarCartaoDoCliente em mercadopago.ts) — repassado
+  // pro Payment Brick mostrar como opção pronta, sem o cliente digitar o
+  // cartão de novo. `mpCustomerId` null = cliente nunca pagou online nessa
+  // loja ainda, Brick renderiza o formulário normal de cartão novo.
+  const mpCustomerId = mpPublicKey ? await getMercadoPagoCustomerId(empresa.id) : null;
+  const cartoesSalvos = mpCustomerId ? await listarCartoesSalvos(empresa.id, mpCustomerId) : [];
+
   const metodosEntrega = (empresa.metodos_pagamento_ativos ?? ["Dinheiro", "Pix"]).filter((m) =>
     METODOS_SEM_MEDIACAO_DE_ATENDENTE.has(m),
   );
@@ -86,6 +94,8 @@ export default async function CarrinhoPagamentoPage({
         empresaId={empresa.id}
         metodosPagamento={metodosPagamento}
         mpPublicKey={mpPublicKey}
+        mpCustomerId={mpCustomerId}
+        cartoesSalvos={cartoesSalvos}
         bandeirasAceitas={empresa.bandeiras_aceitas}
         taxasParcelamento={empresa.taxas_parcelamento}
         valorMinimoParcela={empresa.valor_minimo_parcela}

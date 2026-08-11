@@ -191,7 +191,7 @@ export async function cobrarPagamentoOnline(
   // valor real e já validado é o `valor_total` que o RPC gravou no pedido.
   const { data: pedidoAtual } = await supabase
     .from("pedidos")
-    .select("metadata, valor_total, numero_sequencial")
+    .select("metadata, valor_total, numero_sequencial, cliente_id")
     .eq("id", pedidoId)
     .maybeSingle();
   if (!pedidoAtual?.valor_total) {
@@ -258,7 +258,104 @@ export async function cobrarPagamentoOnline(
     })
     .eq("id", pedidoId);
 
+  // Pix não tem cartão pra salvar (`dados.token` só existe em pagamento com
+  // cartão). Best-effort de propósito — cliente salvo é uma conveniência
+  // (evita digitar o cartão de novo na próxima compra), nunca deve
+  // derrubar um pagamento que já foi cobrado com sucesso.
+  if (dados.token) {
+    try {
+      await salvarCartaoDoCliente(empresaId, pedidoAtual.cliente_id, accessToken, dados.token, dados.payer.email, pagamento.card);
+    } catch (erro) {
+      console.error("Erro ao salvar cartão do cliente no Mercado Pago:", erro);
+    }
+  }
+
   return { ok: true };
+}
+
+/**
+ * Cria (ou reaproveita) o Customer do cliente no Mercado Pago DESSA loja —
+ * split por conta, então o mesmo cliente comprando em duas lojas diferentes
+ * tem um `mp_customer_id` diferente em cada uma (cada uma é um vendedor MP
+ * separado). Salva o token do cartão recém-usado nesse Customer pra
+ * aparecer como opção pronta no próximo checkout (Payment Brick com
+ * `initialization.payer.customerId/cardsIds` — ver pagamento-form.tsx).
+ * Deduplica pelos últimos 4 dígitos + validade (vêm no retorno do próprio
+ * pagamento) pra não empilhar o mesmo cartão físico a cada compra.
+ */
+async function salvarCartaoDoCliente(
+  empresaId: string,
+  clienteId: string,
+  accessToken: string,
+  token: string,
+  email: string,
+  cartaoCobrado: { last_four_digits?: string; expiration_month?: number; expiration_year?: number } | undefined,
+): Promise<void> {
+  if (!cartaoCobrado?.last_four_digits) return;
+
+  const supabase = createServiceClient();
+  const { data: cliente } = await supabase.from("clientes").select("nome, mp_customer_id").eq("id", clienteId).single();
+  if (!cliente) return;
+
+  let customerId = cliente.mp_customer_id;
+  if (!customerId) {
+    const [primeiroNome, ...resto] = cliente.nome.trim().split(/\s+/);
+    const resposta = await fetch("https://api.mercadopago.com/v1/customers", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, first_name: primeiroNome, last_name: resto.join(" ") || primeiroNome }),
+    });
+    if (!resposta.ok) return;
+    const novoCustomer = (await resposta.json()) as { id: string };
+    customerId = novoCustomer.id;
+    await supabase.from("clientes").update({ mp_customer_id: customerId }).eq("id", clienteId);
+  }
+
+  const respostaCartoes = await fetch(`https://api.mercadopago.com/v1/customers/${customerId}/cards`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (respostaCartoes.ok) {
+    const cartoesExistentes = (await respostaCartoes.json()) as Array<{
+      last_four_digits: string;
+      expiration_month: number;
+      expiration_year: number;
+    }>;
+    const jaSalvo = cartoesExistentes.some(
+      (c) =>
+        c.last_four_digits === cartaoCobrado.last_four_digits &&
+        c.expiration_month === cartaoCobrado.expiration_month &&
+        c.expiration_year === cartaoCobrado.expiration_year,
+    );
+    if (jaSalvo) return;
+  }
+
+  await fetch(`https://api.mercadopago.com/v1/customers/${customerId}/cards`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+}
+
+/**
+ * IDs dos cartões salvos do cliente nessa loja (empresaId — split, ver
+ * `salvarCartaoDoCliente`) — repassados pro Payment Brick mostrar como
+ * opção pronta (`initialization.payer.cardsIds`). `null`/`[]` = cliente
+ * não tem cartão salvo ainda, Brick renderiza o formulário normal.
+ */
+export async function listarCartoesSalvos(empresaId: string, mpCustomerId: string): Promise<string[]> {
+  const accessToken = await obterAccessTokenValido(empresaId);
+  if (!accessToken) return [];
+
+  try {
+    const resposta = await fetch(`https://api.mercadopago.com/v1/customers/${mpCustomerId}/cards`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!resposta.ok) return [];
+    const cartoes = (await resposta.json()) as Array<{ id: string }>;
+    return cartoes.map((c) => c.id);
+  } catch {
+    return [];
+  }
 }
 
 /**

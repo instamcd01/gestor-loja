@@ -45,6 +45,8 @@ export function PagamentoForm({
   empresaId,
   metodosPagamento,
   mpPublicKey,
+  mpCustomerId,
+  cartoesSalvos,
   bandeirasAceitas,
   taxasParcelamento,
   valorMinimoParcela,
@@ -59,6 +61,9 @@ export function PagamentoForm({
   metodosPagamento: string[];
   /** null = loja não conectou o Mercado Pago — "Pagamento Online" não aparece em `metodosPagamento` nesse caso (ver pagamento/page.tsx), mas o tipo continua opcional aqui por segurança. */
   mpPublicKey: string | null;
+  /** null = cliente nunca pagou online nessa loja ainda (ver getMercadoPagoCustomerId) — Brick mostra formulário de cartão novo normal. */
+  mpCustomerId: string | null;
+  cartoesSalvos: string[];
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
@@ -424,7 +429,13 @@ export function PagamentoForm({
         <Card className="p-4">
           <Payment
             key={valorFinal}
-            initialization={{ amount: valorFinal }}
+            initialization={{
+              amount: valorFinal,
+              // Cliente com cartão salvo dessa loja (ver getMercadoPagoCustomerId
+              // em cliente.ts) — o Brick já mostra o cartão pronto, só pede o
+              // CVV de novo (nunca fica guardado, por segurança do próprio MP).
+              ...(mpCustomerId ? { payer: { customerId: mpCustomerId, cardsIds: cartoesSalvos } } : {}),
+            }}
             customization={{
               paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" },
               visual: { style: { theme: "dark" } },

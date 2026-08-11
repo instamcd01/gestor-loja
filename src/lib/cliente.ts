@@ -45,6 +45,24 @@ export async function getSaldoCliente(empresaId: string): Promise<number> {
   return data?.saldo ?? 0;
 }
 
+/** `null` = cliente ainda não tem Customer criado no Mercado Pago DESSA loja (nunca pagou online aqui, ou é a primeira vez). */
+export async function getMercadoPagoCustomerId(empresaId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("clientes")
+    .select("mp_customer_id")
+    .eq("empresa_id", empresaId)
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  return data?.mp_customer_id ?? null;
+}
+
 export type ResultadoEndereco = { ok: true } | { ok: false; erro: string };
 
 export async function salvarEndereco(
