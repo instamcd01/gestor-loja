@@ -49,6 +49,7 @@ export function PagamentoForm({
   mpCustomerId,
   cartoesSalvos,
   mpPixAtivo,
+  mpDebitoAtivo,
   bandeirasAceitas,
   taxasParcelamento,
   valorMinimoParcela,
@@ -68,6 +69,8 @@ export function PagamentoForm({
   cartoesSalvos: string[];
   /** Pix pelo Mercado Pago cobra taxa (0,99%) — desligável sem desconectar a conta (ver empresas.mp_pix_ativo). Pix na entrega (chave fixa, grátis) não é afetado. */
   mpPixAtivo: boolean;
+  /** Cartão de Débito Virtual CAIXA — hoje só funciona com esse produto específico (não débito comum), lojista pode esconder pra não confundir cliente (ver empresas.mp_debito_ativo). */
+  mpDebitoAtivo: boolean;
   bandeirasAceitas: EmpresaCatalogo["bandeiras_aceitas"];
   taxasParcelamento: EmpresaCatalogo["taxas_parcelamento"];
   valorMinimoParcela: EmpresaCatalogo["valor_minimo_parcela"];
@@ -570,12 +573,23 @@ export function PagamentoForm({
             customization={{
               paymentMethods: {
                 creditCard: "all",
-                debitCard: "all",
+                // Único produto de débito que o Brick oferece hoje é o
+                // Cartão Virtual CAIXA (não débito comum do banco do
+                // cliente — ver mercado_pago_conectar_screen.dart) —
+                // lojista pode esconder pra não confundir quem tenta pagar
+                // com o débito normal e não encontra (ver empresas.mp_debito_ativo).
+                ...(mpDebitoAtivo ? { debitCard: "all" as const } : {}),
                 // Omitir a chave inteira (não só "excluded") é o jeito de
                 // esconder a categoria — Pix aqui é o do Mercado Pago
                 // (cobra 0,99%), diferente do Pix manual (chave fixa,
                 // grátis) que continua disponível nos métodos na entrega.
                 ...(mpPixAtivo ? { bankTransfer: "all" as const } : {}),
+                // Saldo/carteira Mercado Pago — cliente com conta MP paga
+                // com o saldo que já tem lá, sem digitar cartão de novo.
+                // Sem toggle próprio (diferente de Pix/débito): é o
+                // dinheiro que o próprio cliente já tem na conta dele, não
+                // muda taxa nem comportamento pro lojista.
+                mercadoPago: "all",
                 // Explícito (não só o padrão da conta MP) — é o número que
                 // aparece na mensagem "em até 12x" logo acima, então o
                 // limite real do Brick precisa bater com o que foi prometido.

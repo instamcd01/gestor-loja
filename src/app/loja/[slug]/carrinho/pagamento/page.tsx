@@ -100,6 +100,7 @@ export default async function CarrinhoPagamentoPage({
         mpCustomerId={mpCustomerId}
         cartoesSalvos={cartoesSalvos}
         mpPixAtivo={empresa.mp_pix_ativo}
+        mpDebitoAtivo={empresa.mp_debito_ativo}
         bandeirasAceitas={empresa.bandeiras_aceitas}
         taxasParcelamento={empresa.taxas_parcelamento}
         valorMinimoParcela={empresa.valor_minimo_parcela}

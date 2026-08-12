@@ -44,6 +44,8 @@ export interface EmpresaCatalogo {
   pagamento_online_disponibilidade: "entrega" | "online" | "ambos";
   /** Pix pelo Mercado Pago cobra taxa (diferente do Pix manual, na entrega, que é grátis) — lojista pode desativar sem desconectar a conta inteira. */
   mp_pix_ativo: boolean;
+  /** Cartão de Débito Virtual CAIXA no Brick — hoje só funciona com esse produto específico da CAIXA (não débito comum do banco do cliente), então o lojista pode esconder se isso estiver confundindo clientes. */
+  mp_debito_ativo: boolean;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */
