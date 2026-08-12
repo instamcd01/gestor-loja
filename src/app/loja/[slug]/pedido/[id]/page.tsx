@@ -75,12 +75,20 @@ export default async function PedidoPage({
 
   const metadata = (pedido.metadata ?? {}) as {
     saldoAplicado?: number;
+    petcashAplicado?: number;
     trocoPara?: number;
     entregaSelecionada?: string;
     modalidadeEntrega?: "expressa" | "economica";
     mercadoPagoPixQrCode?: string;
     mercadoPagoPixQrCodeBase64?: string;
   };
+  // Só mostra a prévia enquanto o crédito ainda não existe de verdade
+  // (concedido só quando o pedido é marcado como entregue, ver
+  // gerar_petcash_pedido) — depois disso vira duplicidade confusa.
+  const petcashPrevisto =
+    empresa.petcash_ativo && empresa.petcash_percentual && pedido.status !== "entregue" && pedido.status !== "cancelado"
+      ? Math.round((pedido.valor_produtos ?? 0) * empresa.petcash_percentual) / 100
+      : 0;
   const troco =
     metadata.trocoPara != null ? metadata.trocoPara - (pedido.valor_total ?? 0) : null;
   // entregaSelecionada só existe em pedidos de entrega (ver finalizar_pedido_site) —
@@ -188,6 +196,8 @@ export default async function PedidoPage({
             entregaValor={temEntrega ? (pedido.valor_entrega ?? 0) : null}
             descontoCupom={pedido.desconto ?? 0}
             saldoAplicado={metadata.saldoAplicado}
+            petcashAplicado={metadata.petcashAplicado}
+            petcashPrevisto={petcashPrevisto}
             total={pedido.valor_total ?? 0}
           />
         </div>

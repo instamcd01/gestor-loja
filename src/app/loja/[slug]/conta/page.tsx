@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
+import { formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export default async function ContaPage({
   // RLS (clientes_cliente_le_proprio) já garante que só a própria linha volta.
   const { data: cliente } = await supabase
     .from("clientes")
-    .select("nome, telefone")
+    .select("nome, telefone, saldo_petcash")
     .eq("empresa_id", empresa.id)
     .eq("auth_user_id", user.id)
     .maybeSingle();
@@ -39,7 +41,22 @@ export default async function ContaPage({
         <p className="font-medium">{cliente?.telefone ?? user.phone}</p>
       </div>
 
-      {/* TODO: pedidos do cliente (depende do carrinho/checkout, próximo passo) */}
+      {!!cliente?.saldo_petcash && cliente.saldo_petcash > 0 && (
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">
+          <p className="text-sm text-black/50 dark:text-white/50">🐾 Seu PetCash</p>
+          <p className="text-2xl font-semibold text-[var(--brand-primary)]">
+            {formatarPreco(cliente.saldo_petcash)}
+          </p>
+          <p className="mt-0.5 text-xs text-black/50 dark:text-white/50">Use no seu próximo pedido pelo site</p>
+        </div>
+      )}
+
+      <Link
+        href={`/loja/${slug}/pedidos`}
+        className="rounded-[var(--radius-lg)] border border-black/5 p-4 text-sm font-medium hover:border-[var(--brand-primary)]/40 dark:border-white/10"
+      >
+        Meus pedidos
+      </Link>
 
       <LogoutButton slug={slug} />
     </div>

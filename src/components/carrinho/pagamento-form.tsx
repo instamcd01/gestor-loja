@@ -58,6 +58,11 @@ export function PagamentoForm({
   subtotal,
   itens,
   saldoCliente,
+  saldoPetCash,
+  petcashAtivo,
+  petcashPercentual,
+  petcashUsoMaximoPercentual,
+  petcashPedidoMinimoUso,
 }: {
   slug: string;
   empresaId: string;
@@ -79,6 +84,13 @@ export function PagamentoForm({
   subtotal: number;
   itens: ItemCarrinho[];
   saldoCliente: number;
+  /** PetCash disponível pra gastar — independente de `petcashAtivo` (crédito já concedido continua gastável mesmo se a loja desligar novos créditos). */
+  saldoPetCash: number;
+  /** false = loja não credita PetCash novo (não afeta o saldo já existente, ver `saldoPetCash`). */
+  petcashAtivo: EmpresaCatalogo["petcash_ativo"];
+  petcashPercentual: EmpresaCatalogo["petcash_percentual"];
+  petcashUsoMaximoPercentual: EmpresaCatalogo["petcash_uso_maximo_percentual"];
+  petcashPedidoMinimoUso: EmpresaCatalogo["petcash_pedido_minimo_uso"];
 }) {
   const router = useRouter();
 
@@ -127,6 +139,7 @@ export function PagamentoForm({
   const [mostrarObservacoes, setMostrarObservacoes] = useState(false);
   const [observacoes, setObservacoes] = useState("");
   const [usarSaldo, setUsarSaldo] = useState(false);
+  const [usarPetCash, setUsarPetCash] = useState(false);
   const [trocoParaTexto, setTrocoParaTexto] = useState("");
   const [cupomTexto, setCupomTexto] = useState("");
   const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; valorDesconto: number } | null>(null);
@@ -226,7 +239,19 @@ export function PagamentoForm({
   const descontoCupom = cupomAplicado?.valorDesconto ?? 0;
   const valorAntesDoSaldo = Math.max(0, subtotal + valorEntrega + taxaServico - descontoCupom);
   const saldoAplicado = usarSaldo ? Math.min(saldoCliente, valorAntesDoSaldo) : 0;
-  const valorFinal = valorAntesDoSaldo - saldoAplicado;
+  const valorAntesDoPetCash = valorAntesDoSaldo - saldoAplicado;
+  // Mesmo clamp de finalizar_pedido_site (nunca confia só no que aparece
+  // aqui, o servidor reclampa igual) — só pra mostrar de verdade quanto
+  // vai ser aplicado, não deixar o cliente marcar a caixa achando que vai
+  // usar mais do que o teto/mínimo da loja permite.
+  const petcashUtilizavel =
+    valorAntesDoSaldo >= petcashPedidoMinimoUso
+      ? Math.min(saldoPetCash, valorAntesDoPetCash, Math.round(valorAntesDoSaldo * petcashUsoMaximoPercentual) / 100)
+      : 0;
+  const petcashAplicado = usarPetCash ? petcashUtilizavel : 0;
+  const valorFinal = valorAntesDoPetCash - petcashAplicado;
+  const petcashPrevisto =
+    petcashAtivo && petcashPercentual ? Math.round(subtotal * petcashPercentual) / 100 : 0;
 
   const trocoPara = parseValorMonetarioBr(trocoParaTexto);
   const trocoValido = Number.isFinite(trocoPara) && trocoPara > 0;
@@ -266,6 +291,7 @@ export function PagamentoForm({
       checkoutEstimado.janelaAgendamento,
       tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 ? parcelaEscolhida : null,
       checkoutEstimado.modalidadeEntrega,
+      petcashAplicado,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -316,6 +342,7 @@ export function PagamentoForm({
       checkoutEstimado.janelaAgendamento,
       checkoutEstimado.modalidadeEntrega,
       dados,
+      petcashAplicado,
     );
 
     // se chegou aqui, deu erro — sucesso já redireciona e não retorna
@@ -353,6 +380,34 @@ export function PagamentoForm({
             checked={usarSaldo}
             onChange={(e) => setUsarSaldo(e.target.checked)}
             className="h-5 w-5 accent-[var(--brand-primary)]"
+          />
+        </label>
+      )}
+
+      {saldoPetCash > 0 && (
+        <label
+          className={`flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-dashed p-4 ${
+            petcashUtilizavel > 0
+              ? "cursor-pointer border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5"
+              : "cursor-not-allowed border-black/10 opacity-60 dark:border-white/10"
+          }`}
+        >
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold">🐾 Usar meu PetCash</span>
+            <span className="text-xs text-black/50 dark:text-white/50">
+              {petcashUtilizavel > 0
+                ? `Você tem ${formatarPreco(saldoPetCash)} disponível — pode usar até ${formatarPreco(petcashUtilizavel)} nesse pedido`
+                : valorAntesDoSaldo < petcashPedidoMinimoUso
+                  ? `Você tem ${formatarPreco(saldoPetCash)} disponível — faltam ${formatarPreco(petcashPedidoMinimoUso - valorAntesDoSaldo)} pra poder usar`
+                  : `Você tem ${formatarPreco(saldoPetCash)} disponível`}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={usarPetCash}
+            disabled={petcashUtilizavel <= 0}
+            onChange={(e) => setUsarPetCash(e.target.checked)}
+            className="h-5 w-5 accent-[var(--brand-primary)] disabled:cursor-not-allowed"
           />
         </label>
       )}
@@ -687,6 +742,8 @@ export function PagamentoForm({
           descontoCupom={descontoCupom}
           descontoProdutos={descontoProdutos}
           saldoAplicado={saldoAplicado}
+          petcashAplicado={petcashAplicado}
+          petcashPrevisto={petcashPrevisto}
           total={valorFinal}
         />
       </Card>

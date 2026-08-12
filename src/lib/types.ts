@@ -46,6 +46,16 @@ export interface EmpresaCatalogo {
   mp_pix_ativo: boolean;
   /** Cartão de Débito Virtual CAIXA no Brick — hoje só funciona com esse produto específico da CAIXA (não débito comum do banco do cliente), então o lojista pode esconder se isso estiver confundindo clientes. */
   mp_debito_ativo: boolean;
+  /** PetCash — cashback automático em pedidos do site quando entregues. false = loja não credita PetCash novo (saldo já concedido continua gastável). */
+  petcash_ativo: boolean;
+  /** Percentual sobre o subtotal de produtos (nunca sobre frete/taxa) creditado como PetCash quando ativo. */
+  petcash_percentual: number | null;
+  /** Dias até um crédito de PetCash expirar, contados da data do crédito. */
+  petcash_validade_dias: number;
+  /** Teto de quanto do PetCash pode pagar um pedido, em % do valor do pedido. */
+  petcash_uso_maximo_percentual: number;
+  /** Valor mínimo do pedido pra poder usar PetCash como parte do pagamento. */
+  petcash_pedido_minimo_uso: number;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */

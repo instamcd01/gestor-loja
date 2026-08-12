@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
 import { getEmpresaPorSlug, getMercadoPagoPublicKey } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
-import { getMercadoPagoCustomerId, getSaldoCliente } from "@/lib/cliente";
+import { getMercadoPagoCustomerId, getSaldoCliente, getSaldoPetCash } from "@/lib/cliente";
 import { listarCartoesSalvos } from "@/lib/mercadopago";
 import { createClient } from "@/lib/supabase/server";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
@@ -44,7 +44,11 @@ export default async function CarrinhoPagamentoPage({
   // em carrinho/page.tsx) — manda pro carrinho, que resolve login antes.
   if (!user) redirect(`/loja/${slug}/carrinho`);
 
-  const [carrinho, saldoCliente] = await Promise.all([getCarrinho(empresa.id), getSaldoCliente(empresa.id)]);
+  const [carrinho, saldoCliente, saldoPetCash] = await Promise.all([
+    getCarrinho(empresa.id),
+    getSaldoCliente(empresa.id),
+    getSaldoPetCash(empresa.id),
+  ]);
 
   if (!carrinho.id || carrinho.itens.length === 0) {
     redirect(`/loja/${slug}/carrinho`);
@@ -109,6 +113,11 @@ export default async function CarrinhoPagamentoPage({
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         saldoCliente={saldoCliente}
+        saldoPetCash={saldoPetCash}
+        petcashAtivo={empresa.petcash_ativo}
+        petcashPercentual={empresa.petcash_percentual}
+        petcashUsoMaximoPercentual={empresa.petcash_uso_maximo_percentual}
+        petcashPedidoMinimoUso={empresa.petcash_pedido_minimo_uso}
       />
     </div>
   );

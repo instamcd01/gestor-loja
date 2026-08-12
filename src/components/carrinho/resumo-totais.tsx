@@ -30,6 +30,8 @@ export function ResumoTotais({
   descontoCupom,
   descontoProdutos,
   saldoAplicado,
+  petcashAplicado,
+  petcashPrevisto,
   total,
 }: {
   subtotal: number;
@@ -53,6 +55,10 @@ export function ResumoTotais({
   /** Soma de (preço de catálogo − preço promocional) × quantidade dos itens que estão em promoção. */
   descontoProdutos?: number;
   saldoAplicado?: number;
+  /** Quanto de PetCash foi usado como pagamento nesse pedido — some do total, mesma linha visual do saldo. */
+  petcashAplicado?: number;
+  /** Prévia informativa (não afeta o total) de quanto o pedido vai gerar em PetCash quando entregue — só exibida quando a loja tem PetCash ativo. */
+  petcashPrevisto?: number;
   total: number;
 }) {
   const freteGratisComoDesconto = entregaValor === 0 && !!entregaValorOriginal && entregaValorOriginal > 0;
@@ -153,10 +159,23 @@ export function ResumoTotais({
         </div>
       )}
 
+      {!!petcashAplicado && petcashAplicado > 0 && (
+        <div className="flex justify-between text-[var(--color-success)]">
+          <span>🐾 PetCash aplicado</span>
+          <span>-{formatarPreco(petcashAplicado)}</span>
+        </div>
+      )}
+
       <div className="mt-1 flex justify-between border-t border-black/10 pt-2 text-base font-semibold dark:border-white/10">
         <span>Total</span>
         <span>{formatarPreco(total)}</span>
       </div>
+
+      {!!petcashPrevisto && petcashPrevisto > 0 && (
+        <p className="mt-0.5 text-xs font-medium text-[var(--brand-primary)]">
+          🐾 Você vai ganhar {formatarPreco(petcashPrevisto)} em PetCash quando esse pedido for entregue
+        </p>
+      )}
     </div>
   );
 }

@@ -30,6 +30,7 @@ async function criarPedido(
   agendamento: { inicio: string; fim: string } | null,
   parcelas: number | null,
   modalidadeEntrega: "expressa" | "economica",
+  petcashUsado: number,
 ): Promise<{ ok: true; pedidoId: string } | ResultadoCheckout> {
   const supabase = await createClient();
 
@@ -53,6 +54,11 @@ async function criarPedido(
     p_agendado_fim: agendamento?.fim ?? null,
     p_parcelas: parcelas,
     p_modalidade_entrega: modalidadeEntrega,
+    // Só informativo o quanto o client manda — a RPC nunca confia nesse
+    // valor de verdade, sempre reclampa contra o saldo_petcash real do
+    // cliente e os limites (mínimo de pedido, teto de %) configurados
+    // pela loja (mesma regra já aplicada a saldo/cupom/frete).
+    p_petcash_usado: petcashUsado,
   });
 
   if (error) {
@@ -74,6 +80,7 @@ export async function finalizarPedido(
   agendamento: { inicio: string; fim: string } | null,
   parcelas: number | null,
   modalidadeEntrega: "expressa" | "economica",
+  petcashUsado: number,
 ): Promise<ResultadoCheckout> {
   const resultado = await criarPedido(
     empresaId,
@@ -87,6 +94,7 @@ export async function finalizarPedido(
     agendamento,
     parcelas,
     modalidadeEntrega,
+    petcashUsado,
   );
   if (!resultado.ok) return resultado;
 
@@ -113,6 +121,7 @@ export async function finalizarPedidoOnline(
   agendamento: { inicio: string; fim: string } | null,
   modalidadeEntrega: "expressa" | "economica",
   dadosPagamento: DadosPagamentoOnline,
+  petcashUsado: number,
 ): Promise<ResultadoCheckout> {
   const resultado = await criarPedido(
     empresaId,
@@ -126,6 +135,7 @@ export async function finalizarPedidoOnline(
     agendamento,
     null,
     modalidadeEntrega,
+    petcashUsado,
   );
   if (!resultado.ok) return resultado;
 

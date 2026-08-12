@@ -45,6 +45,24 @@ export async function getSaldoCliente(empresaId: string): Promise<number> {
   return data?.saldo ?? 0;
 }
 
+/** PetCash disponível do cliente logado — coluna denormalizada (clientes.saldo_petcash), mantida em sincronia pelas funções do banco (consumir_petcash/gerar_petcash_pedido/expirar_petcash_vencido), nunca escrita direto daqui. */
+export async function getSaldoPetCash(empresaId: string): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data } = await supabase
+    .from("clientes")
+    .select("saldo_petcash")
+    .eq("empresa_id", empresaId)
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  return data?.saldo_petcash ?? 0;
+}
+
 /** `null` = cliente ainda não tem Customer criado no Mercado Pago DESSA loja (nunca pagou online aqui, ou é a primeira vez). */
 export async function getMercadoPagoCustomerId(empresaId: string): Promise<string | null> {
   const supabase = await createClient();
