@@ -458,7 +458,7 @@ export function PagamentoForm({
             {ordenarComPixPrimeiro(temOnlineEEntrega ? metodosEntrega : metodosPagamento).map((metodo) => (
               <label
                 key={metodo}
-                className={`flex cursor-pointer flex-col gap-2 rounded-[var(--radius-lg)] border p-3.5 transition-colors ${
+                className={`flex cursor-pointer flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-[var(--radius-lg)] border p-3.5 transition-colors ${
                   tipoPagamento === metodo
                     ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
                     : "border-black/10 dark:border-white/10"
@@ -472,22 +472,25 @@ export function PagamentoForm({
                   onChange={() => mudarMetodoPagamento(metodo)}
                   className="sr-only"
                 />
-                <div className="flex w-full items-center justify-between gap-2">
+                {/* Nome ao lado do ícone (não embaixo) — melhor
+                    aproveitamento do espaço do card, mesmo padrão de
+                    linha do card "Pagamento online" acima. */}
+                <span className="flex min-w-0 items-center gap-2.5">
                   <IconePagamento
                     metodo={metodo}
-                    className={`h-5 w-5 ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : "text-black/60 dark:text-white/60"}`}
+                    className={`h-5 w-5 shrink-0 ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : "text-black/60 dark:text-white/60"}`}
                   />
-                  {metodo === "Pix" && (
-                    <Badge variant="success" className="px-1.5 py-0.5 text-[9px]">
-                      Instantâneo
-                    </Badge>
-                  )}
-                </div>
-                <span
-                  className={`text-sm font-medium ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : ""}`}
-                >
-                  {metodo}
+                  <span
+                    className={`text-sm font-medium ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : ""}`}
+                  >
+                    {metodo}
+                  </span>
                 </span>
+                {metodo === "Pix" && (
+                  <Badge variant="success" className="shrink-0 px-1.5 py-0.5 text-[9px]">
+                    Instantâneo
+                  </Badge>
+                )}
               </label>
             ))}
           </div>
