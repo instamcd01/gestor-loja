@@ -25,6 +25,10 @@ export function LoginForm({
   const [telefone, setTelefone] = useState("");
   const [codigo, setCodigo] = useState("");
   const [nome, setNome] = useState("");
+  // Opt-in explícito — nunca marcado por padrão, precisa de ação real do
+  // cliente (ver aceita_lembrete_whatsapp, coluna separada da antiga
+  // aceita_marketing, que tinha default true sem nunca perguntar de verdade).
+  const [aceitaLembrete, setAceitaLembrete] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -75,6 +79,7 @@ export function LoginForm({
     const { error: rpcError } = await supabase.rpc("entrar_ou_criar_cliente", {
       p_empresa_id: empresaId,
       p_nome: nome.trim() || null,
+      p_aceita_lembrete_whatsapp: aceitaLembrete,
     });
 
     if (rpcError) {
@@ -119,6 +124,22 @@ export function LoginForm({
             placeholder="Como podemos te chamar?"
           />
         </div>
+
+        {/* Opt-in específico, separado de qualquer termo de uso geral —
+            quando os termos de cadastro forem adicionados, este checkbox
+            deve continuar como um item próprio dentro deles, não
+            substituído por uma aceitação genérica. */}
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            checked={aceitaLembrete}
+            onChange={(e) => setAceitaLembrete(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-primary)]"
+          />
+          <span className="text-black/70 dark:text-white/70">
+            Quero receber um aviso no WhatsApp quando for hora de repor meus produtos
+          </span>
+        </label>
 
         <div className="flex flex-col gap-1">
           <label htmlFor="codigo" className="text-sm font-medium">
