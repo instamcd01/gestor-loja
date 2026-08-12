@@ -63,6 +63,40 @@ export async function getMercadoPagoCustomerId(empresaId: string): Promise<strin
   return data?.mp_customer_id ?? null;
 }
 
+export interface PedidoPendentePagamento {
+  id: string;
+  numeroSequencial: number;
+  valorTotal: number;
+}
+
+/**
+ * Pedido online (Mercado Pago) que já foi criado mas ainda não foi pago —
+ * o carrinho que o originou já foi consumido (ver `finalizar_pedido_site`),
+ * então depois de sair da tela de confirmação o cliente não tinha nenhum
+ * jeito óbvio de voltar pra terminar o Pix/cartão: o carrinho aparecia
+ * vazio, sem pista nenhuma do pedido pendente. Usado na tela de carrinho
+ * vazio pra mostrar um link direto de volta (ver carrinho/page.tsx).
+ */
+export async function getPedidoPendentePagamento(empresaId: string): Promise<PedidoPendentePagamento | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("pedidos")
+    .select("id, numero_sequencial, valor_total")
+    .eq("empresa_id", empresaId)
+    .eq("status", "aguardando_pagamento")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return { id: data.id, numeroSequencial: data.numero_sequencial, valorTotal: data.valor_total ?? 0 };
+}
+
 export type ResultadoEndereco = { ok: true } | { ok: false; erro: string };
 
 export async function salvarEndereco(
