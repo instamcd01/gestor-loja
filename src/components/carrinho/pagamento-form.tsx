@@ -105,7 +105,6 @@ export function PagamentoForm({
     }
   }, [checkoutEstimado, router, slug]);
 
-  const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
   // Só existe uma escolha de "categoria" (online vs na entrega) quando a
   // loja realmente oferece as duas coisas (disponibilidade "ambos" — ver
   // pagamento/page.tsx). Nos outros casos (só online, ou nunca conectou o
@@ -113,8 +112,17 @@ export function PagamentoForm({
   // extra de seleção, que não faria sentido sem escolha real por trás.
   const metodosEntrega = metodosPagamento.filter((m) => m !== NOME_PAGAMENTO_ONLINE);
   const temOnlineEEntrega = metodosPagamento.includes(NOME_PAGAMENTO_ONLINE) && metodosEntrega.length > 0;
+  // Pix é o método preferencial dentro de "Pagar na entrega" (mesmo
+  // destaque do badge "Instantâneo" abaixo) — é pra onde a categoria
+  // entrega pré-seleciona ao ser escolhida, quando a loja oferecer Pix.
+  const metodoEntregaPreferido = metodosEntrega.includes("Pix") ? "Pix" : (metodosEntrega[0] ?? "Dinheiro");
+  // Pedido explícito do usuário: quando as duas categorias existem,
+  // "Pagamento Online" começa pré-selecionado (é a opção recomendada,
+  // ver o card abaixo) — só cai pro primeiro método de entrega quando
+  // online não é uma opção real pra essa loja.
+  const [tipoPagamento, setTipoPagamento] = useState(temOnlineEEntrega ? NOME_PAGAMENTO_ONLINE : metodosPagamento[0] ?? "Dinheiro");
   const [categoriaPagamento, setCategoriaPagamento] = useState<"online" | "entrega">(
-    metodosPagamento[0] === NOME_PAGAMENTO_ONLINE ? "online" : "entrega",
+    temOnlineEEntrega ? "online" : "entrega",
   );
   const [mostrarObservacoes, setMostrarObservacoes] = useState(false);
   const [observacoes, setObservacoes] = useState("");
@@ -192,7 +200,7 @@ export function PagamentoForm({
     if (categoria === "online") {
       mudarMetodoPagamento(NOME_PAGAMENTO_ONLINE);
     } else if (metodosEntrega.length > 0) {
-      mudarMetodoPagamento(metodosEntrega[0]);
+      mudarMetodoPagamento(metodoEntregaPreferido);
     }
   }
 
@@ -407,8 +415,10 @@ export function PagamentoForm({
                   : "border-black/10 dark:border-white/10"
               }`}
             >
-              <Badge className="mb-0.5">Recomendado</Badge>
-              <span className="text-sm font-semibold">Pagamento online</span>
+              <div className="flex w-full items-center justify-between gap-2">
+                <span className="text-sm font-semibold">Pagamento online</span>
+                <Badge>Recomendado</Badge>
+              </div>
               <span className="text-xs text-black/50 dark:text-white/50">
                 Cartão em até 12x, Pix ou saldo — confirmado na hora
               </span>
@@ -428,14 +438,19 @@ export function PagamentoForm({
           </div>
         )}
 
+        {/* Grid de cards (não pills) — com 4 métodos possíveis
+            (Pix/Dinheiro/Débito/Crédito) uma linha de pills ficava
+            apertada e quebrava de forma inconsistente; cards do mesmo
+            tamanho em grid de 2 colunas escaneiam melhor e dão espaço
+            pro selo do Pix sem espremer o texto do método. */}
         {(!temOnlineEEntrega || categoriaPagamento === "entrega") && (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {ordenarComPixPrimeiro(temOnlineEEntrega ? metodosEntrega : metodosPagamento).map((metodo) => (
               <label
                 key={metodo}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
+                className={`flex cursor-pointer flex-col gap-2 rounded-[var(--radius-lg)] border p-3.5 transition-colors ${
                   tipoPagamento === metodo
-                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
+                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
                     : "border-black/10 dark:border-white/10"
                 }`}
               >
@@ -447,13 +462,22 @@ export function PagamentoForm({
                   onChange={() => mudarMetodoPagamento(metodo)}
                   className="sr-only"
                 />
-                <IconePagamento metodo={metodo} className="h-4 w-4" />
-                {metodo}
-                {metodo === "Pix" && (
-                  <Badge variant="success" className="px-1.5 py-0.5 text-[9px]">
-                    Instantâneo
-                  </Badge>
-                )}
+                <div className="flex w-full items-center justify-between gap-2">
+                  <IconePagamento
+                    metodo={metodo}
+                    className={`h-5 w-5 ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : "text-black/60 dark:text-white/60"}`}
+                  />
+                  {metodo === "Pix" && (
+                    <Badge variant="success" className="px-1.5 py-0.5 text-[9px]">
+                      Instantâneo
+                    </Badge>
+                  )}
+                </div>
+                <span
+                  className={`text-sm font-medium ${tipoPagamento === metodo ? "text-[var(--brand-primary)]" : ""}`}
+                >
+                  {metodo}
+                </span>
               </label>
             ))}
           </div>
