@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { horarioFechamentoNoDia } from "@/lib/agendamento";
 import { AutoAtualizarPedido } from "@/components/pedido/auto-atualizar-pedido";
+import { MudarFormaPagamentoButton } from "@/components/pedido/mudar-forma-pagamento-button";
 import { PixPagamento } from "@/components/pedido/pix-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ButtonLink } from "@/components/ui/button";
@@ -212,6 +213,12 @@ export default async function PedidoPage({
               : undefined
           }
         />
+      )}
+
+      {aguardandoPagamentoOnline && (
+        <div className="mx-auto">
+          <MudarFormaPagamentoButton slug={slug} pedidoId={pedido.id} />
+        </div>
       )}
 
       <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mx-auto w-fit">

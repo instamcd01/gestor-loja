@@ -143,6 +143,27 @@ export async function finalizarPedidoOnline(
 }
 
 /**
+ * Cancela um pedido "Pagamento Online" ainda não pago (Pix não escaneado,
+ * ou o cliente simplesmente mudou de ideia) e reabre o carrinho com os
+ * mesmos itens — mesmo mecanismo já usado quando o Mercado Pago recusa um
+ * cartão (`reabrirCarrinhoPagamentoRecusado`), só que aqui é o próprio
+ * cliente quem decide, não uma recusa automática. A RPC (`SECURITY
+ * DEFINER`, ver migração `cliente_cancela_pagamento_pendente`) confere
+ * dono do pedido e status ainda pendente com `FOR UPDATE` antes de
+ * cancelar — protege contra cancelar um pedido que acabou de ser
+ * confirmado pelo webhook bem nesse instante.
+ */
+export async function cancelarPagamentoPendente(slug: string, pedidoId: string): Promise<ResultadoCheckout> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cliente_cancelar_pagamento_pendente", { p_pedido_id: pedidoId });
+  if (error) {
+    return { ok: false, erro: "Não foi possível cancelar esse pagamento. Tente de novo." };
+  }
+
+  redirect(`/loja/${slug}/carrinho`);
+}
+
+/**
  * Calcula o frete a partir de um endereço já resolvido (com lat/lng
  * confirmados via CapturarEndereco) — não lê mais o endereço salvo na
  * conta diretamente, quem chama decide a origem (conta, estimativa
