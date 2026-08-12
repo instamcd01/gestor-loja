@@ -63,6 +63,60 @@ export async function getSaldoPetCash(empresaId: string): Promise<number> {
   return data?.saldo_petcash ?? 0;
 }
 
+export interface CreditoPetCash {
+  id: string;
+  valorTotal: number;
+  valorUsado: number;
+  valorDisponivel: number;
+  status: "disponivel" | "esgotado" | "expirado";
+  criadoEm: string;
+  expiraEm: string;
+  expiradoEm: string | null;
+  /** Número do pedido que gerou esse crédito — null em créditos de estorno (pedido cancelado depois do original que gerou o crédito). */
+  pedidoOrigemNumero: number | null;
+}
+
+/**
+ * Extrato completo do PetCash — cada crédito ganho, quanto já foi usado e
+ * se expirou. Existe porque saldo sumindo sem explicação parece erro do
+ * sistema pro cliente (pedido explícito do usuário) — aqui ele vê que foi
+ * usado numa compra ou que expirou, nunca fica sem saber o motivo.
+ */
+export async function getExtratoPetCash(empresaId: string): Promise<CreditoPetCash[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase.rpc("meu_extrato_petcash", { p_empresa_id: empresaId });
+  if (!data) return [];
+
+  return data.map(
+    (row: {
+      id: string;
+      valor_total: number;
+      valor_usado: number;
+      valor_disponivel: number;
+      status: "disponivel" | "esgotado" | "expirado";
+      criado_em: string;
+      expira_em: string;
+      expirado_em: string | null;
+      pedido_origem_numero: number | null;
+    }) => ({
+      id: row.id,
+      valorTotal: row.valor_total,
+      valorUsado: row.valor_usado,
+      valorDisponivel: row.valor_disponivel,
+      status: row.status,
+      criadoEm: row.criado_em,
+      expiraEm: row.expira_em,
+      expiradoEm: row.expirado_em,
+      pedidoOrigemNumero: row.pedido_origem_numero,
+    }),
+  );
+}
+
 /** `null` = cliente ainda não tem Customer criado no Mercado Pago DESSA loja (nunca pagou online aqui, ou é a primeira vez). */
 export async function getMercadoPagoCustomerId(empresaId: string): Promise<string | null> {
   const supabase = await createClient();

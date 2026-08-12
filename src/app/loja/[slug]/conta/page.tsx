@@ -41,15 +41,22 @@ export default async function ContaPage({
         <p className="font-medium">{cliente?.telefone ?? user.phone}</p>
       </div>
 
-      {!!cliente?.saldo_petcash && cliente.saldo_petcash > 0 && (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4">
-          <p className="text-sm text-black/50 dark:text-white/50">🐾 Seu PetCash</p>
-          <p className="text-2xl font-semibold text-[var(--brand-primary)]">
-            {formatarPreco(cliente.saldo_petcash)}
-          </p>
-          <p className="mt-0.5 text-xs text-black/50 dark:text-white/50">Use no seu próximo pedido pelo site</p>
-        </div>
-      )}
+      {/* Link sempre visível, mesmo com saldo zerado — é exatamente quando
+          o saldo cai pra zero (usado ou expirado) que o cliente mais
+          precisa entender o motivo, então esconder o link nesse momento
+          seria o pior timing possível. */}
+      <Link
+        href={`/loja/${slug}/petcash`}
+        className="flex items-center justify-between gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/5 p-4"
+      >
+        <span>
+          <span className="block text-sm text-black/50 dark:text-white/50">🐾 Seu PetCash</span>
+          <span className="text-2xl font-semibold text-[var(--brand-primary)]">
+            {formatarPreco(cliente?.saldo_petcash ?? 0)}
+          </span>
+        </span>
+        <span className="text-xs text-black/50 underline-offset-2 dark:text-white/50">Ver extrato</span>
+      </Link>
 
       <Link
         href={`/loja/${slug}/pedidos`}
