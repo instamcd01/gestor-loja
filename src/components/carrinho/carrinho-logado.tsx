@@ -115,7 +115,10 @@ export function CarrinhoLogado({
     // embutido (ver comentário em entrega-form.tsx).
     <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-44 pt-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Seu carrinho</h1>
+        <div>
+          <p className="text-xs font-medium text-black/40 dark:text-white/40">Etapa 1 de 2</p>
+          <h1 className="text-xl font-semibold">Seu carrinho</h1>
+        </div>
         <LimparCarrinhoButton onConfirmar={esvaziar} />
       </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,17 @@ export function PagamentoForm({
   }, [checkoutEstimado, router, slug]);
 
   const [tipoPagamento, setTipoPagamento] = useState(metodosPagamento[0] ?? "Dinheiro");
+  // Só existe uma escolha de "categoria" (online vs na entrega) quando a
+  // loja realmente oferece as duas coisas (disponibilidade "ambos" — ver
+  // pagamento/page.tsx). Nos outros casos (só online, ou nunca conectou o
+  // Mercado Pago) cai direto na lista simples de sempre, sem esse nível
+  // extra de seleção, que não faria sentido sem escolha real por trás.
+  const metodosEntrega = metodosPagamento.filter((m) => m !== NOME_PAGAMENTO_ONLINE);
+  const temOnlineEEntrega = metodosPagamento.includes(NOME_PAGAMENTO_ONLINE) && metodosEntrega.length > 0;
+  const [categoriaPagamento, setCategoriaPagamento] = useState<"online" | "entrega">(
+    metodosPagamento[0] === NOME_PAGAMENTO_ONLINE ? "online" : "entrega",
+  );
+  const [mostrarObservacoes, setMostrarObservacoes] = useState(false);
   const [observacoes, setObservacoes] = useState("");
   const [usarSaldo, setUsarSaldo] = useState(false);
   const [trocoParaTexto, setTrocoParaTexto] = useState("");
@@ -162,6 +174,15 @@ export function PagamentoForm({
   function mudarMetodoPagamento(metodo: string) {
     setTipoPagamento(metodo);
     if (metodo !== "Cartão de Crédito") setParcelaEscolhida(1);
+  }
+
+  function selecionarCategoria(categoria: "online" | "entrega") {
+    setCategoriaPagamento(categoria);
+    if (categoria === "online") {
+      mudarMetodoPagamento(NOME_PAGAMENTO_ONLINE);
+    } else if (metodosEntrega.length > 0) {
+      mudarMetodoPagamento(metodosEntrega[0]);
+    }
   }
 
   const quantidadeItens = itens.reduce((soma, item) => soma + item.quantidade, 0);
@@ -318,30 +339,112 @@ export function PagamentoForm({
       )}
 
       <div>
+        <label htmlFor="cupom" className="mb-1 block text-sm font-semibold">
+          Cupom de desconto (opcional)
+        </label>
+        {cupomAplicado ? (
+          <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-3.5 py-2.5">
+            <span className="text-sm font-medium text-[var(--color-success)]">
+              &ldquo;{cupomAplicado.codigo}&rdquo; aplicado — -{formatarPreco(cupomAplicado.valorDesconto)}
+            </span>
+            <button
+              type="button"
+              onClick={removerCupom}
+              className="text-xs text-black/50 hover:underline dark:text-white/50"
+            >
+              Remover
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              id="cupom"
+              value={cupomTexto}
+              onChange={(e) => setCupomTexto(e.target.value.toUpperCase())}
+              placeholder="Ex: BEMVINDO10"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={aplicarCupom}
+              disabled={validandoCupom || !cupomTexto.trim()}
+            >
+              {validandoCupom ? "..." : "Aplicar"}
+            </Button>
+          </div>
+        )}
+        {erroCupom && <p className="mt-1 text-xs text-[var(--color-danger)]">{erroCupom}</p>}
+      </div>
+
+      {/* Cupom/saldo vêm ANTES da forma de pagamento de propósito — o
+          Payment Brick (abaixo) remonta (`key={valorFinal}`) toda vez que
+          o total muda, o que apaga qualquer cartão que o cliente já
+          tivesse começado a digitar. Aplicar desconto antes de entrar no
+          Brick evita que o cliente perca o que já preencheu. */}
+      <div>
         <p className="mb-2 text-sm font-semibold">Forma de pagamento</p>
-        <div className="flex flex-wrap gap-2">
-          {metodosPagamento.map((metodo) => (
-            <label
-              key={metodo}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
-                tipoPagamento === metodo
-                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
+
+        {temOnlineEEntrega && (
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => selecionarCategoria("online")}
+              className={`flex flex-col items-start gap-1 rounded-[var(--radius-lg)] border p-3.5 text-left transition-colors ${
+                categoriaPagamento === "online"
+                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
                   : "border-black/10 dark:border-white/10"
               }`}
             >
-              <input
-                type="radio"
-                name="tipoPagamento"
-                value={metodo}
-                checked={tipoPagamento === metodo}
-                onChange={() => mudarMetodoPagamento(metodo)}
-                className="sr-only"
-              />
-              <IconePagamento metodo={metodo} className="h-4 w-4" />
-              {metodo}
-            </label>
-          ))}
-        </div>
+              <Badge className="mb-0.5">Recomendado</Badge>
+              <span className="text-sm font-semibold">Pagamento online</span>
+              <span className="text-xs text-black/50 dark:text-white/50">Cartão ou Pix, confirmado na hora</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => selecionarCategoria("entrega")}
+              className={`flex flex-col items-start gap-1 rounded-[var(--radius-lg)] border p-3.5 text-left transition-colors ${
+                categoriaPagamento === "entrega"
+                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                  : "border-black/10 dark:border-white/10"
+              }`}
+            >
+              <span className="text-sm font-semibold">Pagar na entrega</span>
+              <span className="text-xs text-black/50 dark:text-white/50">Dinheiro, Pix ou cartão na hora</span>
+            </button>
+          </div>
+        )}
+
+        {(!temOnlineEEntrega || categoriaPagamento === "entrega") && (
+          <div className="flex flex-wrap gap-2">
+            {(temOnlineEEntrega ? metodosEntrega : metodosPagamento).map((metodo) => (
+              <label
+                key={metodo}
+                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
+                  tipoPagamento === metodo
+                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
+                    : "border-black/10 dark:border-white/10"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="tipoPagamento"
+                  value={metodo}
+                  checked={tipoPagamento === metodo}
+                  onChange={() => mudarMetodoPagamento(metodo)}
+                  className="sr-only"
+                />
+                <IconePagamento metodo={metodo} className="h-4 w-4" />
+                {metodo}
+                {metodo === "Pix" && (
+                  <Badge variant="success" className="px-1.5 py-0.5 text-[9px]">
+                    Sem troco
+                  </Badge>
+                )}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {(tipoPagamento === "Cartão de Crédito" || tipoPagamento === "Cartão de Débito") &&
@@ -429,7 +532,22 @@ export function PagamentoForm({
           abaixo) — ele já cuida de tokenizar cartão/montar Pix no
           browser antes de chegar em pagarOnline(). */}
       {tipoPagamento === NOME_PAGAMENTO_ONLINE && mpPublicKey && (
-        <Card className="p-4">
+        <Card className="flex flex-col gap-3 p-4">
+          <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-white/50">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5 shrink-0"
+            >
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            <span>Pagamento processado com segurança pelo Mercado Pago</span>
+          </div>
           <Payment
             key={valorFinal}
             initialization={{
@@ -457,57 +575,29 @@ export function PagamentoForm({
         </Card>
       )}
 
-      <div>
-        <label htmlFor="observacoes" className="mb-1 block text-sm font-semibold">
-          Observações (opcional)
-        </label>
-        <textarea
-          id="observacoes"
-          value={observacoes}
-          onChange={(e) => setObservacoes(e.target.value)}
-          rows={2}
-          className="w-full rounded-[var(--radius-md)] border border-black/10 bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="cupom" className="mb-1 block text-sm font-semibold">
-          Cupom de desconto (opcional)
-        </label>
-        {cupomAplicado ? (
-          <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-3.5 py-2.5">
-            <span className="text-sm font-medium text-[var(--color-success)]">
-              &ldquo;{cupomAplicado.codigo}&rdquo; aplicado — -{formatarPreco(cupomAplicado.valorDesconto)}
-            </span>
-            <button
-              type="button"
-              onClick={removerCupom}
-              className="text-xs text-black/50 hover:underline dark:text-white/50"
-            >
-              Remover
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Input
-              id="cupom"
-              value={cupomTexto}
-              onChange={(e) => setCupomTexto(e.target.value.toUpperCase())}
-              placeholder="Ex: BEMVINDO10"
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={aplicarCupom}
-              disabled={validandoCupom || !cupomTexto.trim()}
-            >
-              {validandoCupom ? "..." : "Aplicar"}
-            </Button>
-          </div>
-        )}
-        {erroCupom && <p className="mt-1 text-xs text-[var(--color-danger)]">{erroCupom}</p>}
-      </div>
+      {mostrarObservacoes ? (
+        <div>
+          <label htmlFor="observacoes" className="mb-1 block text-sm font-semibold">
+            Observações (opcional)
+          </label>
+          <textarea
+            id="observacoes"
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            rows={2}
+            autoFocus
+            className="w-full rounded-[var(--radius-md)] border border-black/10 bg-[var(--surface)] px-3.5 py-2.5 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setMostrarObservacoes(true)}
+          className="self-start text-sm text-black/50 underline-offset-2 hover:underline dark:text-white/50"
+        >
+          + Adicionar observação (opcional)
+        </button>
+      )}
 
       <Card className="p-4">
         <ResumoTotais

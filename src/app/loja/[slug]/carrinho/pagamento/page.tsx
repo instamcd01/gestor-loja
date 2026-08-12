@@ -87,7 +87,10 @@ export default async function CarrinhoPagamentoPage({
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <h1 className="text-xl font-semibold">Pagamento</h1>
+        <div>
+          <p className="text-xs font-medium text-black/40 dark:text-white/40">Etapa 2 de 2</p>
+          <h1 className="text-xl font-semibold">Pagamento</h1>
+        </div>
       </div>
       <PagamentoForm
         slug={slug}
