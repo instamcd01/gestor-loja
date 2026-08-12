@@ -405,7 +405,12 @@ export function PagamentoForm({
         <p className="mb-2 text-sm font-semibold">Forma de pagamento</p>
 
         {temOnlineEEntrega && (
-          <div className="mb-3 grid grid-cols-2 gap-2">
+          // grid-cols-1 no mobile: "Pagamento online" + o badge "Recomendado"
+          // lado a lado não cabem na metade da largura de um card em tela
+          // estreita (achado ao vivo — vazava pra fora do card). Card cheio
+          // no mobile resolve de vez; volta a ficar lado a lado a partir de
+          // `sm` (640px), onde já sobra espaço.
+          <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => selecionarCategoria("online")}
@@ -415,8 +420,13 @@ export function PagamentoForm({
                   : "border-black/10 dark:border-white/10"
               }`}
             >
-              <div className="flex w-full items-center justify-between gap-2">
-                <span className="text-sm font-semibold">Pagamento online</span>
+              {/* flex-wrap + min-w-0 no título é rede de segurança: mesmo
+                  com o card cheio, um dispositivo bem estreito (320px)
+                  ainda podia empurrar o badge pra fora sem isso — ver
+                  regra de flex/min-width no checklist de engenharia do
+                  projeto. */}
+              <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <span className="min-w-0 text-sm font-semibold">Pagamento online</span>
                 <Badge>Recomendado</Badge>
               </div>
               <span className="text-xs text-black/50 dark:text-white/50">
