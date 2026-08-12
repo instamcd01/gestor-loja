@@ -176,6 +176,14 @@ export function PagamentoForm({
     if (metodo !== "Cartão de Crédito") setParcelaEscolhida(1);
   }
 
+  // Pix é a opção que mais queremos destacar (mais rápido que dinheiro/
+  // cartão físico, e no caso "na entrega" não passa taxa nenhuma pro
+  // lojista) — reordenado só pra exibição, não muda o método
+  // pré-selecionado por padrão (isso continua vindo da config da loja).
+  function ordenarComPixPrimeiro(metodos: string[]): string[] {
+    return [...metodos].sort((a, b) => (a === "Pix" ? -1 : b === "Pix" ? 1 : 0));
+  }
+
   function selecionarCategoria(categoria: "online" | "entrega") {
     setCategoriaPagamento(categoria);
     if (categoria === "online") {
@@ -398,7 +406,9 @@ export function PagamentoForm({
             >
               <Badge className="mb-0.5">Recomendado</Badge>
               <span className="text-sm font-semibold">Pagamento online</span>
-              <span className="text-xs text-black/50 dark:text-white/50">Cartão ou Pix, confirmado na hora</span>
+              <span className="text-xs text-black/50 dark:text-white/50">
+                Cartão em até 12x, Pix ou saldo — confirmado na hora
+              </span>
             </button>
             <button
               type="button"
@@ -417,7 +427,7 @@ export function PagamentoForm({
 
         {(!temOnlineEEntrega || categoriaPagamento === "entrega") && (
           <div className="flex flex-wrap gap-2">
-            {(temOnlineEEntrega ? metodosEntrega : metodosPagamento).map((metodo) => (
+            {ordenarComPixPrimeiro(temOnlineEEntrega ? metodosEntrega : metodosPagamento).map((metodo) => (
               <label
                 key={metodo}
                 className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
@@ -438,7 +448,7 @@ export function PagamentoForm({
                 {metodo}
                 {metodo === "Pix" && (
                   <Badge variant="success" className="px-1.5 py-0.5 text-[9px]">
-                    Sem troco
+                    Instantâneo
                   </Badge>
                 )}
               </label>
@@ -566,8 +576,18 @@ export function PagamentoForm({
                 // (cobra 0,99%), diferente do Pix manual (chave fixa,
                 // grátis) que continua disponível nos métodos na entrega.
                 ...(mpPixAtivo ? { bankTransfer: "all" as const } : {}),
+                // Explícito (não só o padrão da conta MP) — é o número que
+                // aparece na mensagem "em até 12x" logo acima, então o
+                // limite real do Brick precisa bater com o que foi prometido.
+                maxInstallments: 12,
               },
-              visual: { style: { theme: "dark" } },
+              visual: {
+                style: { theme: "dark" },
+                // Pix é o destaque tanto aqui quanto em "Pagar na entrega"
+                // (ver ordenarComPixPrimeiro) — quando disponível, o Brick
+                // já abre nele em vez de cair no formulário de cartão.
+                ...(mpPixAtivo ? { defaultPaymentOption: { bankTransferForm: true } } : {}),
+              },
             }}
             onSubmit={pagarOnline}
             onError={() => setErro("Não foi possível processar o pagamento. Tente de novo.")}
