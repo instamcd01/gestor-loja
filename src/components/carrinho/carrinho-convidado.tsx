@@ -233,7 +233,8 @@ export function CarrinhoConvidado({
         Finalizar pedido
       </ButtonLink>
       <p className="text-center text-xs text-black/40 dark:text-white/40">
-        Confirme seu telefone só nessa última etapa, pra gente saber pra quem é o pedido.
+        Confirme seu telefone pra continuar — se você já tinha algo no carrinho (inclusive pelo
+        WhatsApp), ele aparece aqui junto com esses itens.
       </p>
     </div>
   );
