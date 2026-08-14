@@ -80,11 +80,20 @@ export function CarrinhoConvidado({
 
   if (itens.length === 0) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-2 py-16 text-center">
+      <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-16 text-center">
         <h1 className="text-xl font-semibold">Seu carrinho está vazio</h1>
         <p className="text-sm text-black/50 dark:text-white/50">
           Volte ao catálogo e adicione alguns produtos.
         </p>
+        {/* Carrinho de convidado só enxerga o localStorage deste navegador --
+            quem já tem itens de verdade (ex: montados pelo WhatsApp) precisa
+            confirmar o telefone pra ver esse carrinho, não o local vazio. */}
+        <p className="mt-4 text-sm text-black/50 dark:text-white/50">
+          Já montou seu carrinho pelo WhatsApp?
+        </p>
+        <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="w-full max-w-xs py-3 text-base">
+          Confirmar meu telefone
+        </ButtonLink>
       </div>
     );
   }
