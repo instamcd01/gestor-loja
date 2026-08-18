@@ -71,7 +71,10 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
     // nunca tem timer nenhum: quem avança é o onEnded do <video>.
     if (timerRef.current) clearTimeout(timerRef.current);
     if (banners.length > 1 && banners[indice]?.tipo !== "video") {
-      timerRef.current = setTimeout(() => emblaApi.scrollNext(), DELAY_IMAGEM_MS);
+      timerRef.current = setTimeout(
+        () => emblaApi.scrollNext(),
+        DELAY_IMAGEM_MS,
+      );
     }
   }, [emblaApi, mudo, banners]);
 
@@ -98,85 +101,96 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
   if (banners.length === 0) return null;
 
   return (
-    <div className="group relative overflow-hidden rounded-[var(--radius-xl)] bg-black/5 dark:bg-white/5">
-      <div ref={emblaRef} className="overflow-hidden">
-        <div className="flex">
-          {banners.map((banner, i) => (
-            <div key={banner.id} className="relative min-w-0 flex-[0_0_100%]">
-              <BannerSlide
-                banner={banner}
-                videoRef={(el) => {
-                  videoRefs.current[i] = el;
-                }}
-                videoBgRef={(el) => {
-                  videoBgRefs.current[i] = el;
-                }}
-                onVideoEnded={() => {
-                  // Único banner: não tem pra onde avançar (loop desligado
-                  // com 1 slide só) — melhor repetir o vídeo do que travar
-                  // no último frame.
-                  if (banners.length <= 1) {
-                    videoRefs.current[i]?.play().catch(() => {});
-                    videoBgRefs.current[i]?.play().catch(() => {});
-                  } else {
-                    emblaApi?.scrollNext();
-                  }
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {banners.length > 1 && (
-        <>
-          <button
-            type="button"
-            aria-label="Anterior"
-            onClick={() => emblaApi?.scrollPrev()}
-            className="absolute top-1/2 left-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black opacity-0 shadow transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:flex"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            aria-label="Próximo"
-            onClick={() => emblaApi?.scrollNext()}
-            className="absolute top-1/2 right-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black opacity-0 shadow transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:flex"
-          >
-            ›
-          </button>
-
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+    <div className="flex flex-col gap-3">
+      <div className="group relative overflow-hidden rounded-[var(--radius-xl)] bg-black/5 dark:bg-white/5">
+        <div ref={emblaRef} className="overflow-hidden">
+          <div className="flex">
             {banners.map((banner, i) => (
-              <button
-                key={banner.id}
-                type="button"
-                aria-label={`Ir pro banner ${i + 1}`}
-                onClick={() => emblaApi?.scrollTo(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i === selecionado ? "w-6 bg-white" : "w-1.5 bg-white/50",
-                )}
-              />
+              <div key={banner.id} className="relative min-w-0 flex-[0_0_100%]">
+                <BannerSlide
+                  banner={banner}
+                  videoRef={(el) => {
+                    videoRefs.current[i] = el;
+                  }}
+                  videoBgRef={(el) => {
+                    videoBgRefs.current[i] = el;
+                  }}
+                  onVideoEnded={() => {
+                    // Único banner: não tem pra onde avançar (loop desligado
+                    // com 1 slide só) — melhor repetir o vídeo do que travar
+                    // no último frame.
+                    if (banners.length <= 1) {
+                      videoRefs.current[i]?.play().catch(() => {});
+                      videoBgRefs.current[i]?.play().catch(() => {});
+                    } else {
+                      emblaApi?.scrollNext();
+                    }
+                  }}
+                />
+              </div>
             ))}
           </div>
-        </>
-      )}
+        </div>
 
-      {banners[selecionado]?.tipo === "video" && (
-        <button
-          type="button"
-          aria-label={mudo ? "Ativar som" : "Silenciar"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setMudo((m) => !m);
-          }}
-          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
-        >
-          <IconeSom mudo={mudo} />
-        </button>
+        {banners.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Anterior"
+              onClick={() => emblaApi?.scrollPrev()}
+              className="absolute top-1/2 left-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black opacity-0 shadow transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:flex"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Próximo"
+              onClick={() => emblaApi?.scrollNext()}
+              className="absolute top-1/2 right-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black opacity-0 shadow transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:flex"
+            >
+              ›
+            </button>
+          </>
+        )}
+
+        {banners[selecionado]?.tipo === "video" && (
+          <button
+            type="button"
+            aria-label={mudo ? "Ativar som" : "Silenciar"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMudo((m) => !m);
+            }}
+            className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+          >
+            <IconeSom mudo={mudo} />
+          </button>
+        )}
+      </div>
+
+      {/* Fora do banner (não mais sobreposta na imagem) — a pedido do
+        lojista. Precisa de cor própria agora: dentro da imagem o
+        branco/translúcido contrastava com qualquer foto de fundo; aqui
+        embaixo, sobre o fundo da página, usa a cor de marca pra continuar
+        visível nos dois temas. */}
+      {banners.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          {banners.map((banner, i) => (
+            <button
+              key={banner.id}
+              type="button"
+              aria-label={`Ir pro banner ${i + 1}`}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                i === selecionado
+                  ? "w-6 bg-[var(--brand-primary)]"
+                  : "w-1.5 bg-black/15 dark:bg-white/20",
+              )}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -184,9 +198,21 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
 
 function IconeSom({ mudo }: { mudo: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4.5 w-4.5"
+    >
       <path d="M4 9v6h4l5 4V5L8 9H4Z" />
-      {mudo ? <path d="m19 9-5 5m0-5 5 5" /> : <path d="M17 8a5 5 0 0 1 0 8M19.5 5.5a9 9 0 0 1 0 13" />}
+      {mudo ? (
+        <path d="m19 9-5 5m0-5 5 5" />
+      ) : (
+        <path d="M17 8a5 5 0 0 1 0 8M19.5 5.5a9 9 0 0 1 0 13" />
+      )}
     </svg>
   );
 }
@@ -259,7 +285,9 @@ function BannerSlide({
       )}
       {banner.titulo && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10 sm:p-6 sm:pt-16">
-          <p className="text-sm font-bold text-white sm:text-lg">{banner.titulo}</p>
+          <p className="text-sm font-bold text-white sm:text-lg">
+            {banner.titulo}
+          </p>
         </div>
       )}
     </div>

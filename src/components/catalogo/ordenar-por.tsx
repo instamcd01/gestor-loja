@@ -37,7 +37,13 @@ export function OrdenarPor({ ordenacaoAtiva }: { ordenacaoAtiva: Ordenacao }) {
       <select
         value={ordenacaoAtiva}
         onChange={(e) => alterar(e.target.value)}
-        className="max-w-[45vw] rounded-[var(--radius-sm)] border border-black/10 bg-white py-1.5 pl-2 pr-7 text-sm outline-none focus:border-[var(--brand-primary)] sm:max-w-none dark:border-white/10 dark:bg-white/5"
+        // bg/text explícitos (não só herdados do <label>) e opacos —
+        // o popup nativo das <option> segue a cor/fundo do próprio
+        // <select>, então um fundo com opacidade (ex: bg-white/5) rendeiriza
+        // quase branco por trás, e sem "color" próprio o texto herdado
+        // branco (dark:text-white/60 do label) ficava ilegível em tema
+        // escuro (texto branco sobre bloco quase branco).
+        className="max-w-[45vw] rounded-[var(--radius-sm)] border border-black/10 bg-[var(--surface)] py-1.5 pl-2 pr-7 text-sm text-black outline-none focus:border-[var(--brand-primary)] sm:max-w-none dark:border-white/10 dark:text-white"
       >
         {OPCOES.map((opcao) => (
           <option key={opcao.valor} value={opcao.valor}>
