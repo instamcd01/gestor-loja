@@ -69,6 +69,8 @@ export interface BannerCatalogo {
   empresa_id: string;
   tipo: "imagem" | "video";
   url: string;
+  /** Versão recortada especificamente pra mobile (16:9), opcional — nula usa `url` (recorte central 21:9) também no mobile. */
+  url_mobile: string | null;
   url_thumbnail: string | null;
   titulo: string | null;
   link_destino: string | null;

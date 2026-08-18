@@ -232,14 +232,30 @@ function BannerSlide({
           />
         </div>
       ) : (
-        <Image
-          src={banner.url}
-          alt={banner.titulo ?? "Banner promocional"}
-          fill
-          sizes="100vw"
-          priority
-          className="object-cover"
-        />
+        // Duas <Image> alternadas por breakpoint (em vez de uma só) — banner
+        // cadastrado com uma versão mobile dedicada (`url_mobile`, recorte
+        // 16:9 feito no app) usa ela abaixo de `sm`; sem essa versão, cai pra
+        // `url` nas duas (recorte central 21:9 do próprio navegador, igual
+        // era antes). Sem isso não tinha como mostrar imagens diferentes por
+        // tela com <Image fill> (um único elemento não troca de src via CSS).
+        <>
+          <Image
+            src={banner.url_mobile ?? banner.url}
+            alt={banner.titulo ?? "Banner promocional"}
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover sm:hidden"
+          />
+          <Image
+            src={banner.url}
+            alt={banner.titulo ?? "Banner promocional"}
+            fill
+            sizes="100vw"
+            priority
+            className="hidden object-cover sm:block"
+          />
+        </>
       )}
       {banner.titulo && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10 sm:p-6 sm:pt-16">
