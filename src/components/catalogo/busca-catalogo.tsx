@@ -29,9 +29,19 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
   // Num efeito, não durante a renderização — o projeto usa uma regra de
   // lint que proíbe ler/escrever ref no corpo do componente.
   const ultimoValorEnviado = useRef(qAtual);
+  // Marca que a próxima mudança em `valor` veio de fora (sincronização com a
+  // URL), não de digitação — o efeito de debounce abaixo precisa saber
+  // disso pra não reagir a ela. Sem essa distinção, ao clicar num produto
+  // (navega pra fora de /loja/[slug], que não tem `?q=`) o `q` sumia,
+  // `valor` era limpo por este efeito, e o efeito de debounce interpretava
+  // isso como "usuário apagou a busca", agendando um `router.replace` pro
+  // catálogo 350ms depois — te chutando de volta pra página inicial bem na
+  // hora que a página do produto acabava de abrir.
+  const mudancaExterna = useRef(false);
   useEffect(() => {
     if (qAtual !== ultimoValorEnviado.current) {
       ultimoValorEnviado.current = qAtual;
+      mudancaExterna.current = true;
       setValor(qAtual);
     }
   }, [qAtual]);
@@ -39,6 +49,10 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
   useEffect(() => {
     if (primeiraRenderizacao.current) {
       primeiraRenderizacao.current = false;
+      return;
+    }
+    if (mudancaExterna.current) {
+      mudancaExterna.current = false;
       return;
     }
 
