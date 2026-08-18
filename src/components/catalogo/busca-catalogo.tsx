@@ -59,7 +59,9 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
     const timeout = setTimeout(() => {
       const valorFinal = valor.trim();
       ultimoValorEnviado.current = valorFinal;
-      const params = new URLSearchParams(pathname === destino ? searchParams : undefined);
+      const params = new URLSearchParams(
+        pathname === destino ? searchParams : undefined,
+      );
       if (valorFinal) {
         params.set("q", valorFinal);
       } else {
@@ -90,7 +92,11 @@ export function BuscaCatalogo({ slug }: { slug: string }) {
         value={valor}
         onChange={(e) => setValor(e.target.value)}
         placeholder="O que seu pet precisa?"
-        className="w-full rounded-full border border-black/10 bg-[var(--surface)] py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[var(--brand-primary)] dark:border-white/10"
+        // text-black explícito: sem isso o campo herdava o text-white do
+        // <header> (cor de marca) — no tema escuro coincidia por acaso com
+        // o fundo escuro do campo, mas no tema claro virava texto branco
+        // sobre fundo branco (var(--surface) claro), ilegível.
+        className="w-full rounded-full border border-black/10 bg-[var(--surface)] py-2.5 pl-10 pr-4 text-sm text-black outline-none focus:border-[var(--brand-primary)] dark:border-white/10 dark:text-white"
       />
     </div>
   );
