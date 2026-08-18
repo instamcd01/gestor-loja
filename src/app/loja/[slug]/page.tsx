@@ -166,20 +166,18 @@ export default async function LojaPage({
 
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
 
-      <div id="produtos" className="flex items-center justify-end gap-3">
-        <div className="flex shrink-0 items-center gap-2">
-          <FiltrosDrawer
-            marcas={marcas}
-            marcaAtiva={marca ?? null}
-            especies={especies}
-            especieAtiva={especie ?? null}
-            fases={fases}
-            faseAtiva={fase ?? null}
-            faixasPreco={faixasPreco}
-            faixaAtiva={faixaAtiva}
-          />
-          <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
-        </div>
+      <div id="produtos" className="flex items-center justify-between gap-3">
+        <FiltrosDrawer
+          marcas={marcas}
+          marcaAtiva={marca ?? null}
+          especies={especies}
+          especieAtiva={especie ?? null}
+          fases={fases}
+          faseAtiva={fase ?? null}
+          faixasPreco={faixasPreco}
+          faixaAtiva={faixaAtiva}
+        />
+        <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
       </div>
 
       {totalProdutos === 0 ? (
