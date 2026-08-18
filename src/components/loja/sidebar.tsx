@@ -169,7 +169,14 @@ export function Sidebar({
               aberta ? "translate-x-0" : "-translate-x-full",
             )}
           >
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center bg-[var(--brand-primary)] p-4">
+            {/* h-[118px]: mesma altura do <header> principal (layout.tsx) —
+                medida ao vivo (duas linhas: ícones + busca, py-3 + gap-3),
+                não deriva de nenhum token do design system porque o header
+                também não deriva (soma de padding + duas linhas de conteúdo
+                de altura variável). Se o header mudar de forma visível
+                (nova linha, padding diferente), remedir e atualizar aqui
+                junto — não há vínculo automático entre os dois. */}
+            <div className="grid h-[118px] grid-cols-[1fr_auto_1fr] items-center bg-[var(--brand-primary)] px-4">
               <span />
               <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
               <button
@@ -211,7 +218,9 @@ export function Sidebar({
           (`flex-1 min-h-0 overflow-y-auto`) rola por dentro quando a
           lista é longa. `sticky` continua funcionando igual. */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/5 lg:flex dark:border-white/10">
-        <div className="flex items-center justify-center bg-[var(--brand-primary)] p-4">
+        {/* h-[118px]: mesma altura do <header> principal — ver comentário
+            equivalente no bloco de topo da gaveta mobile, acima. */}
+        <div className="flex h-[118px] items-center justify-center bg-[var(--brand-primary)] px-4">
           <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
         </div>
         {conteudo}
