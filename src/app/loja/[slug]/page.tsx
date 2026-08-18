@@ -6,17 +6,15 @@ import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
 import { CategoriasEmLinha } from "@/components/loja/categorias-em-linha";
 import { CategoriasEspecie } from "@/components/loja/categorias-especie";
-import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
 import { GradeDeProdutos, GradeSkeleton } from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
-import { SelosConfianca } from "@/components/selos-confianca";
+import { PetcashBanner } from "@/components/loja/petcash-banner";
 import {
   getBannersCatalogo,
   getContagemProdutosCatalogo,
   getEmpresaPorSlug,
   getFiltrosCatalogo,
-  getMenorValorFreteGratis,
   getProdutosCatalogo,
   type Ordenacao,
 } from "@/lib/catalogo";
@@ -70,26 +68,24 @@ export default async function LojaPage({
   const exigeGradeFinal = !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
   const usaLinhasPorCategoria = !exigeGradeFinal;
 
-  const [produtos, totalSemOutrosFiltros, { marcas, especies, fases, faixasPreco }, freteGratisMinimo, banners] =
-    await Promise.all([
-      usaLinhasPorCategoria
-        ? Promise.resolve([])
-        : getProdutosCatalogo(empresa.id, {
-            busca: q,
-            departamento,
-            categoria,
-            marca,
-            especie,
-            fase,
-            precoMin: precoMin ? Number(precoMin) : undefined,
-            precoMax: precoMax ? Number(precoMax) : undefined,
-            ordenar,
-          }),
-      usaLinhasPorCategoria ? getContagemProdutosCatalogo(empresa.id, { especie, departamento }) : Promise.resolve(0),
-      getFiltrosCatalogo(empresa.id),
-      getMenorValorFreteGratis(empresa.id),
-      getBannersCatalogo(empresa.id),
-    ]);
+  const [produtos, totalSemOutrosFiltros, { marcas, especies, fases, faixasPreco }, banners] = await Promise.all([
+    usaLinhasPorCategoria
+      ? Promise.resolve([])
+      : getProdutosCatalogo(empresa.id, {
+          busca: q,
+          departamento,
+          categoria,
+          marca,
+          especie,
+          fase,
+          precoMin: precoMin ? Number(precoMin) : undefined,
+          precoMax: precoMax ? Number(precoMax) : undefined,
+          ordenar,
+        }),
+    usaLinhasPorCategoria ? getContagemProdutosCatalogo(empresa.id, { especie, departamento }) : Promise.resolve(0),
+    getFiltrosCatalogo(empresa.id),
+    getBannersCatalogo(empresa.id),
+  ]);
 
   const totalProdutos = usaLinhasPorCategoria ? totalSemOutrosFiltros : produtos.length;
 
@@ -105,22 +101,31 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      {!filtroAtivo &&
-        (banners.length > 0 ? (
-          <BannerCarousel banners={banners} />
-        ) : (
-          <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} moderno={moderno} />
-        ))}
-
       {!filtroAtivo && <CategoriasEspecie slug={slug} />}
 
-      <SelosConfianca
-        freteGratisMinimo={freteGratisMinimo}
-        metodosPagamento={empresa.metodos_pagamento_ativos}
-        moderno={moderno}
-      />
+      {!filtroAtivo && (
+        // -mx-4 cancela o padding horizontal do <main> (layout.tsx) só pro
+        // banner — preenche a tela de ponta a ponta no mobile em vez de
+        // deixar aquela faixa de espaço nas laterais, mantendo os cantos
+        // arredondados (o recorte continua vindo do rounded-xl interno do
+        // BannerCarousel/HeroBanner, só não sobra espaço fora dele).
+        <div className="-mx-4">
+          {banners.length > 0 ? (
+            <BannerCarousel banners={banners} />
+          ) : (
+            <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} moderno={moderno} />
+          )}
+        </div>
+      )}
 
-      {!filtroAtivo && <ClubeEmBreve nome={empresa.nome} moderno={moderno} />}
+      {!filtroAtivo && (
+        <PetcashBanner
+          nome={empresa.nome}
+          moderno={moderno}
+          petcashAtivo={empresa.petcash_ativo}
+          petcashPercentual={empresa.petcash_percentual}
+        />
+      )}
 
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
 
