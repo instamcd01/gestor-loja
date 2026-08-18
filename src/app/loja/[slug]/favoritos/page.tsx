@@ -24,12 +24,6 @@ export default async function FavoritosPage({
 
   const produtos = await getProdutosFavoritos(empresa.id);
   const variantesPorPai = await getVariantesEmLote(empresa.id, produtos);
-  const enderecoEmpresa = {
-    endereco: empresa.endereco,
-    cidade: empresa.cidade,
-    estado: empresa.estado,
-    cep: empresa.cep,
-  };
   const moderno = empresa.catalogo_modelo === "moderno";
 
   return (
@@ -50,8 +44,6 @@ export default async function FavoritosPage({
               key={produto.id}
               produto={produto}
               slug={slug}
-              empresaId={empresa.id}
-              enderecoEmpresa={enderecoEmpresa}
               variantes={variantesPorPai.get(produto.id)}
               moderno={moderno}
             />

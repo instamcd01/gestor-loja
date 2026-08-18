@@ -15,21 +15,22 @@ import { getProdutosHomeAgrupados, getVariantesEmLote } from "@/lib/catalogo";
 export async function CategoriasEmLinha({
   slug,
   empresaId,
-  enderecoEmpresa,
   moderno,
   especie,
   departamento,
 }: {
   slug: string;
   empresaId: string;
-  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   moderno: boolean;
   /** Restringe as linhas à espécie escolhida (Cães/Gatos/Pássaros/Outros) — mesma tela de casa, só filtrada. */
   especie?: string;
   /** Restringe as linhas às categorias do departamento escolhido ("Tudo em X" do menu). */
   departamento?: string;
 }) {
-  const produtos = await getProdutosHomeAgrupados(empresaId, 10, { especie, departamento });
+  const produtos = await getProdutosHomeAgrupados(empresaId, 10, {
+    especie,
+    departamento,
+  });
   const variantesPorPai = await getVariantesEmLote(empresaId, produtos);
   const destino = `/loja/${slug}`;
   const sufixoFiltros =
@@ -57,12 +58,13 @@ export async function CategoriasEmLinha({
           </div>
           <div className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-1">
             {itens.map((produto) => (
-              <div key={produto.id} className="w-40 shrink-0 snap-start sm:w-48">
+              <div
+                key={produto.id}
+                className="w-40 shrink-0 snap-start sm:w-48"
+              >
                 <ProdutoCard
                   produto={produto}
                   slug={slug}
-                  empresaId={empresaId}
-                  enderecoEmpresa={enderecoEmpresa}
                   variantes={variantesPorPai.get(produto.id)}
                   moderno={moderno}
                 />

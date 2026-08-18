@@ -62,10 +62,16 @@ export default async function ProdutoPage({
   const { produto, variantes, relacionados, empresa } = dados;
 
   const temPromocao =
-    produto.preco_promocional != null && produto.preco_promocional < produto.preco;
-  const percentualOff = percentualDesconto(produto.preco, produto.preco_promocional);
+    produto.preco_promocional != null &&
+    produto.preco_promocional < produto.preco;
+  const percentualOff = percentualDesconto(
+    produto.preco,
+    produto.preco_promocional,
+  );
 
-  const mensagemWhatsapp = encodeURIComponent(`Olá! Tenho interesse em: ${produto.nome}`);
+  const mensagemWhatsapp = encodeURIComponent(
+    `Olá! Tenho interesse em: ${produto.nome}`,
+  );
   const moderno = empresa.catalogo_modelo === "moderno";
 
   return (
@@ -75,7 +81,12 @@ export default async function ProdutoPage({
           itens={[
             { rotulo: "Loja", href: `/loja/${slug}` },
             ...(produto.categoria
-              ? [{ rotulo: produto.categoria, href: `/loja/${slug}?categoria=${encodeURIComponent(produto.categoria)}` }]
+              ? [
+                  {
+                    rotulo: produto.categoria,
+                    href: `/loja/${slug}?categoria=${encodeURIComponent(produto.categoria)}`,
+                  },
+                ]
               : []),
             { rotulo: produto.nome },
           ]}
@@ -84,7 +95,10 @@ export default async function ProdutoPage({
         <div className="grid gap-8 md:grid-cols-2">
           <div className="relative">
             {percentualOff > 0 && (
-              <Badge variant="secondary" className="absolute top-2 left-2 z-[1]">
+              <Badge
+                variant="secondary"
+                className="absolute top-2 left-2 z-[1]"
+              >
                 {percentualOff}% OFF
               </Badge>
             )}
@@ -109,7 +123,9 @@ export default async function ProdutoPage({
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold">
-                {formatarPreco(temPromocao ? produto.preco_promocional! : produto.preco)}
+                {formatarPreco(
+                  temPromocao ? produto.preco_promocional! : produto.preco,
+                )}
               </span>
               {temPromocao && (
                 <span className="text-base text-black/40 line-through dark:text-white/40">
@@ -135,21 +151,15 @@ export default async function ProdutoPage({
 
             <Card className="flex flex-col gap-3 p-4">
               <AdicionarCarrinhoButton
-                slug={slug}
-                empresaId={empresa.id}
-                enderecoEmpresa={{
-                  endereco: empresa.endereco,
-                  cidade: empresa.cidade,
-                  estado: empresa.estado,
-                  cep: empresa.cep,
-                }}
                 produtoId={produto.id}
                 mostrarEstoqueBaixo={empresa.mostrar_estoque_baixo}
                 produto={{
                   nome: produto.nome,
                   imagemUrl: produto.imagem_url,
                   categoria: produto.categoria,
-                  preco: temPromocao ? produto.preco_promocional! : produto.preco,
+                  preco: temPromocao
+                    ? produto.preco_promocional!
+                    : produto.preco,
                   precoOriginal: temPromocao ? produto.preco : null,
                   estoqueDisponivel: produto.estoque_disponivel,
                 }}
@@ -169,7 +179,11 @@ export default async function ProdutoPage({
 
             <ClubeEmBreve nome={empresa.nome} moderno={moderno} />
 
-            <ButtonLink href={`/loja/${slug}`} variant="secondary" className="mt-2 w-fit">
+            <ButtonLink
+              href={`/loja/${slug}`}
+              variant="secondary"
+              className="mt-2 w-fit"
+            >
               ← Voltar ao catálogo
             </ButtonLink>
           </div>
@@ -179,13 +193,6 @@ export default async function ProdutoPage({
       <ProdutosRelacionados
         produtos={relacionados}
         slug={slug}
-        empresaId={empresa.id}
-        enderecoEmpresa={{
-          endereco: empresa.endereco,
-          cidade: empresa.cidade,
-          estado: empresa.estado,
-          cep: empresa.cep,
-        }}
         moderno={moderno}
       />
     </div>

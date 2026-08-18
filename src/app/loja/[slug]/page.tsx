@@ -120,13 +120,6 @@ export default async function LojaPage({
     ? totalSemOutrosFiltros
     : produtos.length;
 
-  const enderecoEmpresa = {
-    endereco: empresa.endereco,
-    cidade: empresa.cidade,
-    estado: empresa.estado,
-    cep: empresa.cep,
-  };
-
   const faixaAtiva =
     precoMin != null
       ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined }
@@ -194,7 +187,6 @@ export default async function LojaPage({
           <CategoriasEmLinha
             slug={slug}
             empresaId={empresa.id}
-            enderecoEmpresa={enderecoEmpresa}
             moderno={moderno}
             especie={especie}
             departamento={departamento}
@@ -210,7 +202,6 @@ export default async function LojaPage({
             produtos={produtos}
             slug={slug}
             empresaId={empresa.id}
-            enderecoEmpresa={enderecoEmpresa}
             moderno={moderno}
           />
         </Suspense>

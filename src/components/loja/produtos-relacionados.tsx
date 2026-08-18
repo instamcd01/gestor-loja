@@ -4,14 +4,10 @@ import type { ProdutoCatalogo } from "@/lib/types";
 export function ProdutosRelacionados({
   produtos,
   slug,
-  empresaId,
-  enderecoEmpresa,
   moderno,
 }: {
   produtos: ProdutoCatalogo[];
   slug: string;
-  empresaId: string;
-  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   moderno: boolean;
 }) {
   if (produtos.length === 0) return null;
@@ -25,8 +21,6 @@ export function ProdutosRelacionados({
             key={produto.id}
             produto={produto}
             slug={slug}
-            empresaId={empresaId}
-            enderecoEmpresa={enderecoEmpresa}
             moderno={moderno}
           />
         ))}

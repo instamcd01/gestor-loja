@@ -16,13 +16,11 @@ export async function GradeDeProdutos({
   produtos,
   slug,
   empresaId,
-  enderecoEmpresa,
   moderno,
 }: {
   produtos: ProdutoCatalogo[];
   slug: string;
   empresaId: string;
-  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   moderno: boolean;
 }) {
   const variantesPorPai = await getVariantesEmLote(empresaId, produtos);
@@ -34,8 +32,6 @@ export async function GradeDeProdutos({
           key={produto.id}
           produto={produto}
           slug={slug}
-          empresaId={empresaId}
-          enderecoEmpresa={enderecoEmpresa}
           variantes={variantesPorPai.get(produto.id)}
           moderno={moderno}
         />
