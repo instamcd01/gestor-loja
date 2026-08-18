@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import { useSessao } from "@/components/auth/sessao-provider";
 import type { DepartamentoComContagem } from "@/lib/catalogo";
 import type { MarcaPosicaoCatalogo } from "@/lib/types";
@@ -49,18 +55,35 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 
 function useSidebarContext() {
   const contexto = useContext(SidebarContext);
-  if (!contexto) throw new Error("useSidebarContext precisa estar dentro de um SidebarProvider");
+  if (!contexto)
+    throw new Error(
+      "useSidebarContext precisa estar dentro de um SidebarProvider",
+    );
   return contexto;
 }
 
 /** Topo da sidebar — imagem configurada pro Kit de Marca (posição "Barra lateral do site") ou o nome da loja em texto. */
-function MarcaSidebar({ marca, nomeEmpresa }: { marca: MarcaPosicaoCatalogo; nomeEmpresa: string }) {
+function MarcaSidebar({
+  marca,
+  nomeEmpresa,
+}: {
+  marca: MarcaPosicaoCatalogo;
+  nomeEmpresa: string;
+}) {
   if (!marca.url) {
-    return <span className="min-w-0 truncate text-sm font-semibold">{nomeEmpresa}</span>;
+    return (
+      <span className="min-w-0 truncate text-sm font-semibold">
+        {nomeEmpresa}
+      </span>
+    );
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={marca.url} alt={nomeEmpresa} className="h-16 max-w-[200px] shrink-0 object-contain" />
+    <img
+      src={marca.url}
+      alt={nomeEmpresa}
+      className="h-16 max-w-[200px] shrink-0 object-contain"
+    />
   );
 }
 
@@ -72,9 +95,16 @@ export function SidebarToggleButton() {
       type="button"
       onClick={abrir}
       aria-label="Abrir menu"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-black/5 lg:hidden dark:hover:bg-white/10"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15 lg:hidden"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-5 w-5">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        className="h-5 w-5"
+      >
         <path d="M3 6h18M3 12h18M3 18h18" />
       </svg>
     </button>
@@ -104,13 +134,25 @@ export function Sidebar({
   // Não montar até precisar elimina o risco por completo, não só cobre com CSS.
   const { aberta, montada, fechar } = useSidebarContext();
 
-  const conteudo = <SidebarConteudo departamentos={departamentos} slug={slug} moderno={moderno} onNavegar={fechar} />;
+  const conteudo = (
+    <SidebarConteudo
+      departamentos={departamentos}
+      slug={slug}
+      moderno={moderno}
+      onNavegar={fechar}
+    />
+  );
 
   return (
     <>
       {/* Mobile — backdrop + gaveta deslizante. */}
       {montada && (
-        <div className={cn("fixed inset-0 z-40 overflow-hidden lg:hidden", aberta ? "" : "pointer-events-none")}>
+        <div
+          className={cn(
+            "fixed inset-0 z-40 overflow-hidden lg:hidden",
+            aberta ? "" : "pointer-events-none",
+          )}
+        >
           <div
             onClick={fechar}
             className={cn(
@@ -133,7 +175,14 @@ export function Sidebar({
                 aria-label="Fechar menu"
                 className="flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full hover:bg-black/5 dark:hover:bg-white/10"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4.5 w-4.5">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  className="h-4.5 w-4.5"
+                >
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
@@ -182,7 +231,9 @@ function SidebarConteudo({
 
   const destino = `/loja/${slug}`;
   const noCatalogo = pathname === destino;
-  const departamentoAtivo = noCatalogo ? searchParams.get("departamento") : null;
+  const departamentoAtivo = noCatalogo
+    ? searchParams.get("departamento")
+    : null;
   const categoriaAtiva = noCatalogo ? searchParams.get("categoria") : null;
   const temBusca = noCatalogo && !!searchParams.get("q");
 
@@ -193,7 +244,9 @@ function SidebarConteudo({
   // revelar o menu; escolher a subcategoria final navegava de novo, dobrando
   // o trabalho). Inicializa a partir da URL (chega direto numa categoria
   // filtrada já expandida), depois só o clique manual muda.
-  const [departamentoExpandido, setDepartamentoExpandido] = useState<string | null>(() => departamentoAtivo);
+  const [departamentoExpandido, setDepartamentoExpandido] = useState<
+    string | null
+  >(() => departamentoAtivo);
 
   const sair = useCallback(async () => {
     setSaindo(true);
@@ -206,90 +259,126 @@ function SidebarConteudo({
 
   return (
     <>
-    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
-      {departamentos.length > 0 && (
-        <div className="flex flex-col gap-0.5">
-          <Link href={destino} onClick={onNavegar} className={linkClasse(!departamentoAtivo && !temBusca, moderno)}>
-            Todos os produtos
-          </Link>
-          {departamentos.map((d) => {
-            const ativo = departamentoAtivo === d.nome;
-            const temSubcategorias = d.categorias.length > 1;
-            const expandido = departamentoExpandido === d.nome;
-            return (
-              <div key={d.nome}>
-                {temSubcategorias ? (
-                  <button
-                    type="button"
-                    onClick={() => setDepartamentoExpandido((atual) => (atual === d.nome ? null : d.nome))}
-                    className={cn(linkClasse(ativo, moderno), "flex w-full items-center justify-between gap-2 text-left")}
-                  >
-                    {d.nome}
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                      className={cn("h-3.5 w-3.5 shrink-0 transition-transform", expandido && "rotate-180")}
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
+        {departamentos.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <Link
+              href={destino}
+              onClick={onNavegar}
+              className={linkClasse(!departamentoAtivo && !temBusca, moderno)}
+            >
+              Todos os produtos
+            </Link>
+            {departamentos.map((d) => {
+              const ativo = departamentoAtivo === d.nome;
+              const temSubcategorias = d.categorias.length > 1;
+              const expandido = departamentoExpandido === d.nome;
+              return (
+                <div key={d.nome}>
+                  {temSubcategorias ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDepartamentoExpandido((atual) =>
+                          atual === d.nome ? null : d.nome,
+                        )
+                      }
+                      className={cn(
+                        linkClasse(ativo, moderno),
+                        "flex w-full items-center justify-between gap-2 text-left",
+                      )}
                     >
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
-                  </button>
-                ) : (
-                  <Link
-                    href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
-                    onClick={onNavegar}
-                    className={linkClasse(ativo, moderno)}
-                  >
-                    {d.nome}
-                  </Link>
-                )}
-                {temSubcategorias && expandido && (
-                  <div className="mt-0.5 mb-1 ml-3 flex flex-col gap-0.5 border-l border-black/10 pl-3 dark:border-white/10">
+                      {d.nome}
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                        strokeLinecap="round"
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0 transition-transform",
+                          expandido && "rotate-180",
+                        )}
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  ) : (
                     <Link
                       href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
                       onClick={onNavegar}
-                      className={subLinkClasse(ativo && !categoriaAtiva)}
+                      className={linkClasse(ativo, moderno)}
                     >
-                      Tudo em {d.nome}
+                      {d.nome}
                     </Link>
-                    {d.categorias.map(({ categoria }) => (
+                  )}
+                  {temSubcategorias && expandido && (
+                    <div className="mt-0.5 mb-1 ml-3 flex flex-col gap-0.5 border-l border-black/10 pl-3 dark:border-white/10">
                       <Link
-                        key={categoria}
-                        href={`${destino}?departamento=${encodeURIComponent(d.nome)}&categoria=${encodeURIComponent(categoria)}`}
+                        href={`${destino}?departamento=${encodeURIComponent(d.nome)}`}
                         onClick={onNavegar}
-                        className={subLinkClasse(ativo && categoriaAtiva === categoria)}
+                        className={subLinkClasse(ativo && !categoriaAtiva)}
                       >
-                        {categoria}
+                        Tudo em {d.nome}
                       </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </nav>
+                      {d.categorias.map(({ categoria }) => (
+                        <Link
+                          key={categoria}
+                          href={`${destino}?departamento=${encodeURIComponent(d.nome)}&categoria=${encodeURIComponent(categoria)}`}
+                          onClick={onNavegar}
+                          className={subLinkClasse(
+                            ativo && categoriaAtiva === categoria,
+                          )}
+                        >
+                          {categoria}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </nav>
 
       {/* Fora do <nav> rolável, de propósito: fica sempre visível colado no
           rodapé do menu (não sai de vista quando a lista de departamentos é
           longa/expandida), enquanto só os departamentos rolam por dentro. */}
       <div className="flex shrink-0 flex-col gap-0.5 border-t border-black/5 p-3 dark:border-white/10">
-        <Link href={`/loja/${slug}/${logado ? "conta" : "entrar"}`} onClick={onNavegar} className={linkClasse(false, moderno)}>
+        <Link
+          href={`/loja/${slug}/${logado ? "conta" : "entrar"}`}
+          onClick={onNavegar}
+          className={linkClasse(false, moderno)}
+        >
           {logado ? "Minha conta" : "Entrar"}
         </Link>
-        <Link href={`/loja/${slug}/favoritos`} onClick={onNavegar} className={linkClasse(false, moderno)}>
+        <Link
+          href={`/loja/${slug}/favoritos`}
+          onClick={onNavegar}
+          className={linkClasse(false, moderno)}
+        >
           Favoritos
         </Link>
         {logado && (
-          <Link href={`/loja/${slug}/pedidos`} onClick={onNavegar} className={linkClasse(false, moderno)}>
+          <Link
+            href={`/loja/${slug}/pedidos`}
+            onClick={onNavegar}
+            className={linkClasse(false, moderno)}
+          >
             Pedidos
           </Link>
         )}
         {logado && (
-          <button type="button" onClick={sair} disabled={saindo} className={cn(linkClasse(false, moderno), "text-left disabled:opacity-50")}>
+          <button
+            type="button"
+            onClick={sair}
+            disabled={saindo}
+            className={cn(
+              linkClasse(false, moderno),
+              "text-left disabled:opacity-50",
+            )}
+          >
             {saindo ? "Saindo..." : "Sair"}
           </button>
         )}

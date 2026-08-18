@@ -14,7 +14,13 @@ import { lerCarrinhoConvidado } from "@/lib/carrinho-convidado";
  * que já foi adicionado até a pessoa entrar na página do carrinho (foi
  * uma causa real da confusão "não consigo adicionar outros produtos").
  */
-export function CarrinhoLink({ slug, empresaId }: { slug: string; empresaId: string }) {
+export function CarrinhoLink({
+  slug,
+  empresaId,
+}: {
+  slug: string;
+  empresaId: string;
+}) {
   const logado = useSessao();
   const [contagem, setContagem] = useState(0);
 
@@ -25,7 +31,10 @@ export function CarrinhoLink({ slug, empresaId }: { slug: string; empresaId: str
       if (logado === null) return;
       const total = logado
         ? await getContagemCarrinho(empresaId)
-        : lerCarrinhoConvidado(empresaId).reduce((soma, item) => soma + item.quantidade, 0);
+        : lerCarrinhoConvidado(empresaId).reduce(
+            (soma, item) => soma + item.quantidade,
+            0,
+          );
       if (!cancelado) setContagem(total);
     }
 
@@ -42,15 +51,24 @@ export function CarrinhoLink({ slug, empresaId }: { slug: string; empresaId: str
       href={`/loja/${slug}/carrinho`}
       aria-label="Carrinho"
       title="Carrinho"
-      className="relative flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+      className="relative flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/15"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5"
+      >
         <path d="M3 4h2l1 3m0 0 2.2 8.4a2 2 0 0 0 1.94 1.6h7.32a2 2 0 0 0 1.94-1.52L21 8H6" />
         <circle cx="9.5" cy="20" r="1.4" />
         <circle cx="17.5" cy="20" r="1.4" />
       </svg>
       {contagem > 0 && (
-        <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-[10px] font-semibold text-white">
+        // bg branco + texto na cor de marca — mesmo motivo do FavoritosLink.
+        <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-[var(--brand-primary)]">
           {contagem}
         </span>
       )}

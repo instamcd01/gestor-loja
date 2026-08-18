@@ -16,7 +16,7 @@ export function AccountLink({ slug }: { slug: string }) {
   const logado = useSessao();
 
   if (logado === null) {
-    return <span className="h-9 w-9 animate-pulse rounded-full bg-black/5 dark:bg-white/10" />;
+    return <span className="h-9 w-9 animate-pulse rounded-full bg-white/15" />;
   }
 
   return (
@@ -24,9 +24,17 @@ export function AccountLink({ slug }: { slug: string }) {
       href={`/loja/${slug}/${logado ? "conta" : "entrar"}`}
       aria-label={logado ? "Minha conta" : "Entrar"}
       title={logado ? "Minha conta" : "Entrar"}
-      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+      className="flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/15"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5"
+      >
         <circle cx="12" cy="8" r="3.5" />
         <path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6" />
       </svg>
