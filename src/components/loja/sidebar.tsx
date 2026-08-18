@@ -195,17 +195,22 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Desktop — coluna fixa, sempre visível. `self-start` é o pulo do gato:
-          por padrão um item de `flex` linha estica (`align-items: stretch`)
-          pra bater a altura do irmão mais alto — como a coluna de conteúdo
-          (catálogo inteiro) é bem mais alta que a tela, a sidebar esticava
-          junto e ficava gigante mesmo com poucos departamentos, sobrando um
-          vão enorme em branco embaixo do menu. `self-start` tira ela dessa
-          esticada, ela some do tamanho que o próprio conteúdo pede;
-          `max-h-screen` + `overflow-y-auto` no <nav> seguram o caso de MUITOS
-          departamentos (não deixa passar da tela, rola por dentro). `sticky`
-          continua funcionando igual, independe da altura do elemento. */}
-      <aside className="sticky top-0 hidden max-h-screen w-60 shrink-0 self-start flex-col border-r border-black/5 lg:flex dark:border-white/10">
+      {/* Desktop — coluna fixa, sempre visível, `h-screen` (não
+          `self-start`/`max-h-screen` como antes): altura EXPLÍCITA de
+          100vh evita o esticamento pelo irmão (`align-items: stretch` do
+          `<div className="flex">` em layout.tsx bateria na altura da
+          coluna de conteúdo, bem mais alta que a tela, sem precisar de
+          `self-start` pra escapar disso — altura explícita já ganha de
+          stretch por definição do flexbox). E, diferente do
+          `self-start` (que encolhia a sidebar pro tamanho do próprio
+          conteúdo quando a lista de departamentos era curta, deixando
+          "Minha conta/Favoritos/Pedidos/Sair" flutuando logo abaixo da
+          lista em vez de grudado no rodapé da tela), `h-screen` mantém a
+          coluna sempre do tamanho da tela — o rodapé (fora do `<nav>`,
+          `shrink-0`) fica sempre colado embaixo, e só o `<nav>` do meio
+          (`flex-1 min-h-0 overflow-y-auto`) rola por dentro quando a
+          lista é longa. `sticky` continua funcionando igual. */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-black/5 lg:flex dark:border-white/10">
         <div className="flex items-center justify-center bg-[var(--brand-primary)] p-4">
           <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
         </div>
