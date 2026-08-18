@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { createContext, useContext, type ReactNode } from "react";
 import { CarrinhoMiniBarra } from "@/components/carrinho/carrinho-mini-barra";
 import { MiniCarrinhoDrawer } from "@/components/carrinho/mini-carrinho-drawer";
@@ -42,12 +43,20 @@ export function CarrinhoRapidoProvider({
   children: ReactNode;
 }) {
   const carrinhoRapido = useCarrinhoRapido(slug, empresaId);
+  // Nunca aparece nas próprias páginas de carrinho/checkout — o cliente já
+  // está vendo o carrinho ali, uma gaveta ou barra por cima seria
+  // redundante (e, no caso da gaveta cheia, esconderia a página de baixo
+  // por completo). Verificado aqui, não só dentro de cada peça, porque
+  // controla as duas: gaveta cheia E barra minimizada.
+  const pathname = usePathname();
+  const naTelaDeCarrinho = pathname?.includes("/carrinho") ?? false;
 
   return (
     <CarrinhoRapidoContext.Provider value={carrinhoRapido}>
       {children}
 
-      {carrinhoRapido.drawer &&
+      {!naTelaDeCarrinho &&
+        carrinhoRapido.drawer &&
         (carrinhoRapido.minimizado ? (
           <CarrinhoMiniBarra
             quantidadeItens={carrinhoRapido.drawer.itens.length}

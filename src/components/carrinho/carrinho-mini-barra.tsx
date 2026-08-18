@@ -1,7 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-
 /**
  * O que sobra da gaveta de confirmação (MiniCarrinhoDrawer) quando ela é
  * minimizada — pelo × ou "Continuar comprando" (as duas ações minimizam
@@ -11,10 +9,9 @@ import { usePathname } from "next/navigation";
  * "adicionar" recente nesta página). Toque em qualquer parte reabre a
  * gaveta cheia.
  *
- * Some nas páginas de carrinho/checkout — já se está vendo o carrinho ali,
- * o convite pra abri-lo de novo seria redundante (mesmo raciocínio já
- * usado pelo WhatsappSuporteButton pra não competir com a barra de total
- * daquela tela).
+ * Não decide sozinha se deve sumir nas páginas de carrinho/checkout — quem
+ * controla isso é o CarrinhoRapidoProvider (mesma checagem de rota vale
+ * pra MiniCarrinhoDrawer, então fica num lugar só).
  */
 export function CarrinhoMiniBarra({
   quantidadeItens,
@@ -23,9 +20,6 @@ export function CarrinhoMiniBarra({
   quantidadeItens: number;
   onExpandir: () => void;
 }) {
-  const pathname = usePathname();
-  if (pathname?.includes("/carrinho")) return null;
-
   const texto = `Adicionado ao carrinho (${quantidadeItens} ${quantidadeItens === 1 ? "item" : "itens"})`;
 
   return (

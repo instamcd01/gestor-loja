@@ -47,7 +47,12 @@ export function MiniCarrinhoDrawer({
 }: {
   slug: string;
   empresaId: string;
-  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  enderecoEmpresa: {
+    endereco: string | null;
+    cidade: string | null;
+    estado: string | null;
+    cep: string | null;
+  };
   itens: ItemMiniCarrinho[];
   valorTotal: number;
   idRecemAdicionado: string;
@@ -58,12 +63,19 @@ export function MiniCarrinhoDrawer({
 }) {
   const painelRef = useDrawerA11y(true, onFechar);
   const router = useRouter();
-  const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
+  const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<
+    string | null
+  >(null);
   const [indoParaCarrinho, setIndoParaCarrinho] = useState(false);
 
   async function irParaCarrinho() {
     setIndoParaCarrinho(true);
     await onAntesDeNavegar();
+    // Minimiza antes de navegar — o estado da gaveta agora vive no layout
+    // (CarrinhoRapidoProvider), não dentro de cada card, então não some
+    // mais sozinho ao trocar de rota. Sem isso, a gaveta cheia continuava
+    // aberta por cima da própria página do carrinho depois de navegar.
+    onFechar();
     router.push(`/loja/${slug}/carrinho`);
   }
 
@@ -88,13 +100,20 @@ export function MiniCarrinhoDrawer({
   // não fica estagnado igual ao `valor` da RPC. Fallback pro `valor`
   // antigo cobre um cache já salvo no navegador ANTES desse campo existir
   // (até o cliente trocar/reconfirmar o endereço, o que reescreve o cache).
-  const entregaValor = estimado ? (entregaGratis ? 0 : (estimado.valorCheio ?? estimado.valor)) : null;
+  const entregaValor = estimado
+    ? entregaGratis
+      ? 0
+      : (estimado.valorCheio ?? estimado.valor)
+    : null;
   const faltaParaFreteGratis =
     estimado?.valorMinimoFreteGratis != null && !entregaGratis
       ? estimado.valorMinimoFreteGratis - valorTotal
       : null;
   const descontoProdutos = itens.reduce(
-    (soma, item) => (item.precoOriginal != null ? soma + (item.precoOriginal - item.preco) * item.quantidade : soma),
+    (soma, item) =>
+      item.precoOriginal != null
+        ? soma + (item.precoOriginal - item.preco) * item.quantidade
+        : soma,
     0,
   );
 
@@ -118,7 +137,8 @@ export function MiniCarrinhoDrawer({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">
-            Adicionado ao carrinho ({itens.length} {itens.length === 1 ? "item" : "itens"})
+            Adicionado ao carrinho ({itens.length}{" "}
+            {itens.length === 1 ? "item" : "itens"})
           </h2>
           <button
             type="button"
@@ -130,7 +150,11 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
-        <EstimarFreteGratis empresaId={empresaId} enderecoEmpresa={enderecoEmpresa} subtotal={valorTotal} />
+        <EstimarFreteGratis
+          empresaId={empresaId}
+          enderecoEmpresa={enderecoEmpresa}
+          subtotal={valorTotal}
+        />
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {itens.map((item) => (
@@ -163,7 +187,9 @@ export function MiniCarrinhoDrawer({
               </div>
               {confirmandoRemocaoId === item.id ? (
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-black/60 dark:text-white/60">Remover?</span>
+                  <span className="text-black/60 dark:text-white/60">
+                    Remover?
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
@@ -192,15 +218,23 @@ export function MiniCarrinhoDrawer({
                         : onAlterarQuantidade(item.id, item.quantidade - 1)
                     }
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 leading-none dark:border-white/10"
-                    aria-label={item.quantidade === 1 ? "Remover item" : "Diminuir quantidade"}
+                    aria-label={
+                      item.quantidade === 1
+                        ? "Remover item"
+                        : "Diminuir quantidade"
+                    }
                   >
                     {item.quantidade === 1 ? <IconeLixeira /> : "−"}
                   </button>
-                  <span className="w-5 text-center text-sm">{item.quantidade}</span>
+                  <span className="w-5 text-center text-sm">
+                    {item.quantidade}
+                  </span>
                   <button
                     type="button"
                     disabled={item.quantidade >= item.estoqueDisponivel}
-                    onClick={() => onAlterarQuantidade(item.id, item.quantidade + 1)}
+                    onClick={() =>
+                      onAlterarQuantidade(item.id, item.quantidade + 1)
+                    }
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
                     aria-label="Aumentar quantidade"
                   >
@@ -225,7 +259,11 @@ export function MiniCarrinhoDrawer({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Button onClick={irParaCarrinho} disabled={indoParaCarrinho} className="w-full">
+          <Button
+            onClick={irParaCarrinho}
+            disabled={indoParaCarrinho}
+            className="w-full"
+          >
             {indoParaCarrinho ? "Abrindo carrinho..." : "Ir para o carrinho"}
           </Button>
           <button
