@@ -71,8 +71,11 @@ function MarcaSidebar({
   nomeEmpresa: string;
 }) {
   if (!marca.url) {
+    // text-white fixo: as duas únicas chamadas deste componente (drawer
+    // mobile e coluna fixa desktop) vivem dentro do bloco de topo com fundo
+    // sólido na cor de marca — ver <Sidebar>.
     return (
-      <span className="min-w-0 truncate text-sm font-semibold">
+      <span className="min-w-0 truncate text-sm font-semibold text-white">
         {nomeEmpresa}
       </span>
     );
@@ -166,14 +169,14 @@ export function Sidebar({
               aberta ? "translate-x-0" : "-translate-x-full",
             )}
           >
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-black/5 p-4 dark:border-white/10">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center bg-[var(--brand-primary)] p-4">
               <span />
               <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
               <button
                 type="button"
                 onClick={fechar}
                 aria-label="Fechar menu"
-                className="flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+                className="flex h-8 w-8 shrink-0 items-center justify-center justify-self-end rounded-full text-white hover:bg-white/15"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -203,7 +206,7 @@ export function Sidebar({
           departamentos (não deixa passar da tela, rola por dentro). `sticky`
           continua funcionando igual, independe da altura do elemento. */}
       <aside className="sticky top-0 hidden max-h-screen w-60 shrink-0 self-start flex-col border-r border-black/5 lg:flex dark:border-white/10">
-        <div className="flex items-center justify-center border-b border-black/5 p-4 dark:border-white/10">
+        <div className="flex items-center justify-center bg-[var(--brand-primary)] p-4">
           <MarcaSidebar marca={marca} nomeEmpresa={nomeEmpresa} />
         </div>
         {conteudo}
@@ -344,19 +347,23 @@ function SidebarConteudo({
 
       {/* Fora do <nav> rolável, de propósito: fica sempre visível colado no
           rodapé do menu (não sai de vista quando a lista de departamentos é
-          longa/expandida), enquanto só os departamentos rolam por dentro. */}
-      <div className="flex shrink-0 flex-col gap-0.5 border-t border-black/5 p-3 dark:border-white/10">
+          longa/expandida), enquanto só os departamentos rolam por dentro.
+          Fundo na cor de marca (a pedido do lojista) — usa linkClasseColorida
+          em vez de linkClasse porque estes 4 links nunca têm estado "ativo"
+          (sempre chamavam linkClasse(false, ...)), então não precisam da
+          variante de destaque, só do texto branco pra contrastar aqui. */}
+      <div className="flex shrink-0 flex-col gap-0.5 bg-[var(--brand-primary)] p-3">
         <Link
           href={`/loja/${slug}/${logado ? "conta" : "entrar"}`}
           onClick={onNavegar}
-          className={linkClasse(false, moderno)}
+          className={linkClasseColorida(moderno)}
         >
           {logado ? "Minha conta" : "Entrar"}
         </Link>
         <Link
           href={`/loja/${slug}/favoritos`}
           onClick={onNavegar}
-          className={linkClasse(false, moderno)}
+          className={linkClasseColorida(moderno)}
         >
           Favoritos
         </Link>
@@ -364,7 +371,7 @@ function SidebarConteudo({
           <Link
             href={`/loja/${slug}/pedidos`}
             onClick={onNavegar}
-            className={linkClasse(false, moderno)}
+            className={linkClasseColorida(moderno)}
           >
             Pedidos
           </Link>
@@ -375,7 +382,7 @@ function SidebarConteudo({
             onClick={sair}
             disabled={saindo}
             className={cn(
-              linkClasse(false, moderno),
+              linkClasseColorida(moderno),
               "text-left disabled:opacity-50",
             )}
           >
@@ -395,6 +402,15 @@ function linkClasse(ativo: boolean, moderno: boolean) {
     ativo
       ? "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
       : "text-black/70 hover:bg-black/5 dark:text-white/70 dark:hover:bg-white/10",
+  );
+}
+
+/** Mesmo estilo de link do menu, mas pro bloco de fundo colorido (topo/rodapé da sidebar) — texto branco em vez do preto/cinza padrão. */
+function linkClasseColorida(moderno: boolean) {
+  const pesoFonte = moderno ? "font-bold" : "font-medium";
+  return cn(
+    "rounded-[var(--radius-sm)] px-3 py-2 text-sm text-white transition-colors hover:bg-white/15",
+    pesoFonte,
   );
 }
 
