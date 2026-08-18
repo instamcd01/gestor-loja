@@ -65,8 +65,7 @@ export function FiltroPreco({
           >
             {faixa.max != null
               ? `${formatarPreco(faixa.min)} - ${formatarPreco(faixa.max)}`
-              : `Acima de ${formatarPreco(faixa.min)}`}{" "}
-            ({faixa.total})
+              : `Acima de ${formatarPreco(faixa.min)}`}
           </button>
         ))}
       </div>

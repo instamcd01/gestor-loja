@@ -40,7 +40,7 @@ export function FiltroFase({
         >
           Todas
         </button>
-        {fases.map(({ fase, total }) => (
+        {fases.map(({ fase }) => (
           <button
             key={fase}
             type="button"
@@ -51,7 +51,7 @@ export function FiltroFase({
                 : "border-black/10 text-black/60 dark:border-white/10 dark:text-white/60"
             }`}
           >
-            {fase} ({total})
+            {fase}
           </button>
         ))}
       </div>

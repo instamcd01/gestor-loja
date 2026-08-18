@@ -40,7 +40,7 @@ export function FiltroMarca({
         >
           Todas
         </button>
-        {marcas.map(({ marca, total }) => (
+        {marcas.map(({ marca }) => (
           <button
             key={marca}
             type="button"
@@ -51,7 +51,7 @@ export function FiltroMarca({
                 : "border-black/10 text-black/60 dark:border-white/10 dark:text-white/60"
             }`}
           >
-            {marca} ({total})
+            {marca}
           </button>
         ))}
       </div>

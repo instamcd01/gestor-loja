@@ -6,7 +6,10 @@ import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
 import { CategoriasEmLinha } from "@/components/loja/categorias-em-linha";
 import { CategoriasEspecie } from "@/components/loja/categorias-especie";
-import { GradeDeProdutos, GradeSkeleton } from "@/components/loja/grade-de-produtos";
+import {
+  GradeDeProdutos,
+  GradeSkeleton,
+} from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashBanner } from "@/components/loja/petcash-banner";
@@ -29,7 +32,8 @@ export async function generateMetadata({
   if (!empresa) return {};
   return {
     title: empresa.nome,
-    description: empresa.catalogo_info_extra ?? `Peça online na ${empresa.nome}`,
+    description:
+      empresa.catalogo_info_extra ?? `Peça online na ${empresa.nome}`,
   };
 }
 
@@ -51,11 +55,28 @@ export default async function LojaPage({
   }>;
 }) {
   const { slug } = await params;
-  const { q, departamento, categoria, marca, especie, fase, precoMin, precoMax, ordenar } = await searchParams;
+  const {
+    q,
+    departamento,
+    categoria,
+    marca,
+    especie,
+    fase,
+    precoMin,
+    precoMax,
+    ordenar,
+  } = await searchParams;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
 
-  const filtroAtivo = !!q || !!departamento || !!categoria || !!marca || !!especie || !!fase || !!precoMin;
+  const filtroAtivo =
+    !!q ||
+    !!departamento ||
+    !!categoria ||
+    !!marca ||
+    !!especie ||
+    !!fase ||
+    !!precoMin;
   const moderno = empresa.catalogo_modelo === "moderno";
 
   // Linhas por categoria (CategoriasEmLinha) valem pra home solta, pra tela
@@ -65,10 +86,16 @@ export default async function LojaPage({
   // lista completa só pra jogar fora e usar apenas a contagem. Só quando
   // uma CATEGORIA final (ou busca/marca/fase/faixa de preço/ordenação) é
   // escolhida a grade plana precisa da lista real (é o que ela renderiza).
-  const exigeGradeFinal = !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
+  const exigeGradeFinal =
+    !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
   const usaLinhasPorCategoria = !exigeGradeFinal;
 
-  const [produtos, totalSemOutrosFiltros, { marcas, especies, fases, faixasPreco }, banners] = await Promise.all([
+  const [
+    produtos,
+    totalSemOutrosFiltros,
+    { marcas, especies, fases, faixasPreco },
+    banners,
+  ] = await Promise.all([
     usaLinhasPorCategoria
       ? Promise.resolve([])
       : getProdutosCatalogo(empresa.id, {
@@ -82,12 +109,16 @@ export default async function LojaPage({
           precoMax: precoMax ? Number(precoMax) : undefined,
           ordenar,
         }),
-    usaLinhasPorCategoria ? getContagemProdutosCatalogo(empresa.id, { especie, departamento }) : Promise.resolve(0),
+    usaLinhasPorCategoria
+      ? getContagemProdutosCatalogo(empresa.id, { especie, departamento })
+      : Promise.resolve(0),
     getFiltrosCatalogo(empresa.id),
     getBannersCatalogo(empresa.id),
   ]);
 
-  const totalProdutos = usaLinhasPorCategoria ? totalSemOutrosFiltros : produtos.length;
+  const totalProdutos = usaLinhasPorCategoria
+    ? totalSemOutrosFiltros
+    : produtos.length;
 
   const enderecoEmpresa = {
     endereco: empresa.endereco,
@@ -97,7 +128,9 @@ export default async function LojaPage({
   };
 
   const faixaAtiva =
-    precoMin != null ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined } : null;
+    precoMin != null
+      ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined }
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,7 +146,11 @@ export default async function LojaPage({
           {banners.length > 0 ? (
             <BannerCarousel banners={banners} />
           ) : (
-            <HeroBanner nome={empresa.nome} tagline={empresa.catalogo_info_extra} moderno={moderno} />
+            <HeroBanner
+              nome={empresa.nome}
+              tagline={empresa.catalogo_info_extra}
+              moderno={moderno}
+            />
           )}
         </div>
       )}
@@ -129,17 +166,7 @@ export default async function LojaPage({
 
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
 
-      <div id="produtos" className="flex items-center justify-between gap-3">
-        <p className="min-w-0 flex-1 truncate text-sm text-black/50 dark:text-white/50">
-          {totalProdutos} produto{totalProdutos === 1 ? "" : "s"}
-          {categoria
-            ? ` em ${categoria}`
-            : departamento
-              ? ` em ${departamento}`
-              : especie
-                ? ` para ${especie}`
-                : ""}
-        </p>
+      <div id="produtos" className="flex items-center justify-end gap-3">
         <div className="flex shrink-0 items-center gap-2">
           <FiltrosDrawer
             marcas={marcas}

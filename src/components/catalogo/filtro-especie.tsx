@@ -40,7 +40,7 @@ export function FiltroEspecie({
         >
           Todos
         </button>
-        {especies.map(({ especie, total }) => (
+        {especies.map(({ especie }) => (
           <button
             key={especie}
             type="button"
@@ -51,7 +51,7 @@ export function FiltroEspecie({
                 : "border-black/10 text-black/60 dark:border-white/10 dark:text-white/60"
             }`}
           >
-            {especie} ({total})
+            {especie}
           </button>
         ))}
       </div>
