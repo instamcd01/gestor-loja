@@ -8,7 +8,13 @@ import iconeOutros from "@/assets/icones/outros.png";
 const CATEGORIAS = [
   { rotulo: "Cães", icone: iconeCao, params: "especie=C%C3%A3es" },
   { rotulo: "Gatos", icone: iconeGato, params: "especie=Gatos" },
-  { rotulo: "Pássaros", icone: iconePassaro, params: "especie=P%C3%A1ssaros" },
+  // "Pássaros" filtra por categoria (não espécie, diferente de Cães/Gatos
+  // acima): o campo `especie` é texto livre e a maioria dos produtos de
+  // pássaro vem com o nome específico da ave (Calopsitas e Agapornis,
+  // Psitacídeos, Beija-Flor...), não a palavra genérica "Pássaros" — filtrar
+  // por especie ilike '%Pássaros%' pegava só 1 de 4 produtos reais.
+  // `categoria = 'Pássaros'` é 1:1 com a categoria no banco, sem esse ruído.
+  { rotulo: "Pássaros", icone: iconePassaro, params: "categoria=P%C3%A1ssaros" },
   { rotulo: "Outros", icone: iconeOutros, params: "departamento=Outros%20Animais" },
 ] as const;
 
