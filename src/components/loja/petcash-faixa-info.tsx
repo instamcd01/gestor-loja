@@ -11,7 +11,7 @@ export function PetcashFaixaInfo({ petcashAtivo }: { petcashAtivo: boolean }) {
 
   return (
     <div className="truncate border-b border-black/5 bg-black/[0.02] px-4 py-1.5 text-center text-[11px] text-black/50 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/50">
-      Ganhe PetCash no site, use como desconto depois.
+      🪙 Ganhe PetCash em pedidos feitos pelo site
     </div>
   );
 }
