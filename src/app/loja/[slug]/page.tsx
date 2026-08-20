@@ -13,6 +13,7 @@ import {
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashBanner } from "@/components/loja/petcash-banner";
+import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
 import {
   getBannersCatalogo,
   getContagemProdutosCatalogo,
@@ -127,6 +128,14 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {!filtroAtivo && (
+        // -mx-4 cancela o padding do <main>, mesmo truque do BannerCarousel
+        // logo abaixo — fica colada no header, sem borda, como uma linha só.
+        <div className="-mx-4 -mt-6">
+          <PetcashFaixaInfo petcashAtivo={empresa.petcash_ativo} />
+        </div>
+      )}
+
       {!filtroAtivo && <CategoriasEspecie slug={slug} />}
 
       {!filtroAtivo && (
