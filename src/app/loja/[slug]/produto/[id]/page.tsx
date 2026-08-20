@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import {
   getEmpresaPorSlug,
+  getKitComponentesCatalogo,
   getProdutoCatalogo,
   getProdutosCatalogo,
   getVariantesDoProduto,
@@ -26,17 +27,19 @@ async function carregar(slug: string, id: string) {
   if (!empresa) return null;
   const produto = await getProdutoCatalogo(empresa.id, id);
   if (!produto) return null;
-  const [variantes, relacionados] = await Promise.all([
+  const [variantes, relacionados, kitComponentes] = await Promise.all([
     getVariantesDoProduto(empresa.id, produto),
     produto.categoria
       ? getProdutosCatalogo(empresa.id, { categoria: produto.categoria })
       : Promise.resolve([]),
+    produto.eh_kit ? getKitComponentesCatalogo(produto.id) : Promise.resolve([]),
   ]);
   return {
     empresa,
     produto,
     variantes,
     relacionados: relacionados.filter((p) => p.id !== produto.id).slice(0, 8),
+    kitComponentes,
   };
 }
 
@@ -59,7 +62,7 @@ export default async function ProdutoPage({
   const { slug, id } = await params;
   const dados = await carregar(slug, id);
   if (!dados) notFound();
-  const { produto, variantes, relacionados, empresa } = dados;
+  const { produto, variantes, relacionados, empresa, kitComponentes } = dados;
 
   const temPromocao =
     produto.preco_promocional != null &&
@@ -68,6 +71,15 @@ export default async function ProdutoPage({
     produto.preco,
     produto.preco_promocional,
   );
+
+  // Kit: "riscado" compara com a soma dos componentes (preco_cheio_kit),
+  // mesmo padrão do card na grade.
+  const precoExibidoKit = temPromocao ? produto.preco_promocional! : produto.preco;
+  const temDescontoKit =
+    produto.eh_kit && produto.preco_cheio_kit != null && produto.preco_cheio_kit > precoExibidoKit;
+  const percentualOffKit = temDescontoKit
+    ? percentualDesconto(produto.preco_cheio_kit!, precoExibidoKit)
+    : 0;
 
   const mensagemWhatsapp = encodeURIComponent(
     `Olá! Tenho interesse em: ${produto.nome}`,
@@ -94,14 +106,14 @@ export default async function ProdutoPage({
 
         <div className="grid gap-8 md:grid-cols-2">
           <div className="relative">
-            {percentualOff > 0 && (
-              <Badge
-                variant="secondary"
-                className="absolute top-2 left-2 z-[1]"
-              >
-                {percentualOff}% OFF
-              </Badge>
-            )}
+            <div className="absolute top-2 left-2 z-[1] flex flex-col gap-1">
+              {produto.eh_kit && <Badge variant="neutral">Kit</Badge>}
+              {(temDescontoKit ? percentualOffKit : percentualOff) > 0 && (
+                <Badge variant="secondary">
+                  {temDescontoKit ? percentualOffKit : percentualOff}% OFF
+                </Badge>
+              )}
+            </div>
             <GaleriaProduto
               nome={produto.nome}
               categoria={produto.categoria}
@@ -123,16 +135,41 @@ export default async function ProdutoPage({
 
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold">
-                {formatarPreco(
-                  temPromocao ? produto.preco_promocional! : produto.preco,
-                )}
+                {formatarPreco(precoExibidoKit)}
               </span>
-              {temPromocao && (
+              {temDescontoKit ? (
                 <span className="text-base text-black/40 line-through dark:text-white/40">
-                  {formatarPreco(produto.preco)}
+                  {formatarPreco(produto.preco_cheio_kit!)}
                 </span>
+              ) : (
+                temPromocao && (
+                  <span className="text-base text-black/40 line-through dark:text-white/40">
+                    {formatarPreco(produto.preco)}
+                  </span>
+                )
               )}
             </div>
+
+            {produto.eh_kit && kitComponentes.length > 0 && (
+              <Card className="flex flex-col gap-2 p-4">
+                <span className="text-xs font-medium tracking-wide text-black/40 uppercase dark:text-white/40">
+                  O que vem no kit
+                </span>
+                <ul className="flex flex-col gap-2">
+                  {kitComponentes.map((c) => (
+                    <li
+                      key={c.componente_produto_id}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="text-black/80 dark:text-white/80">{c.nome}</span>
+                      <span className="shrink-0 font-medium text-black/50 dark:text-white/50">
+                        {c.quantidade}x
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
 
             {variantes.length > 0 && (
               <SeletorVariante
@@ -157,10 +194,12 @@ export default async function ProdutoPage({
                   nome: produto.nome,
                   imagemUrl: produto.imagem_url,
                   categoria: produto.categoria,
-                  preco: temPromocao
-                    ? produto.preco_promocional!
-                    : produto.preco,
-                  precoOriginal: temPromocao ? produto.preco : null,
+                  preco: precoExibidoKit,
+                  precoOriginal: temDescontoKit
+                    ? produto.preco_cheio_kit!
+                    : temPromocao
+                      ? produto.preco
+                      : null,
                   estoqueDisponivel: produto.estoque_disponivel,
                 }}
               />

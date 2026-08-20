@@ -55,6 +55,17 @@ export function ProdutoCard({
     selecionada.preco_promocional,
   );
 
+  // Kit: o "riscado" compara com a soma dos componentes (preco_cheio_kit),
+  // não com preco_promocional (que aqui seria um desconto extra em cima do
+  // preço já fechado do kit, caso exista) — deixa o desconto do combo
+  // visível igual ao padrão de promoção já usado em produto avulso.
+  const precoExibidoKit = temPromocao ? selecionada.preco_promocional! : selecionada.preco;
+  const temDescontoKit =
+    produto.eh_kit && produto.preco_cheio_kit != null && produto.preco_cheio_kit > precoExibidoKit;
+  const percentualOffKit = temDescontoKit
+    ? percentualDesconto(produto.preco_cheio_kit!, precoExibidoKit)
+    : 0;
+
   // Adicionar ao carrinho sem precisar abrir o produto — pra quem quer
   // continuar navegando o catálogo em vez de interromper pra visitar cada
   // página. Estado compartilhado com a página inteira via contexto (ver
@@ -106,8 +117,11 @@ export function ProdutoCard({
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {percentualOff > 0 && (
-              <Badge variant="secondary">{percentualOff}% OFF</Badge>
+            {produto.eh_kit && <Badge variant="neutral">Kit</Badge>}
+            {(temDescontoKit ? percentualOffKit : percentualOff) > 0 && (
+              <Badge variant="secondary">
+                {temDescontoKit ? percentualOffKit : percentualOff}% OFF
+              </Badge>
             )}
             {produto.destaque && <Badge variant="neutral">Destaque</Badge>}
           </div>
@@ -164,16 +178,18 @@ export function ProdutoCard({
                 moderno ? "text-lg font-extrabold" : "text-base font-semibold"
               }
             >
-              {formatarPreco(
-                temPromocao
-                  ? selecionada.preco_promocional!
-                  : selecionada.preco,
-              )}
+              {formatarPreco(precoExibidoKit)}
             </span>
-            {temPromocao && (
+            {temDescontoKit ? (
               <span className="text-xs text-black/40 line-through dark:text-white/40">
-                {formatarPreco(selecionada.preco)}
+                {formatarPreco(produto.preco_cheio_kit!)}
               </span>
+            ) : (
+              temPromocao && (
+                <span className="text-xs text-black/40 line-through dark:text-white/40">
+                  {formatarPreco(selecionada.preco)}
+                </span>
+              )
             )}
           </div>
 

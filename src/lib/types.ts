@@ -99,6 +99,19 @@ export interface ProdutoCatalogo {
   variante_label: string | null;
   /** Soma do estoque real (view já filtra produto com 0) — usado pra limitar a quantidade no carrinho. */
   estoque_disponivel: number;
+  /** Kit/combo (produtos reais agrupados por preço fechado) em vez de um produto físico próprio — nunca tem linha em estoque, `estoque_disponivel` acima já vem calculado a partir dos componentes. */
+  eh_kit: boolean;
+  /** Soma do preço normal de cada componente × quantidade no kit — só preenchido quando `eh_kit`, usado pro "preço riscado" (preço cheio vs. preço fechado do kit). */
+  preco_cheio_kit: number | null;
+}
+
+/** Um componente real dentro de um kit — pra página de detalhe listar "o que vem dentro". */
+export interface KitComponenteCatalogo {
+  kit_id: string;
+  componente_produto_id: string;
+  nome: string;
+  imagem_url: string | null;
+  quantidade: number;
 }
 
 /** Uma variante (peso/tamanho) de um produto-pai, pra montar as pills de seleção. */

@@ -4,6 +4,7 @@ import type {
   BannerCatalogo,
   CategoriaCatalogo,
   EmpresaCatalogo,
+  KitComponenteCatalogo,
   MarcaPosicaoCatalogo,
   ProdutoCatalogo,
   VarianteProduto,
@@ -686,6 +687,21 @@ export async function getProdutoCatalogo(
     return null;
   }
   return data;
+}
+
+/** Componentes reais de um kit — pra página de detalhe listar "o que vem dentro". */
+export async function getKitComponentesCatalogo(kitId: string): Promise<KitComponenteCatalogo[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_kit_componentes_publico")
+    .select("*")
+    .eq("kit_id", kitId);
+
+  if (error) {
+    console.error("Erro ao buscar componentes do kit:", error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 /**
