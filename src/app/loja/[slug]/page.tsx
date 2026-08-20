@@ -12,7 +12,6 @@ import {
 } from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
-import { PetcashBanner } from "@/components/loja/petcash-banner";
 import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
 import {
   getBannersCatalogo,
@@ -155,15 +154,6 @@ export default async function LojaPage({
             />
           )}
         </div>
-      )}
-
-      {!filtroAtivo && (
-        <PetcashBanner
-          nome={empresa.nome}
-          moderno={moderno}
-          petcashAtivo={empresa.petcash_ativo}
-          petcashPercentual={empresa.petcash_percentual}
-        />
       )}
 
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
