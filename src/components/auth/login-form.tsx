@@ -165,7 +165,23 @@ export function LoginForm({
     if (modoEmail === "entrar") {
       const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
       if (error) {
+        // Login falhou — o motivo mais comum na primeira tentativa é o
+        // email ainda não confirmado (cadastro direto por email, ou email
+        // anexado via telefone), e o Supabase recusa com a MESMA mensagem
+        // genérica de "credenciais inválidas" nos dois casos (não revela
+        // se o email existe/está confirmado, por segurança). Tenta
+        // reenviar os dois tipos de confirmação às cegas — o que não se
+        // aplica (conta já confirmada, ou email não existe) simplesmente
+        // falha e é ignorado, sem vazar qual dos dois foi.
+        const [reenvioCadastro, reenvioTrocaEmail] = await Promise.all([
+          supabase.auth.resend({ type: "signup", email }),
+          supabase.auth.resend({ type: "email_change", email }),
+        ]);
         setCarregando(false);
+        if (!reenvioCadastro.error || !reenvioTrocaEmail.error) {
+          setEtapa("confirmeEmail");
+          return;
+        }
         setErro("Email ou senha incorretos.");
         return;
       }

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cnpjValido, cpfValido, formatarCnpj, formatarCpf } from "@/lib/cpf-cnpj";
+import { apenasDigitos, cnpjValido, cpfValido, formatarCnpj, formatarCpf } from "@/lib/cpf-cnpj";
+import { dataBrParaIso, dataBrValida, formatarDataBr } from "@/lib/data-br";
 import { createClient } from "@/lib/supabase/client";
 import { formatarTelefoneBr, telefoneValido } from "@/lib/telefone";
 
@@ -54,6 +55,16 @@ export function CompletarCadastroForm({
   const [erro, setErro] = useState<string | null>(null);
   const [emailPendenteConfirmacao, setEmailPendenteConfirmacao] = useState<string | null>(null);
 
+  // Feedback ao vivo (assim que termina de digitar, sem esperar o submit) —
+  // só acende depois que a quantidade certa de dígitos foi preenchida, pra
+  // não mostrar erro enquanto a pessoa ainda está no meio de digitar.
+  const cpfCompleto = apenasDigitos(cpf).length === 11;
+  const cpfInvalido = cpfCompleto && !cpfValido(cpf);
+  const cnpjCompleto = apenasDigitos(cnpj).length === 14;
+  const cnpjInvalido = cnpjCompleto && !cnpjValido(cnpj);
+  const dataNascimentoCompleta = dataNascimento.length === 10;
+  const dataNascimentoInvalida = dataNascimentoCompleta && !dataBrValida(dataNascimento);
+
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
@@ -78,6 +89,10 @@ export function CompletarCadastroForm({
     }
     if (!telefoneConhecido && !telefoneValido(telefone)) {
       setErro("Digite um telefone válido com DDD.");
+      return;
+    }
+    if (!dataBrValida(dataNascimento)) {
+      setErro("Data de nascimento inválida.");
       return;
     }
     if (pedirEmailSenha) {
@@ -115,7 +130,7 @@ export function CompletarCadastroForm({
       p_cnpj: tipoPessoa === "juridica" ? cnpj : null,
       p_razao_social: tipoPessoa === "juridica" ? razaoSocial.trim() : null,
       p_genero: genero || null,
-      p_data_nascimento: dataNascimento || null,
+      p_data_nascimento: dataBrParaIso(dataNascimento),
       p_telefone: telefoneConhecido ?? telefone,
       p_aceitou_termos: aceitouTermos,
     });
@@ -210,7 +225,9 @@ export function CompletarCadastroForm({
             value={cpf}
             onChange={(e) => setCpf(formatarCpf(e.target.value))}
             placeholder="000.000.000-00"
+            className={cpfInvalido ? "border-[var(--color-danger)]" : undefined}
           />
+          {cpfInvalido && <p className="text-xs text-[var(--color-danger)]">CPF inválido — confira os números.</p>}
         </div>
       ) : (
         <>
@@ -224,7 +241,9 @@ export function CompletarCadastroForm({
               value={cnpj}
               onChange={(e) => setCnpj(formatarCnpj(e.target.value))}
               placeholder="00.000.000/0000-00"
+              className={cnpjInvalido ? "border-[var(--color-danger)]" : undefined}
             />
+            {cnpjInvalido && <p className="text-xs text-[var(--color-danger)]">CNPJ inválido — confira os números.</p>}
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="razaoSocial" className="text-sm font-medium">
@@ -310,10 +329,13 @@ export function CompletarCadastroForm({
           </label>
           <Input
             id="nascimento"
-            type="date"
+            inputMode="numeric"
             value={dataNascimento}
-            onChange={(e) => setDataNascimento(e.target.value)}
+            onChange={(e) => setDataNascimento(formatarDataBr(e.target.value))}
+            placeholder="DD/MM/AAAA"
+            className={dataNascimentoInvalida ? "border-[var(--color-danger)]" : undefined}
           />
+          {dataNascimentoInvalida && <p className="text-xs text-[var(--color-danger)]">Data inválida.</p>}
         </div>
       </div>
 

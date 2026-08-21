@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ConfirmarEmailForm } from "@/components/conta/confirmar-email-form";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
+import { formatarCnpj, formatarCpf } from "@/lib/cpf-cnpj";
 import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
 
@@ -25,20 +27,51 @@ export default async function ContaPage({
   // RLS (clientes_cliente_le_proprio) já garante que só a própria linha volta.
   const { data: cliente } = await supabase
     .from("clientes")
-    .select("nome, telefone, saldo_petcash")
+    .select("nome, telefone, email, cpf, cnpj, tipo_pessoa, razao_social, saldo_petcash")
     .eq("empresa_id", empresa.id)
     .eq("auth_user_id", user.id)
     .maybeSingle();
+
+  const pessoaJuridica = cliente?.tipo_pessoa === "juridica";
 
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-6 py-10">
       <h1 className="text-xl font-semibold">Minha conta</h1>
 
-      <div className="rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
-        <p className="text-sm text-black/50 dark:text-white/50">Nome</p>
-        <p className="mb-3 font-medium">{cliente?.nome ?? "—"}</p>
-        <p className="text-sm text-black/50 dark:text-white/50">Telefone</p>
-        <p className="font-medium">{cliente?.telefone ?? user.phone}</p>
+      <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-black/5 p-4 dark:border-white/10">
+        <div>
+          <p className="text-sm text-black/50 dark:text-white/50">Nome</p>
+          <p className="font-medium">{cliente?.nome ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-sm text-black/50 dark:text-white/50">Telefone</p>
+          <p className="font-medium">{cliente?.telefone ?? user.phone ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-sm text-black/50 dark:text-white/50">Email</p>
+          {cliente?.email ? (
+            <p className="font-medium">{cliente.email}</p>
+          ) : (
+            <ConfirmarEmailForm />
+          )}
+        </div>
+        {pessoaJuridica ? (
+          <>
+            <div>
+              <p className="text-sm text-black/50 dark:text-white/50">CNPJ</p>
+              <p className="font-medium">{cliente?.cnpj ? formatarCnpj(cliente.cnpj) : "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-black/50 dark:text-white/50">Razão social</p>
+              <p className="font-medium">{cliente?.razao_social ?? "—"}</p>
+            </div>
+          </>
+        ) : (
+          <div>
+            <p className="text-sm text-black/50 dark:text-white/50">CPF</p>
+            <p className="font-medium">{cliente?.cpf ? formatarCpf(cliente.cpf) : "—"}</p>
+          </div>
+        )}
       </div>
 
       {/* Link sempre visível, mesmo com saldo zerado — é exatamente quando
