@@ -171,13 +171,24 @@ export function LoginForm({
         // nativo do Supabase (`resend({type:'email_change'})`) só funciona
         // com sessão ativa — inútil aqui —, por isso essa RPC própria
         // (token + Resend direto, ver [[gestor_loja_cadastro_unificado_auth]]).
-        // Ela nunca revela se o email existe/está pendente, então a
-        // mensagem cobre os dois casos possíveis sem mentir em nenhum.
-        await supabase.rpc("solicitar_confirmacao_email", { p_empresa_id: empresaId, p_email: email });
+        // A RPC diferencia os 3 casos (email já confirmado = senha errada;
+        // email pendente = manda confirmação; nada encontrado = genérico) —
+        // decisão consciente de mostrar mensagem precisa em vez de esconder
+        // tudo atrás de um texto genérico.
+        const { data: status } = await supabase.rpc("solicitar_confirmacao_email", {
+          p_empresa_id: empresaId,
+          p_email: email,
+        });
         setCarregando(false);
-        setErro(
-          "Não conseguimos entrar. Se esse email ainda não foi confirmado, acabamos de mandar um novo link de confirmação — confira sua caixa de entrada (e o spam). Se já confirmou antes, confira a senha.",
-        );
+        if (status === "senha_incorreta") {
+          setErro("Senha incorreta.");
+          return;
+        }
+        if (status === "confirmacao_enviada") {
+          setEtapa("confirmeEmail");
+          return;
+        }
+        setErro("Email ou senha incorretos.");
         return;
       }
       await finalizarEntrada();
