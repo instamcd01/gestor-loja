@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
+import { SugestaoProduto } from "@/components/catalogo/sugestao-produto";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
 import { CategoriasEmLinha } from "@/components/loja/categorias-em-linha";
 import { CategoriasEspecie } from "@/components/loja/categorias-especie";
@@ -173,11 +174,14 @@ export default async function LojaPage({
       </div>
 
       {totalProdutos === 0 ? (
-        <p className="py-16 text-center text-black/50 dark:text-white/50">
-          {filtroAtivo
-            ? "Nenhum produto encontrado."
-            : "Nenhum produto disponível no catálogo ainda."}
-        </p>
+        <div className="py-16 text-center">
+          <p className="text-black/50 dark:text-white/50">
+            {filtroAtivo
+              ? "Nenhum produto encontrado."
+              : "Nenhum produto disponível no catálogo ainda."}
+          </p>
+          {q && <SugestaoProduto empresaId={empresa.id} termoBuscado={q} />}
+        </div>
       ) : usaLinhasPorCategoria ? (
         // Isolado num Server Component próprio + Suspense pelo mesmo motivo
         // da grade plana abaixo: o resto da página não depende dela pra
