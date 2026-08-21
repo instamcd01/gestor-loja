@@ -166,23 +166,18 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
       if (error) {
         // Login falhou — o motivo mais comum na primeira tentativa é o
-        // email ainda não confirmado (cadastro direto por email, ou email
-        // anexado via telefone), e o Supabase recusa com a MESMA mensagem
-        // genérica de "credenciais inválidas" nos dois casos (não revela
-        // se o email existe/está confirmado, por segurança). Tenta
-        // reenviar os dois tipos de confirmação às cegas — o que não se
-        // aplica (conta já confirmada, ou email não existe) simplesmente
-        // falha e é ignorado, sem vazar qual dos dois foi.
-        const [reenvioCadastro, reenvioTrocaEmail] = await Promise.all([
-          supabase.auth.resend({ type: "signup", email }),
-          supabase.auth.resend({ type: "email_change", email }),
-        ]);
+        // email ainda não confirmado (anexado via telefone, cliente sem
+        // acesso ao celular pra confirmar pela tela de conta). O reenvio
+        // nativo do Supabase (`resend({type:'email_change'})`) só funciona
+        // com sessão ativa — inútil aqui —, por isso essa RPC própria
+        // (token + Resend direto, ver [[gestor_loja_cadastro_unificado_auth]]).
+        // Ela nunca revela se o email existe/está pendente, então a
+        // mensagem cobre os dois casos possíveis sem mentir em nenhum.
+        await supabase.rpc("solicitar_confirmacao_email", { p_empresa_id: empresaId, p_email: email });
         setCarregando(false);
-        if (!reenvioCadastro.error || !reenvioTrocaEmail.error) {
-          setEtapa("confirmeEmail");
-          return;
-        }
-        setErro("Email ou senha incorretos.");
+        setErro(
+          "Não conseguimos entrar. Se esse email ainda não foi confirmado, acabamos de mandar um novo link de confirmação — confira sua caixa de entrada (e o spam). Se já confirmou antes, confira a senha.",
+        );
         return;
       }
       await finalizarEntrada();
