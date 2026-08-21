@@ -52,6 +52,7 @@ export function CompletarCadastroForm({
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [emailPendenteConfirmacao, setEmailPendenteConfirmacao] = useState<string | null>(null);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -132,7 +133,34 @@ export function CompletarCadastroForm({
       return;
     }
 
+    // O email só passa a valer pra login DEPOIS que o cliente clicar no
+    // link de confirmação que o Supabase acabou de mandar (updateUser não
+    // ativa o email na hora, por segurança — ver a mesma regra na
+    // memória do projeto). Sem avisar isso aqui, o cliente tenta entrar
+    // com email+senha, dá "senha inválida" (mensagem genérica, não diz o
+    // motivo real) e acha que o cadastro não funcionou.
+    if (pedirEmailSenha) {
+      setEmailPendenteConfirmacao(email);
+      return;
+    }
+
     onCompleto();
+  }
+
+  if (emailPendenteConfirmacao) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-2xl">📧</p>
+        <p className="text-sm text-black/70 dark:text-white/70">
+          Cadastro concluído! Enviamos um link de confirmação para <strong>{emailPendenteConfirmacao}</strong>.
+          Confirme pra poder entrar também com email e senha da próxima vez — até lá, continue entrando com seu
+          telefone normalmente.
+        </p>
+        <Button type="button" onClick={onCompleto} className="py-3 text-base">
+          Continuar
+        </Button>
+      </div>
+    );
   }
 
   return (

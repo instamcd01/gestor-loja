@@ -26,7 +26,6 @@ export function LoginForm({
   const [etapa, setEtapa] = useState<Etapa>("escolha");
   const [telefone, setTelefone] = useState("");
   const [codigo, setCodigo] = useState("");
-  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [modoEmail, setModoEmail] = useState<ModoEmail>("entrar");
@@ -48,8 +47,19 @@ export function LoginForm({
   async function finalizarEntrada() {
     const { data: clienteId, error: rpcError } = await supabase.rpc("entrar_ou_criar_cliente", {
       p_empresa_id: empresaId,
-      p_nome: nome.trim() || null,
-      p_aceita_lembrete_whatsapp: aceitaLembrete,
+      // Nome não é mais coletado neste passo — quem ainda não tem
+      // cadastro completo preenche em CompletarCadastroForm logo em
+      // seguida (que sobrescreve incondicionalmente); passar null aqui só
+      // deixa o fallback "Cliente" temporário pro INSERT de um cliente
+      // realmente novo, nunca visível de fato.
+      p_nome: null,
+      // null (não `false`) quando o cliente não marcou — a RPC faz
+      // coalesce(p_aceita_lembrete_whatsapp, valor_atual), então só passar
+      // `false` de propósito sobrescreveria um opt-in anterior toda vez
+      // que a pessoa loga de novo sem marcar a caixa (ela já começa
+      // desmarcada a cada sessão, então "não marcada" não significa "quero
+      // desativar").
+      p_aceita_lembrete_whatsapp: aceitaLembrete || null,
     });
 
     if (rpcError) {
@@ -205,7 +215,6 @@ export function LoginForm({
         slug={slug}
         telefoneConhecido={telefoneVerificado ?? undefined}
         pedirEmailSenha={!!telefoneVerificado}
-        nomeInicial={nome}
         onCompleto={concluirEIrPara}
       />
     );
@@ -218,20 +227,12 @@ export function LoginForm({
           Enviamos um código por SMS para {formatarTelefoneBr(telefone)}.
         </p>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="nome" className="text-sm font-medium">
-            Seu nome (só na primeira vez)
-          </label>
-          <Input
-            id="nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Como podemos te chamar?"
-          />
-        </div>
-
-        {/* Opt-in específico, separado do aceite de termos (esse fica no
-            passo de completar cadastro, na primeira vez). */}
+        {/* Nome não é pedido aqui — quem ainda não completou o cadastro
+            preenche no passo seguinte (CompletarCadastroForm); pedir aqui
+            também mostrava esse campo pra clientes que JÁ tinham cadastro,
+            mesmo prometendo "só na primeira vez" (bug real reportado pelo
+            usuário 21/08/2026). Opt-in específico, separado do aceite de
+            termos (esse fica no passo de completar cadastro). */}
         <label className="flex cursor-pointer items-start gap-2.5 text-sm">
           <input
             type="checkbox"
