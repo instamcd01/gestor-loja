@@ -8,6 +8,7 @@ import { CarrinhoLink } from "@/components/carrinho/carrinho-link";
 import { CarrinhoRapidoProvider } from "@/components/carrinho/carrinho-rapido-provider";
 import { FavoritosLink } from "@/components/favoritos/favoritos-link";
 import { FavoritosProvider } from "@/components/favoritos/favoritos-provider";
+import { LojaFooter } from "@/components/loja/loja-footer";
 import {
   Sidebar,
   SidebarProvider,
@@ -129,9 +130,13 @@ export default async function LojaLayout({
                   {children}
                 </main>
 
-                <footer className="border-t border-black/5 px-4 py-6 text-center text-xs text-black/40 dark:border-white/10 dark:text-white/40">
-                  {empresa.nome} · powered by Gestor
-                </footer>
+                <LojaFooter
+                  slug={slug}
+                  nome={empresa.nome}
+                  whatsapp={empresa.whatsapp_catalogo}
+                  instagram={empresa.instagram}
+                  facebook={empresa.facebook}
+                />
               </div>
             </SidebarProvider>
           </FavoritosProvider>
