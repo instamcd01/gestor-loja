@@ -25,7 +25,6 @@ export function LojaFooter({
       <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1.5">
           <p className="font-semibold text-black/80 dark:text-white/80">{nome}</p>
-          <p className="text-black/40 dark:text-white/40">Loja 100% delivery — sem unidade física pra visitar.</p>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {whatsapp && (
               <a href={linkWhatsApp(whatsapp)} target="_blank" rel="noopener noreferrer" className="hover:underline">
