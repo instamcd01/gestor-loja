@@ -12,6 +12,7 @@ import {
   GradeSkeleton,
 } from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
+import { MaisVendidos, PromocoesDoDia } from "@/components/loja/linha-produtos-destaque";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
 import {
@@ -167,6 +168,18 @@ export default async function LojaPage({
       )}
 
       {!filtroAtivo && moderno && <MarcasParceiras marcas={marcas} />}
+
+      {!filtroAtivo && (
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
+          <PromocoesDoDia slug={slug} empresaId={empresa.id} moderno={moderno} />
+        </Suspense>
+      )}
+
+      {!filtroAtivo && (
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
+          <MaisVendidos slug={slug} empresaId={empresa.id} moderno={moderno} />
+        </Suspense>
+      )}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
         <FiltrosDrawer

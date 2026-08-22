@@ -330,6 +330,65 @@ function descontoPercentual(produto: ProdutoCatalogo): number {
   return (produto.preco - produto.preco_promocional) / produto.preco;
 }
 
+/** Produtos com preço promocional ativo agora, do maior desconto pro menor
+ * — seção "Promoções do dia" da home. Só pai/avulso (mesmo padrão das
+ * outras linhas da home — variante vira pill dentro do card, não card
+ * próprio). */
+export async function getPromocoesDoDia(empresaId: string, limite = 12): Promise<ProdutoCatalogo[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("*")
+    .eq("empresa_id", empresaId)
+    .is("produto_pai_id", null)
+    .not("preco_promocional", "is", null);
+
+  if (error) {
+    console.error("Erro ao buscar promoções do dia:", error.message);
+    return [];
+  }
+
+  return (data ?? [])
+    .filter((produto) => descontoPercentual(produto) > 0)
+    .sort((a, b) => descontoPercentual(b) - descontoPercentual(a))
+    .slice(0, limite);
+}
+
+/** Ranking de mais vendidos dos últimos 90 dias — seção "Mais vendidos" da
+ * home. `catalogo_mais_vendidos_publico` já agrupa venda de variante (filho)
+ * sob o produto pai e já filtra só produto atualmente visível no catálogo. */
+export async function getMaisVendidos(empresaId: string, limite = 12): Promise<ProdutoCatalogo[]> {
+  const supabase = await createClient();
+  const { data: ranking, error: erroRanking } = await supabase
+    .from("catalogo_mais_vendidos_publico")
+    .select("produto_id, total_vendido")
+    .eq("empresa_id", empresaId)
+    .order("total_vendido", { ascending: false })
+    .limit(limite);
+
+  if (erroRanking) {
+    console.error("Erro ao buscar ranking de mais vendidos:", erroRanking.message);
+    return [];
+  }
+  if (!ranking || ranking.length === 0) return [];
+
+  const ids = ranking.map((linha) => linha.produto_id as string);
+  const { data: produtos, error: erroProdutos } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("*")
+    .in("id", ids);
+
+  if (erroProdutos) {
+    console.error("Erro ao buscar produtos mais vendidos:", erroProdutos.message);
+    return [];
+  }
+
+  const porId = new Map((produtos ?? []).map((produto) => [produto.id, produto]));
+  // Mantém a ordem do ranking (.in() não garante ordem) — pula produto_id
+  // que não veio de volta (ex: virou variante escondida desde a venda).
+  return ids.map((id) => porId.get(id)).filter((produto): produto is ProdutoCatalogo => produto != null);
+}
+
 /**
  * Pra cada produto pedido (pai OU filho — a grade de busca mostra os dois
  * soltos, ver getProdutosCatalogo), devolve as OUTRAS opções da mesma
