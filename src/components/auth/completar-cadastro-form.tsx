@@ -100,8 +100,8 @@ export function CompletarCadastroForm({
         setErro("Digite um email válido.");
         return;
       }
-      if (senha.length < 6) {
-        setErro("A senha precisa ter pelo menos 6 caracteres.");
+      if (senha.length < 8) {
+        setErro("A senha precisa ter pelo menos 8 caracteres.");
         return;
       }
     }
@@ -297,7 +297,7 @@ export function CompletarCadastroForm({
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
             <p className="text-xs text-black/40 dark:text-white/40">
               Pra poder entrar também com email e senha, além do código por SMS.

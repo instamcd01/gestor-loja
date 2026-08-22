@@ -49,9 +49,9 @@ export function LoginForm({
       p_empresa_id: empresaId,
       // Nome não é mais coletado neste passo — quem ainda não tem
       // cadastro completo preenche em CompletarCadastroForm logo em
-      // seguida (que sobrescreve incondicionalmente); passar null aqui só
-      // deixa o fallback "Cliente" temporário pro INSERT de um cliente
-      // realmente novo, nunca visível de fato.
+      // seguida. Só é usado aqui pra reconectar um cliente já existente
+      // (outro canal) sem nome salvo; um cliente realmente novo nem chega
+      // a ser criado por esta RPC (ver comentário abaixo).
       p_nome: null,
       // null (não `false`) quando o cliente não marcou — a RPC faz
       // coalesce(p_aceita_lembrete_whatsapp, valor_atual), então só passar
@@ -65,6 +65,19 @@ export function LoginForm({
     if (rpcError) {
       setCarregando(false);
       setErro(rpcError.message);
+      return;
+    }
+
+    // clienteId vem null quando é a primeira vez desse usuário nesta loja
+    // (entrar_ou_criar_cliente não materializa nenhuma linha antes do
+    // cadastro ser concluído — ver completar_cadastro_cliente, que cria o
+    // registro de verdade só quando o formulário é enviado). Sem esse
+    // early-return, cair na tela de perfil já sabendo que não há nada pra
+    // buscar evita uma query à toa e deixa claro que "sem cliente" também
+    // significa "precisa completar o cadastro".
+    if (!clienteId) {
+      setCarregando(false);
+      setEtapa("perfil");
       return;
     }
 
@@ -155,8 +168,8 @@ export function LoginForm({
       setErro("Digite um email válido.");
       return;
     }
-    if (senha.length < 6) {
-      setErro("A senha precisa ter pelo menos 6 caracteres.");
+    if (senha.length < 8) {
+      setErro("A senha precisa ter pelo menos 8 caracteres.");
       return;
     }
 
@@ -360,7 +373,7 @@ export function LoginForm({
             autoComplete={modoEmail === "entrar" ? "current-password" : "new-password"}
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            placeholder={modoEmail === "entrar" ? "Sua senha" : "Mínimo 6 caracteres"}
+            placeholder={modoEmail === "entrar" ? "Sua senha" : "Mínimo 8 caracteres"}
           />
         </div>
 
