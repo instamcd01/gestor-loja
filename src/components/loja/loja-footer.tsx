@@ -2,10 +2,21 @@ import Link from "next/link";
 import { linkWhatsApp } from "@/lib/utils";
 
 /**
+ * `empresas.instagram`/`.facebook` guardam só o @handle (o form de
+ * "Catálogo Online" no app mostra um prefixo "@" fixo pro Instagram, não
+ * pede URL) — sem isso, um <a href={handle}> vira um link relativo quebrado
+ * em vez de ir pro Instagram/Facebook de verdade. Se algum dia alguém colar
+ * a URL completa em vez do handle, usa ela direto (não duplica o domínio).
+ */
+function linkRedeSocial(base: string, valor: string): string {
+  const limpo = valor.trim().replace(/^@/, "");
+  return limpo.startsWith("http") ? limpo : `${base}${limpo}`;
+}
+
+/**
  * Rodapé de verdade — antes era só uma linha "{nome} · powered by Gestor",
  * sem nenhum link (nem pro /termos, que já existia). Agora leva os links
- * legais (Termos, Privacidade, Trocas e devoluções) e contato — sem
- * endereço de loja física de propósito, a operação é só delivery.
+ * legais (Termos, Privacidade, Trocas e devoluções) e contato.
  */
 export function LojaFooter({
   slug,
@@ -32,12 +43,22 @@ export function LojaFooter({
               </a>
             )}
             {instagram && (
-              <a href={instagram} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              <a
+                href={linkRedeSocial("https://instagram.com/", instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
                 Instagram
               </a>
             )}
             {facebook && (
-              <a href={facebook} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              <a
+                href={linkRedeSocial("https://facebook.com/", facebook)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
                 Facebook
               </a>
             )}
