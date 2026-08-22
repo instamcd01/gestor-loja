@@ -66,14 +66,20 @@ export function LojaFooter({
         </div>
 
         <nav className="flex flex-col gap-1.5 sm:items-end">
-          <Link href={`/loja/${slug}/termos`} className="hover:underline">
-            Termos e condições
+          <Link href={`/loja/${slug}/entrega`} className="hover:underline">
+            Política de entrega
+          </Link>
+          <Link href={`/loja/${slug}/trocas-e-devolucoes`} className="hover:underline">
+            Trocas e devoluções
           </Link>
           <Link href={`/loja/${slug}/privacidade`} className="hover:underline">
             Política de privacidade
           </Link>
-          <Link href={`/loja/${slug}/trocas-e-devolucoes`} className="hover:underline">
-            Trocas e devoluções
+          <Link href={`/loja/${slug}/termos`} className="hover:underline">
+            Termos e condições
+          </Link>
+          <Link href={`/loja/${slug}/perguntas-frequentes`} className="hover:underline">
+            Perguntas frequentes
           </Link>
         </nav>
       </div>
