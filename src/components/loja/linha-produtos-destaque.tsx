@@ -75,7 +75,7 @@ export async function PromocoesDoDia({
       slug={slug}
       empresaId={empresaId}
       moderno={moderno}
-      verMaisHref={`/loja/${slug}?ordenar=maior_desconto`}
+      verMaisHref={`/loja/${slug}?promocao=1`}
     />
   );
 }
@@ -91,6 +91,13 @@ export async function MaisVendidos({
 }) {
   const produtos = await getMaisVendidos(empresaId);
   return (
-    <LinhaProdutos titulo="Mais vendidos" produtos={produtos} slug={slug} empresaId={empresaId} moderno={moderno} />
+    <LinhaProdutos
+      titulo="Mais vendidos"
+      produtos={produtos}
+      slug={slug}
+      empresaId={empresaId}
+      moderno={moderno}
+      verMaisHref={`/loja/${slug}/mais-vendidos`}
+    />
   );
 }

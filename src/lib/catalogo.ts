@@ -229,6 +229,8 @@ export async function getProdutosCatalogo(
     precoMin?: number;
     precoMax?: number;
     ordenar?: Ordenacao;
+    /** "Ver mais" de Promoções do dia — só produtos com desconto ativo agora, mesmo critério de `getPromocoesDoDia`. */
+    promocao?: boolean;
   },
 ): Promise<ProdutoCatalogo[]> {
   const supabase = await createClient();
@@ -291,6 +293,9 @@ export async function getProdutosCatalogo(
   if (filtros?.precoMax != null) {
     query = query.lte("preco", filtros.precoMax);
   }
+  if (filtros?.promocao) {
+    query = query.not("preco_promocional", "is", null);
+  }
 
   switch (filtros?.ordenar) {
     case "menor_preco":
@@ -318,11 +323,23 @@ export async function getProdutosCatalogo(
     return [];
   }
 
-  if (filtros?.ordenar === "maior_desconto") {
-    return [...(data ?? [])].sort((a, b) => descontoPercentual(b) - descontoPercentual(a));
+  let resultado = data ?? [];
+
+  if (filtros?.promocao) {
+    // `.not("preco_promocional", "is", null)` já filtrou no banco, mas um
+    // preço promocional >= preço normal (cadastro incorreto) não é desconto
+    // de verdade — mesmo critério de `getPromocoesDoDia`.
+    resultado = resultado.filter((produto) => descontoPercentual(produto) > 0);
   }
 
-  return data ?? [];
+  const ordenarPorDesconto =
+    filtros?.ordenar === "maior_desconto" ||
+    (filtros?.promocao && (!filtros.ordenar || filtros.ordenar === "relevancia"));
+  if (ordenarPorDesconto) {
+    resultado = [...resultado].sort((a, b) => descontoPercentual(b) - descontoPercentual(a));
+  }
+
+  return resultado;
 }
 
 function descontoPercentual(produto: ProdutoCatalogo): number {

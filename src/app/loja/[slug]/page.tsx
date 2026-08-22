@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
@@ -63,6 +64,7 @@ export default async function LojaPage({
     precoMin?: string;
     precoMax?: string;
     ordenar?: Ordenacao;
+    promocao?: string;
   }>;
 }) {
   const { slug } = await params;
@@ -76,10 +78,12 @@ export default async function LojaPage({
     precoMin,
     precoMax,
     ordenar,
+    promocao,
   } = await searchParams;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
 
+  const promocaoAtiva = promocao === "1";
   const filtroAtivo =
     !!q ||
     !!departamento ||
@@ -87,7 +91,8 @@ export default async function LojaPage({
     !!marca ||
     !!especie ||
     !!fase ||
-    !!precoMin;
+    !!precoMin ||
+    promocaoAtiva;
   const moderno = empresa.catalogo_modelo === "moderno";
 
   // Linhas por categoria (CategoriasEmLinha) valem pra home solta, pra tela
@@ -98,7 +103,7 @@ export default async function LojaPage({
   // uma CATEGORIA final (ou busca/marca/fase/faixa de preço/ordenação) é
   // escolhida a grade plana precisa da lista real (é o que ela renderiza).
   const exigeGradeFinal =
-    !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar;
+    !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar || promocaoAtiva;
   const usaLinhasPorCategoria = !exigeGradeFinal;
 
   const [
@@ -119,6 +124,7 @@ export default async function LojaPage({
           precoMin: precoMin ? Number(precoMin) : undefined,
           precoMax: precoMax ? Number(precoMax) : undefined,
           ordenar,
+          promocao: promocaoAtiva,
         }),
     usaLinhasPorCategoria
       ? getContagemProdutosCatalogo(empresa.id, { especie, departamento })
@@ -179,6 +185,18 @@ export default async function LojaPage({
         <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
           <MaisVendidos slug={slug} empresaId={empresa.id} moderno={moderno} />
         </Suspense>
+      )}
+
+      {promocaoAtiva && (
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Promoções do dia</h1>
+          <Link
+            href={`/loja/${slug}`}
+            className="shrink-0 text-sm font-medium text-[var(--brand-primary)] hover:underline"
+          >
+            ← Ver tudo
+          </Link>
+        </div>
       )}
 
       <div id="produtos" className="flex items-center justify-between gap-3">
