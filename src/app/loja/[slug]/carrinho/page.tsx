@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CarrinhoConvidado } from "@/components/carrinho/carrinho-convidado";
@@ -9,6 +10,16 @@ import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Carrinho — ${empresa.nome}` : "Carrinho" };
+}
 
 export default async function CarrinhoPage({
   params,

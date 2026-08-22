@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
@@ -15,6 +16,16 @@ import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 const METODOS_SEM_MEDIACAO_DE_ATENDENTE = new Set(["Dinheiro", "Pix", "Cartão de Débito", "Cartão de Crédito"]);
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Pagamento — ${empresa.nome}` : "Pagamento" };
+}
 
 /**
  * Segunda etapa do checkout — só existe pra quem já passou pela primeira

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ButtonLink } from "@/components/ui/button";
@@ -6,6 +7,16 @@ import { createClient } from "@/lib/supabase/server";
 import { formatarData, formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Meus pedidos — ${empresa.nome}` : "Meus pedidos" };
+}
 
 const STATUS_LABEL: Record<string, string> = {
   aguardando_pagamento: "Aguardando confirmação do pagamento",

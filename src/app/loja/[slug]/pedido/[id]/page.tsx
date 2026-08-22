@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { horarioFechamentoNoDia } from "@/lib/agendamento";
@@ -13,6 +14,16 @@ import type { EmpresaCatalogo } from "@/lib/types";
 import { formatarHora, formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string; id: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Pedido — ${empresa.nome}` : "Pedido" };
+}
 
 /**
  * "sexta-feira, 14 de agosto às 21:00" — mesmo formato usado na tela de

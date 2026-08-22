@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
@@ -5,6 +6,16 @@ import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Entrar — ${empresa.nome}` : "Entrar" };
+}
 
 export default async function EntrarPage({
   params,

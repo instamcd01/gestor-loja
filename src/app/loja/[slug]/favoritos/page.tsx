@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ProdutoCard } from "@/components/produto-card";
 import { ButtonLink } from "@/components/ui/button";
@@ -6,6 +7,16 @@ import { getProdutosFavoritos } from "@/lib/favoritos";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Favoritos — ${empresa.nome}` : "Favoritos" };
+}
 
 export default async function FavoritosPage({
   params,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ConfirmarEmailForm } from "@/components/conta/confirmar-email-form";
@@ -8,6 +9,16 @@ import { createClient } from "@/lib/supabase/server";
 import { formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  return { title: empresa ? `Minha conta — ${empresa.nome}` : "Minha conta" };
+}
 
 export default async function ContaPage({
   params,
