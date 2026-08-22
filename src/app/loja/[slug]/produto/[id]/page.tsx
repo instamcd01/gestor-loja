@@ -181,7 +181,7 @@ export default async function ProdutoPage({
             )}
 
             {produto.descricao && (
-              <p className="text-sm leading-relaxed text-black/70 dark:text-white/70">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-black/70 dark:text-white/70">
                 {produto.descricao}
               </p>
             )}
