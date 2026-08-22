@@ -23,6 +23,15 @@ import {
   type Ordenacao,
 } from "@/lib/catalogo";
 
+// Sem isso, o Next.js trata a home como estática e serve a página em cache
+// indefinidamente — banner trocado no banco (ex: Configurações > Banners)
+// não aparecia pros visitantes até o próximo deploy. Achado 22/08/2026: um
+// banner de vídeo de 22MB, já trocado por uma imagem, continuou sendo
+// baixado por visitantes reais por dias por causa disso, estourando a cota
+// de cached egress do Supabase. 60s (mais curto que o revalidate=300 do
+// layout, que é só pra branding) equilibra frescor com cache de verdade.
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {

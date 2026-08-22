@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -34,11 +33,6 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
   // não só o atual — ativou uma vez, continua ativado ao trocar de slide.
   const [mudo, setMudo] = useState(true);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  // Cópia borrada/ampliada do mesmo vídeo, exibida atrás da versão nítida
-  // (object-contain) — preenche as bordas com um "brilho" ambiente do
-  // próprio conteúdo em vez de barra preta seca (mesmo truque do Spotify/
-  // Instagram Stories). Sempre muda, tocada em conjunto com a principal.
-  const videoBgRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onSelect = useCallback(() => {
@@ -50,15 +44,6 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
       if (!video) return;
       if (i === indice) {
         video.muted = mudo;
-        video.currentTime = 0;
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
-    });
-    videoBgRefs.current.forEach((video, i) => {
-      if (!video) return;
-      if (i === indice) {
         video.currentTime = 0;
         video.play().catch(() => {});
       } else {
@@ -112,16 +97,12 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
                   videoRef={(el) => {
                     videoRefs.current[i] = el;
                   }}
-                  videoBgRef={(el) => {
-                    videoBgRefs.current[i] = el;
-                  }}
                   onVideoEnded={() => {
                     // Único banner: não tem pra onde avançar (loop desligado
                     // com 1 slide só) — melhor repetir o vídeo do que travar
                     // no último frame.
                     if (banners.length <= 1) {
                       videoRefs.current[i]?.play().catch(() => {});
-                      videoBgRefs.current[i]?.play().catch(() => {});
                     } else {
                       emblaApi?.scrollNext();
                     }
@@ -220,14 +201,21 @@ function IconeSom({ mudo }: { mudo: boolean }) {
 function BannerSlide({
   banner,
   videoRef,
-  videoBgRef,
   onVideoEnded,
 }: {
   banner: BannerCatalogo;
   videoRef: (el: HTMLVideoElement | null) => void;
-  videoBgRef: (el: HTMLVideoElement | null) => void;
   onVideoEnded: () => void;
 }) {
+  const videoLocalRef = useRef<HTMLVideoElement | null>(null);
+  // Encaminha o elemento pro ref do pai (que só precisa dele pra chamar
+  // .play()/.pause()/.currentTime na troca de slide) e guarda uma cópia
+  // local só pra alimentar o FundoDesfocado abaixo.
+  const videoRefCombinado = (el: HTMLVideoElement | null) => {
+    videoLocalRef.current = el;
+    videoRef(el);
+  };
+
   const conteudo = (
     <div className="relative aspect-[16/9] w-full sm:aspect-[21/9]">
       {banner.tipo === "video" ? (
@@ -235,20 +223,16 @@ function BannerSlide({
         // foto, o vídeo não passa por recorte no app antes de subir (sem
         // ferramenta de edição de vídeo), então cortar pra preencher o
         // quadro cortaria partes imprevisíveis do conteúdo. Mostra o vídeo
-        // inteiro sempre — e em vez de deixar barra preta na sobra, uma
-        // cópia borrada/ampliada do mesmo vídeo preenche o fundo.
+        // inteiro sempre — e em vez de deixar barra preta na sobra, um
+        // espelho borrado/ampliado do MESMO elemento de vídeo (via canvas,
+        // não um 2º <video src=...>) preenche o fundo. Achado 22/08/2026:
+        // dois <video> com o mesmo src baixavam o arquivo duas vezes —
+        // com o banner de vídeo tendo ~22MB, isso sozinho estourou a cota
+        // de egress do Supabase em poucos dias.
         <div className="relative h-full w-full overflow-hidden bg-black">
+          <FundoDesfocado videoRef={videoLocalRef} />
           <video
-            ref={videoBgRef}
-            src={banner.url}
-            muted
-            playsInline
-            aria-hidden
-            tabIndex={-1}
-            className="absolute inset-0 h-full w-full scale-125 object-cover object-center blur-2xl brightness-[0.55] saturate-125"
-          />
-          <video
-            ref={videoRef}
+            ref={videoRefCombinado}
             src={banner.url}
             poster={banner.url_thumbnail ?? undefined}
             muted
@@ -258,30 +242,21 @@ function BannerSlide({
           />
         </div>
       ) : (
-        // Duas <Image> alternadas por breakpoint (em vez de uma só) — banner
-        // cadastrado com uma versão mobile dedicada (`url_mobile`, recorte
-        // 16:9 feito no app) usa ela abaixo de `sm`; sem essa versão, cai pra
-        // `url` nas duas (recorte central 21:9 do próprio navegador, igual
-        // era antes). Sem isso não tinha como mostrar imagens diferentes por
-        // tela com <Image fill> (um único elemento não troca de src via CSS).
-        <>
-          <Image
-            src={banner.url_mobile ?? banner.url}
-            alt={banner.titulo ?? "Banner promocional"}
-            fill
-            sizes="100vw"
-            priority
-            className="object-cover sm:hidden"
-          />
-          <Image
+        // <picture>+<source media> nativo em vez de duas <Image> alternadas
+        // por CSS — as duas versões (desktop/mobile) ficavam no DOM ao
+        // mesmo tempo com `priority` (carregamento antecipado forçado nas
+        // DUAS), baixando o dobro do necessário em toda visita. Com
+        // <picture>, o navegador escolhe e baixa só UMA versão, nativamente,
+        // sem depender de CSS pra "esconder" a outra.
+        <picture>
+          {banner.url_mobile && <source media="(max-width: 639px)" srcSet={banner.url_mobile} />}
+          <img
             src={banner.url}
             alt={banner.titulo ?? "Banner promocional"}
-            fill
-            sizes="100vw"
-            priority
-            className="hidden object-cover sm:block"
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-        </>
+        </picture>
       )}
       {banner.titulo && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10 sm:p-6 sm:pt-16">
@@ -301,4 +276,63 @@ function BannerSlide({
     );
   }
   return conteudo;
+}
+
+/**
+ * Desenha o frame atual do vídeo (via `videoRef`, o MESMO elemento já
+ * baixado pelo `<video>` principal) num canvas borrado/ampliado por trás —
+ * mesmo efeito visual do antigo 2º `<video src=...>`, sem baixar o arquivo
+ * de novo. Só roda o loop de desenho enquanto o vídeo de origem está
+ * tocando de verdade (eventos play/pause do próprio elemento), pra não
+ * gastar CPU à toa nos slides fora de tela.
+ */
+function FundoDesfocado({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement | null> }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let rafId: number | null = null;
+
+    const desenhar = () => {
+      const canvas = canvasRef.current;
+      if (canvas && video.readyState >= 2 && video.videoWidth > 0) {
+        if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
+        if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
+        canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      rafId = requestAnimationFrame(desenhar);
+    };
+
+    const iniciar = () => {
+      if (rafId === null) rafId = requestAnimationFrame(desenhar);
+    };
+    const parar = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+
+    video.addEventListener("play", iniciar);
+    video.addEventListener("pause", parar);
+    video.addEventListener("ended", parar);
+    if (!video.paused) iniciar();
+
+    return () => {
+      parar();
+      video.removeEventListener("play", iniciar);
+      video.removeEventListener("pause", parar);
+      video.removeEventListener("ended", parar);
+    };
+  }, [videoRef]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover object-center blur-2xl brightness-[0.55] saturate-125"
+    />
+  );
 }
