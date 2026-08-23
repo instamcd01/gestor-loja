@@ -147,9 +147,15 @@ export async function getContagemProdutosCatalogo(
   filtros?: { especie?: string; departamento?: string },
 ): Promise<number> {
   const supabase = await createClient();
+  // "id", não "*": head:true descarta o corpo da resposta mesmo assim, mas
+  // o banco ainda precisa AVALIAR cada coluna pedida pra cada linha antes de
+  // descartar — com "*" isso incluía a subquery correlacionada nova
+  // (preco_ancora_canais, ver view catalogo_produtos_publico) rodando pras
+  // 567 linhas só pra essa contagem, e travava (>20s, timeout real
+  // confirmado em produção). "id" não avalia nenhuma coluna calculada.
   let query = supabase
     .from("catalogo_produtos_publico")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("empresa_id", empresaId)
     .is("produto_pai_id", null);
 
