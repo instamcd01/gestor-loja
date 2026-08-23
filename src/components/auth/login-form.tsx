@@ -269,6 +269,9 @@ export function LoginForm({
           Se houver uma conta com o email <strong>{email}</strong>, enviamos um link para redefinir a senha. Abra
           seu email e clique no link.
         </p>
+        <p className="text-sm font-medium text-[var(--color-warning)]">
+          Não achou? Confira também a caixa de spam/lixo eletrônico.
+        </p>
         <button
           type="button"
           onClick={() => {
