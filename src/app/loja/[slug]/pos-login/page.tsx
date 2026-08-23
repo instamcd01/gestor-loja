@@ -17,13 +17,21 @@ export async function generateMetadata({
   return { title: empresa ? `Entrando — ${empresa.nome}` : "Entrando" };
 }
 
-/** Destino do `redirectTo` do `signInWithOAuth` (login com Google, ver
- * "Entrar com Google" em `login-form.tsx`). Diferente de telefone/email,
- * OAuth é um redirect de página inteira — quando o navegador chega aqui, o
- * middleware (`updateSession`) já rodou e a sessão do Google já está
- * disponível via cookie, então dá pra decidir aqui no servidor se falta
- * completar o cadastro (mesma RPC `entrar_ou_criar_cliente` que
- * telefone/email usam) antes de precisar de qualquer JS no cliente. */
+/** "Resolvedor" de pós-autenticação, com dois pontos de entrada:
+ * 1. Destino do `redirectTo` do `signInWithOAuth` (login com Google, ver
+ *    "Entrar com Google" em `login-form.tsx`) — diferente de telefone/
+ *    email, OAuth é um redirect de página inteira, então não dá pra
+ *    continuar no state do `LoginForm`; quando o navegador chega aqui, o
+ *    middleware (`updateSession`) já rodou e a sessão já está disponível
+ *    via cookie.
+ * 2. Página de conta (`conta/page.tsx`) redireciona pra cá quando encontra
+ *    um usuário autenticado sem nenhuma linha em `clientes` — achado ao
+ *    vivo em 2026-08-23: alguém saiu da tela "Complete seu cadastro" (ex:
+ *    clicando no ícone de conta no header) antes de enviar o formulário, e
+ *    a página de conta simplesmente renderizava vazia em vez de cobrar o
+ *    cadastro pendente.
+ * Nos dois casos, a decisão é a mesma RPC `entrar_ou_criar_cliente` que
+ * telefone/email já usam. */
 export default async function PosLoginPage({
   params,
   searchParams,

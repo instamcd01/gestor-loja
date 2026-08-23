@@ -43,6 +43,15 @@ export default async function ContaPage({
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
+  // Autenticado mas sem linha em `clientes` ainda: aconteceu de verdade com
+  // login por Google (achado 2026-08-23) — a pessoa saiu da tela "Complete
+  // seu cadastro" (ex: clicando no ícone de conta no header) antes de
+  // enviar o formulário. Sem essa checagem, esta página renderizava normal
+  // com tudo "—", dando a impressão de conta criada e vazia em vez de
+  // cadastro pendente. `/pos-login` refaz a mesma decisão (mesma RPC
+  // `entrar_ou_criar_cliente`) e mostra o formulário que faltou.
+  if (!cliente) redirect(`/loja/${slug}/pos-login`);
+
   const pessoaJuridica = cliente?.tipo_pessoa === "juridica";
 
   return (
