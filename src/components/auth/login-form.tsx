@@ -10,7 +10,15 @@ import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-co
 import { createClient } from "@/lib/supabase/client";
 import { formatarTelefoneBr, paraE164, telefoneValido } from "@/lib/telefone";
 
-type Etapa = "escolha" | "telefone" | "codigo" | "email" | "confirmeEmail" | "perfil";
+type Etapa =
+  | "escolha"
+  | "telefone"
+  | "codigo"
+  | "email"
+  | "confirmeEmail"
+  | "perfil"
+  | "recuperarSenha"
+  | "recuperarSenhaEnviada";
 type ModoEmail = "entrar" | "cadastrar";
 
 export function LoginForm({
@@ -224,6 +232,99 @@ export function LoginForm({
     await finalizarEntrada();
   }
 
+  async function enviarRecuperacaoSenha(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setErro("Digite um email válido.");
+      return;
+    }
+
+    setCarregando(true);
+    // O Supabase já não retorna erro quando o email simplesmente não existe
+    // (mesmo racional de `solicitar_confirmacao_email` — não dá pra
+    // confirmar/negar cadastro por aqui) — só quando algo realmente falhou
+    // (rate limit, etc.), daí faz sentido mostrar. Usa o mailer nativo do
+    // Supabase Auth (já configurado com SMTP próprio via Resend, ver
+    // [[gestor_loja_cadastro_unificado_auth]]) — diferente da confirmação de
+    // email, este fluxo funciona sem sessão ativa por padrão, não precisa
+    // de RPC/token próprio.
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/loja/${slug}/redefinir-senha`,
+    });
+    setCarregando(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setEtapa("recuperarSenhaEnviada");
+  }
+
+  if (etapa === "recuperarSenhaEnviada") {
+    return (
+      <div className="flex flex-col gap-3 text-center">
+        <p className="text-2xl">📧</p>
+        <p className="text-sm text-black/70 dark:text-white/70">
+          Se houver uma conta com o email <strong>{email}</strong>, enviamos um link para redefinir a senha. Abra
+          seu email e clique no link.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setErro(null);
+            setModoEmail("entrar");
+            setEtapa("email");
+          }}
+          className="text-xs text-black/40 hover:underline dark:text-white/40"
+        >
+          Voltar
+        </button>
+      </div>
+    );
+  }
+
+  if (etapa === "recuperarSenha") {
+    return (
+      <form onSubmit={enviarRecuperacaoSenha} className="flex flex-col gap-4">
+        <p className="text-sm text-black/60 dark:text-white/60">
+          Digite seu email e mandamos um link para você criar uma senha nova.
+        </p>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="email-recuperar" className="text-sm font-medium">
+            Email
+          </label>
+          <Input
+            id="email-recuperar"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@exemplo.com"
+          />
+        </div>
+
+        {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
+
+        <Button type="submit" disabled={carregando} className="py-3 text-base">
+          {carregando ? "Enviando..." : "Enviar link"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => {
+            setErro(null);
+            setModoEmail("entrar");
+            setEtapa("email");
+          }}
+          className="text-xs text-black/40 hover:underline dark:text-white/40"
+        >
+          Voltar
+        </button>
+      </form>
+    );
+  }
+
   if (etapa === "confirmeEmail") {
     return (
       <div className="flex flex-col gap-3 text-center">
@@ -375,6 +476,18 @@ export function LoginForm({
             onChange={(e) => setSenha(e.target.value)}
             placeholder={modoEmail === "entrar" ? "Sua senha" : "Mínimo 8 caracteres"}
           />
+          {modoEmail === "entrar" && (
+            <button
+              type="button"
+              onClick={() => {
+                setErro(null);
+                setEtapa("recuperarSenha");
+              }}
+              className="self-end text-xs text-black/40 hover:underline dark:text-white/40"
+            >
+              Esqueci minha senha
+            </button>
+          )}
         </div>
 
         {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
