@@ -56,6 +56,8 @@ export interface EmpresaCatalogo {
   petcash_uso_maximo_percentual: number;
   /** Valor mínimo do pedido pra poder usar PetCash como parte do pagamento. */
   petcash_pedido_minimo_uso: number;
+  /** Quando true, produto sem promoção real mas com preço maior em algum marketplace (produto_canal) mostra esse preço maior como "de" comparativo — sem revelar que vem de outro canal. Configurado em Configurações > Catálogo Online (app Gestor). */
+  preco_ancora_marketplace_ativo: boolean;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */
@@ -103,6 +105,8 @@ export interface ProdutoCatalogo {
   eh_kit: boolean;
   /** Soma do preço normal de cada componente × quantidade no kit — só preenchido quando `eh_kit`, usado pro "preço riscado" (preço cheio vs. preço fechado do kit). */
   preco_cheio_kit: number | null;
+  /** Maior preço entre os marketplaces habilitados pra esse produto (produto_canal — iFood, 99Food...), null se não estiver em nenhum. Usado só como preço "de" comparativo quando `empresa.preco_ancora_marketplace_ativo`; nunca é o preço realmente cobrado no site. */
+  preco_ancora_canais: number | null;
 }
 
 /** Um componente real dentro de um kit — pra página de detalhe listar "o que vem dentro". */
@@ -122,6 +126,8 @@ export interface VarianteProduto {
   preco: number;
   preco_promocional: number | null;
   estoque_disponivel: number;
+  /** Maior preço entre os marketplaces habilitados (iFood, 99Food...) pra esse produto — ver `ProdutoCatalogo.preco_ancora_canais`. */
+  preco_ancora_canais: number | null;
 }
 
 export interface CategoriaCatalogo {
@@ -147,6 +153,8 @@ export interface ItemCarrinho {
     /** Preço de catálogo atual (pode ter mudado desde que o item entrou no carrinho) — usado só pra calcular "quanto você economizou" no resumo, não pro que é cobrado (isso é `preco_unitario`, travado na hora de adicionar). */
     preco: number;
     preco_promocional: number | null;
+    /** Maior preço entre marketplaces habilitados — ver `ProdutoCatalogo.preco_ancora_canais`. */
+    preco_ancora_canais: number | null;
   } | null;
 }
 

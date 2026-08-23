@@ -26,7 +26,7 @@ import {
   type EnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { EmpresaCatalogo, EnderecoCliente, ItemCarrinho } from "@/lib/types";
-import { formatarEnderecoCompleto, formatarPreco } from "@/lib/utils";
+import { descontoProdutosCarrinho, formatarEnderecoCompleto, formatarPreco } from "@/lib/utils";
 
 type TipoEntrega = "retirada" | "entrega";
 
@@ -49,6 +49,7 @@ export function EntregaForm({
   subtotal,
   itens,
   enderecoSalvo,
+  usarPrecoAncoraMarketplace = false,
   aoConfirmarAntes,
 }: {
   slug: string;
@@ -61,6 +62,7 @@ export function EntregaForm({
   subtotal: number;
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
+  usarPrecoAncoraMarketplace?: boolean;
   /** Garante que qualquer alteração de quantidade ainda pendente (dentro da janela de debounce) chegue no banco antes de avançar — senão a etapa de pagamento podia ler uma quantidade desatualizada. */
   aoConfirmarAntes: () => Promise<void>;
 }) {
@@ -225,15 +227,10 @@ export function EntregaForm({
       ? freteResolvido.valor_minimo_frete_gratis - subtotal
       : null;
   const quantidadeItens = itens.reduce((soma, item) => soma + item.quantidade, 0);
-  // Soma de (preço de catálogo atual − preço promocional) × quantidade —
-  // só dos itens em promoção agora, pra alimentar a linha "Você
-  // economizou" do resumo (ver ResumoTotais). Mesmo cálculo usado na
-  // etapa de pagamento (pagamento-form.tsx).
-  const descontoProdutos = itens.reduce((soma, item) => {
-    const produto = item.produto;
-    if (!produto || produto.preco_promocional == null || produto.preco_promocional >= produto.preco) return soma;
-    return soma + (produto.preco - produto.preco_promocional) * item.quantidade;
-  }, 0);
+  // Pra alimentar a linha "Você economizou" do resumo (ver ResumoTotais) —
+  // helper compartilhado com a etapa de pagamento (pagamento-form.tsx), pra
+  // nunca divergir entre as duas etapas do checkout.
+  const descontoProdutos = descontoProdutosCarrinho(itens, usarPrecoAncoraMarketplace);
   const totalParcial = subtotal + valorEntrega;
 
   function calcularPrazoLabel(): string | null {

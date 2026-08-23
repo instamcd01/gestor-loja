@@ -438,7 +438,9 @@ export async function getVariantesEmLote(
   const supabase = await createClient();
   const { data: filhos, error: erroFilhos } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel")
+    .select(
+      "id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel, preco_ancora_canais",
+    )
     .eq("empresa_id", empresaId)
     .not("produto_pai_id", "is", null);
 
@@ -456,7 +458,9 @@ export async function getVariantesEmLote(
       ? { data: [], error: null }
       : await supabase
           .from("catalogo_produtos_publico")
-          .select("id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel")
+          .select(
+            "id, nome, preco, preco_promocional, produto_pai_id, variante_label, estoque_disponivel, preco_ancora_canais",
+          )
           .in("id", ancorasReferenciadas);
 
   if (erroAncoras) {
@@ -479,6 +483,7 @@ export async function getVariantesEmLote(
         preco: linha.preco,
         preco_promocional: linha.preco_promocional,
         estoque_disponivel: linha.estoque_disponivel,
+        preco_ancora_canais: linha.preco_ancora_canais,
       },
     };
     const lista = membrosPorFamilia.get(familiaId) ?? [];
@@ -515,7 +520,7 @@ export async function getVariantesDoProduto(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("id, nome, preco, preco_promocional, variante_label, estoque_disponivel")
+    .select("id, nome, preco, preco_promocional, variante_label, estoque_disponivel, preco_ancora_canais")
     .eq("empresa_id", empresaId)
     .or(`id.eq.${paiId},produto_pai_id.eq.${paiId}`);
 
@@ -537,6 +542,7 @@ export async function getVariantesDoProduto(
           preco: linha.preco,
           preco_promocional: linha.preco_promocional,
           estoque_disponivel: linha.estoque_disponivel,
+          preco_ancora_canais: linha.preco_ancora_canais,
         } satisfies VarianteProduto,
       };
     })

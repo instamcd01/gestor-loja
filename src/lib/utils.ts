@@ -78,6 +78,57 @@ export function precoEfetivo(item: { preco: number; preco_promocional: number | 
 }
 
 /**
+ * Preço "de"/"por" exibido no card/página do produto — nunca usado pro valor
+ * cobrado de verdade (isso é sempre `precoEfetivo`). Com o comparativo de
+ * marketplace desligado (`usarPrecoAncoraMarketplace=false`) ou sem preço em
+ * nenhum canal, funciona exatamente como antes: só promoção real cadastrada
+ * risca o preço cheio. Ligado, o preço "de" também considera o maior preço
+ * entre os marketplaces habilitados (produto_canal) quando ele for maior que
+ * o preço normal — mesmo sem nenhuma promoção real, criando o efeito visual
+ * de desconto comparado a esse preço mais alto, sem informar de onde ele vem.
+ * Promoção real sempre continua sendo o preço "por" quando existir.
+ */
+export function precoExibicao(
+  item: { preco: number; preco_promocional: number | null; preco_ancora_canais?: number | null },
+  usarPrecoAncoraMarketplace: boolean,
+) {
+  const precoAtual = precoEfetivo(item);
+  const precoAncora = usarPrecoAncoraMarketplace ? (item.preco_ancora_canais ?? null) : null;
+  const precoDe = precoAncora != null && precoAncora > item.preco ? precoAncora : item.preco;
+  const temComparativo = precoDe > precoAtual;
+  return {
+    precoAtual,
+    precoDe,
+    temComparativo,
+    percentual: temComparativo ? percentualDesconto(precoDe, precoAtual) : 0,
+  };
+}
+
+/**
+ * Soma de (preço "de" − preço "por") × quantidade de todo o carrinho — pra
+ * alimentar a linha "Você economizou" do resumo (ResumoTotais). Único lugar
+ * que calcula isso pra itens no formato `ItemCarrinho` (produto aninhado com
+ * preço atual do catálogo, não o preço travado no carrinho) — entrega-form e
+ * pagamento-form reaproveitam, pra nunca divergir entre as duas etapas do
+ * checkout (já aconteceu antes com o cálculo de frete grátis, ver
+ * [[feedback_checklist_bugs_estado_e_sincronizacao]]).
+ */
+export function descontoProdutosCarrinho(
+  itens: {
+    quantidade: number;
+    produto: { preco: number; preco_promocional: number | null; preco_ancora_canais?: number | null } | null;
+  }[],
+  usarPrecoAncoraMarketplace: boolean,
+) {
+  return itens.reduce((soma, item) => {
+    if (!item.produto) return soma;
+    const exibicao = precoExibicao(item.produto, usarPrecoAncoraMarketplace);
+    if (!exibicao.temComparativo) return soma;
+    return soma + (exibicao.precoDe - exibicao.precoAtual) * item.quantidade;
+  }, 0);
+}
+
+/**
  * Mesma normalização/formato de linkWhatsApp no app Gestor
  * (lib/utils/telefone_utils.dart), que sempre força o "55" — lá isso é
  * seguro porque todo telefone de cliente/loja é brasileiro. Aqui adiciona

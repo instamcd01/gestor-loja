@@ -5,10 +5,12 @@ export function ProdutosRelacionados({
   produtos,
   slug,
   moderno,
+  usarPrecoAncoraMarketplace = false,
 }: {
   produtos: ProdutoCatalogo[];
   slug: string;
   moderno: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   if (produtos.length === 0) return null;
 
@@ -22,6 +24,7 @@ export function ProdutosRelacionados({
             produto={produto}
             slug={slug}
             moderno={moderno}
+            usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
           />
         ))}
       </div>

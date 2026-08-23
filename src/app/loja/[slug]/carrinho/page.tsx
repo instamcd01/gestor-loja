@@ -45,7 +45,14 @@ export default async function CarrinhoPage({
   // Sem login, o carrinho vive só no navegador — telefone só é pedido
   // na hora de finalizar (ver CarrinhoConvidado e mesclarCarrinhoConvidado).
   if (!user) {
-    return <CarrinhoConvidado slug={slug} empresaId={empresa.id} enderecoEmpresa={enderecoEmpresa} />;
+    return (
+      <CarrinhoConvidado
+        slug={slug}
+        empresaId={empresa.id}
+        enderecoEmpresa={enderecoEmpresa}
+        usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
+      />
+    );
   }
 
   const [carrinho, enderecoSalvo] = await Promise.all([getCarrinho(empresa.id), getEnderecoCliente(empresa.id)]);
@@ -93,6 +100,7 @@ export default async function CarrinhoPage({
       horarioFuncionamento={empresa.horario_funcionamento}
       enderecoSalvo={enderecoSalvo}
       carrinhoInicial={carrinho}
+      usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
     />
   );
 }

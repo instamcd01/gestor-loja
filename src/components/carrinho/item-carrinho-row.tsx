@@ -4,16 +4,19 @@ import { useState } from "react";
 import { IconeLixeira } from "@/components/icone-lixeira";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ItemCarrinho } from "@/lib/types";
-import { formatarPreco } from "@/lib/utils";
+import { formatarPreco, precoExibicao } from "@/lib/utils";
 
 export function ItemCarrinhoRow({
   item,
   onAlterarQuantidade,
+  usarPrecoAncoraMarketplace = false,
 }: {
   item: ItemCarrinho;
   onAlterarQuantidade: (itemId: string, novaQuantidade: number) => void;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
+  const exibicao = item.produto ? precoExibicao(item.produto, usarPrecoAncoraMarketplace) : null;
 
   return (
     <div className="flex gap-3 py-4">
@@ -35,8 +38,8 @@ export function ItemCarrinhoRow({
           <p className="text-sm leading-snug font-medium">{item.produto?.nome ?? "Produto"}</p>
           <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
             {formatarPreco(item.preco_unitario)} cada
-            {!!item.produto?.preco_promocional && item.produto.preco_promocional < item.produto.preco && (
-              <span className="text-black/40 line-through dark:text-white/40">{formatarPreco(item.produto.preco)}</span>
+            {exibicao?.temComparativo && (
+              <span className="text-black/40 line-through dark:text-white/40">{formatarPreco(exibicao.precoDe)}</span>
             )}
           </p>
         </div>

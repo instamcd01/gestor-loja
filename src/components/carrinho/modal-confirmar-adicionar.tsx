@@ -5,7 +5,7 @@ import { ProdutoImagem } from "@/components/produto-imagem";
 import { Button } from "@/components/ui/button";
 import type { VarianteProduto } from "@/lib/types";
 import { useDrawerA11y } from "@/lib/use-drawer-a11y";
-import { formatarPreco } from "@/lib/utils";
+import { formatarPreco, precoExibicao } from "@/lib/utils";
 
 /**
  * Confirmação exibida ao clicar o "+" rápido pelo card do catálogo (grade,
@@ -25,6 +25,7 @@ export function ModalConfirmarAdicionar({
   opcoes,
   varianteInicialId,
   carregando,
+  usarPrecoAncoraMarketplace = false,
   onConfirmar,
   onFechar,
 }: {
@@ -34,6 +35,7 @@ export function ModalConfirmarAdicionar({
   opcoes: VarianteProduto[];
   varianteInicialId: string;
   carregando: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
   onConfirmar: (varianteId: string, quantidade: number) => void;
   onFechar: () => void;
 }) {
@@ -43,8 +45,7 @@ export function ModalConfirmarAdicionar({
   const temOpcoes = opcoes.length > 1;
 
   const escolhida = opcoes.find((o) => o.id === varianteId) ?? opcoes[0];
-  const temPromocaoEscolhida =
-    escolhida.preco_promocional != null && escolhida.preco_promocional < escolhida.preco;
+  const exibicaoEscolhida = precoExibicao(escolhida, usarPrecoAncoraMarketplace);
 
   function selecionar(opcao: VarianteProduto) {
     setVarianteId(opcao.id);
@@ -80,12 +81,10 @@ export function ModalConfirmarAdicionar({
           <div className="flex flex-col gap-1">
             <p className="text-sm font-medium">{escolhida.nome}</p>
             <span className="flex items-baseline gap-1.5">
-              <span className="font-semibold">
-                {formatarPreco(temPromocaoEscolhida ? escolhida.preco_promocional! : escolhida.preco)}
-              </span>
-              {temPromocaoEscolhida && (
+              <span className="font-semibold">{formatarPreco(exibicaoEscolhida.precoAtual)}</span>
+              {exibicaoEscolhida.temComparativo && (
                 <span className="text-xs text-black/40 line-through dark:text-white/40">
-                  {formatarPreco(escolhida.preco)}
+                  {formatarPreco(exibicaoEscolhida.precoDe)}
                 </span>
               )}
             </span>
@@ -95,7 +94,7 @@ export function ModalConfirmarAdicionar({
         {temOpcoes && (
           <div className="flex flex-col gap-2">
             {opcoes.map((opcao) => {
-              const temPromocao = opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
+              const exibicaoOpcao = precoExibicao(opcao, usarPrecoAncoraMarketplace);
               const semEstoque = opcao.estoque_disponivel === 0;
               return (
                 <button
@@ -114,12 +113,10 @@ export function ModalConfirmarAdicionar({
                     {semEstoque ? " (sem estoque)" : ""}
                   </span>
                   <span className="flex items-baseline gap-1.5">
-                    <span className="font-semibold">
-                      {formatarPreco(temPromocao ? opcao.preco_promocional! : opcao.preco)}
-                    </span>
-                    {temPromocao && (
+                    <span className="font-semibold">{formatarPreco(exibicaoOpcao.precoAtual)}</span>
+                    {exibicaoOpcao.temComparativo && (
                       <span className="text-xs text-black/40 line-through dark:text-white/40">
-                        {formatarPreco(opcao.preco)}
+                        {formatarPreco(exibicaoOpcao.precoDe)}
                       </span>
                     )}
                   </span>

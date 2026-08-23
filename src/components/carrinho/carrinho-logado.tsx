@@ -29,6 +29,7 @@ export function CarrinhoLogado({
   horarioFuncionamento,
   enderecoSalvo,
   carrinhoInicial,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
@@ -38,6 +39,7 @@ export function CarrinhoLogado({
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
   enderecoSalvo: EnderecoCliente | null;
   carrinhoInicial: Carrinho;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const [carrinho, setCarrinho] = useState(carrinhoInicial);
   const { agendar: agendarSync, flushTudo } = useDebounceQuantidade();
@@ -135,7 +137,12 @@ export function CarrinhoLogado({
 
       <Card className="divide-y divide-black/5 px-4 dark:divide-white/10">
         {carrinho.itens.map((item) => (
-          <ItemCarrinhoRow key={item.id} item={item} onAlterarQuantidade={alterarQuantidade} />
+          <ItemCarrinhoRow
+            key={item.id}
+            item={item}
+            onAlterarQuantidade={alterarQuantidade}
+            usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
+          />
         ))}
       </Card>
 
@@ -149,6 +156,7 @@ export function CarrinhoLogado({
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}
+        usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
         aoConfirmarAntes={flushTudo}
       />
     </div>

@@ -177,13 +177,23 @@ export default async function LojaPage({
 
       {!filtroAtivo && (
         <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
-          <PromocoesDoDia slug={slug} empresaId={empresa.id} moderno={moderno} />
+          <PromocoesDoDia
+            slug={slug}
+            empresaId={empresa.id}
+            moderno={moderno}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
+          />
         </Suspense>
       )}
 
       {!filtroAtivo && (
         <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
-          <MaisVendidos slug={slug} empresaId={empresa.id} moderno={moderno} />
+          <MaisVendidos
+            slug={slug}
+            empresaId={empresa.id}
+            moderno={moderno}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
+          />
         </Suspense>
       )}
 
@@ -233,6 +243,7 @@ export default async function LojaPage({
             moderno={moderno}
             especie={especie}
             departamento={departamento}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
           />
         </Suspense>
       ) : (
@@ -246,6 +257,7 @@ export default async function LojaPage({
             slug={slug}
             empresaId={empresa.id}
             moderno={moderno}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
           />
         </Suspense>
       )}

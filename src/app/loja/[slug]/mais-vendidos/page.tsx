@@ -47,7 +47,13 @@ export default async function MaisVendidosPage({
         </p>
       ) : (
         <Suspense fallback={<GradeSkeleton />}>
-          <GradeDeProdutos produtos={produtos} slug={slug} empresaId={empresa.id} moderno={moderno} />
+          <GradeDeProdutos
+            produtos={produtos}
+            slug={slug}
+            empresaId={empresa.id}
+            moderno={moderno}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
+          />
         </Suspense>
       )}
     </div>

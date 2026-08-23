@@ -15,6 +15,7 @@ async function LinhaProdutos({
   empresaId,
   moderno,
   verMaisHref,
+  usarPrecoAncoraMarketplace,
 }: {
   titulo: string;
   produtos: ProdutoCatalogo[];
@@ -22,6 +23,7 @@ async function LinhaProdutos({
   empresaId: string;
   moderno: boolean;
   verMaisHref?: string;
+  usarPrecoAncoraMarketplace: boolean;
 }) {
   if (produtos.length === 0) return null;
 
@@ -45,6 +47,7 @@ async function LinhaProdutos({
               slug={slug}
               variantes={variantesPorPai.get(produto.id)}
               moderno={moderno}
+              usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
             />
           </div>
         ))}
@@ -62,10 +65,12 @@ export async function PromocoesDoDia({
   slug,
   empresaId,
   moderno,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
   moderno: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const produtos = await getPromocoesDoDia(empresaId);
   return (
@@ -76,6 +81,7 @@ export async function PromocoesDoDia({
       empresaId={empresaId}
       moderno={moderno}
       verMaisHref={`/loja/${slug}?promocao=1`}
+      usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
     />
   );
 }
@@ -84,10 +90,12 @@ export async function MaisVendidos({
   slug,
   empresaId,
   moderno,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
   moderno: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const produtos = await getMaisVendidos(empresaId);
   return (
@@ -98,6 +106,7 @@ export async function MaisVendidos({
       empresaId={empresaId}
       moderno={moderno}
       verMaisHref={`/loja/${slug}/mais-vendidos`}
+      usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
     />
   );
 }

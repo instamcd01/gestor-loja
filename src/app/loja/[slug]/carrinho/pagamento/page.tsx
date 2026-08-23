@@ -129,6 +129,7 @@ export default async function CarrinhoPagamentoPage({
         petcashPercentual={empresa.petcash_percentual}
         petcashUsoMaximoPercentual={empresa.petcash_uso_maximo_percentual}
         petcashPedidoMinimoUso={empresa.petcash_pedido_minimo_uso}
+        usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
       />
     </div>
   );

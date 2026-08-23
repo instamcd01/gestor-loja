@@ -22,7 +22,7 @@ import {
   obterSnapshotServidorEnderecoEstimado,
 } from "@/lib/endereco-estimado";
 import type { ProdutoCatalogo } from "@/lib/types";
-import { formatarPreco } from "@/lib/utils";
+import { formatarPreco, precoExibicao } from "@/lib/utils";
 
 /**
  * Carrinho de quem ainda não fez login — lido do navegador (ver
@@ -39,10 +39,12 @@ export function CarrinhoConvidado({
   slug,
   empresaId,
   enderecoEmpresa,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const itens = useSyncExternalStore(
     assinarCarrinhoConvidado,
@@ -65,14 +67,14 @@ export function CarrinhoConvidado({
   // — grava direto no MESMO storage que `itens` já lê via useSyncExternalStore,
   // então a lista reage sozinha, sem precisar de gaveta/popup separado.
   function adicionarSugestao(produto: ProdutoCatalogo) {
-    const emPromocao = produto.preco_promocional != null && produto.preco_promocional < produto.preco;
+    const exibicao = precoExibicao(produto, usarPrecoAncoraMarketplace);
     adicionarItemConvidado(empresaId, {
       produtoId: produto.id,
       nome: produto.nome,
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
-      preco: emPromocao ? produto.preco_promocional! : produto.preco,
-      precoOriginal: emPromocao ? produto.preco : null,
+      preco: exibicao.precoAtual,
+      precoOriginal: exibicao.temComparativo ? exibicao.precoDe : null,
       estoqueDisponivel: produto.estoque_disponivel,
       quantidade: 1,
     });

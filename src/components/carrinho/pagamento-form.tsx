@@ -23,7 +23,13 @@ import {
 } from "@/lib/endereco-estimado";
 import type { DadosPagamentoOnline } from "@/lib/mercadopago";
 import type { EmpresaCatalogo, ItemCarrinho } from "@/lib/types";
-import { formatarEnderecoCompleto, formatarPreco, NOME_PAGAMENTO_ONLINE, parseValorMonetarioBr } from "@/lib/utils";
+import {
+  descontoProdutosCarrinho,
+  formatarEnderecoCompleto,
+  formatarPreco,
+  NOME_PAGAMENTO_ONLINE,
+  parseValorMonetarioBr,
+} from "@/lib/utils";
 
 const NOME_BANDEIRA: Record<string, string> = {
   visa: "Visa",
@@ -63,6 +69,7 @@ export function PagamentoForm({
   petcashPercentual,
   petcashUsoMaximoPercentual,
   petcashPedidoMinimoUso,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
@@ -91,6 +98,7 @@ export function PagamentoForm({
   petcashPercentual: EmpresaCatalogo["petcash_percentual"];
   petcashUsoMaximoPercentual: EmpresaCatalogo["petcash_uso_maximo_percentual"];
   petcashPedidoMinimoUso: EmpresaCatalogo["petcash_pedido_minimo_uso"];
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const router = useRouter();
 
@@ -218,16 +226,11 @@ export function PagamentoForm({
   }
 
   const quantidadeItens = itens.reduce((soma, item) => soma + item.quantidade, 0);
-  // Soma de (preço de catálogo atual − preço promocional) × quantidade —
-  // só dos itens que estão em promoção agora. Usa o preço de catálogo
-  // corrente (não o que foi travado no carrinho) só pra mostrar "quanto
-  // você economizou", igual ao efeito do iFood — o que é cobrado de
-  // verdade continua vindo de `preco_unitario`/`subtotal` do item.
-  const descontoProdutos = itens.reduce((soma, item) => {
-    const produto = item.produto;
-    if (!produto || produto.preco_promocional == null || produto.preco_promocional >= produto.preco) return soma;
-    return soma + (produto.preco - produto.preco_promocional) * item.quantidade;
-  }, 0);
+  // Usa o preço de catálogo corrente (não o que foi travado no carrinho) só
+  // pra mostrar "quanto você economizou" — o que é cobrado de verdade
+  // continua vindo de `preco_unitario`/`subtotal` do item. Helper
+  // compartilhado com a etapa de entrega (entrega-form.tsx).
+  const descontoProdutos = descontoProdutosCarrinho(itens, usarPrecoAncoraMarketplace);
   const taxaServico =
     taxaServicoValor != null && taxaServicoValor > 0
       ? taxaServicoTipo === "fixo"

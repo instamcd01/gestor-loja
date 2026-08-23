@@ -66,6 +66,7 @@ export default async function LojaLayout({
           slug={slug}
           empresaId={empresa.id}
           enderecoEmpresa={enderecoEmpresa}
+          usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
         >
           <FavoritosProvider slug={slug} empresaId={empresa.id}>
             <SidebarProvider>

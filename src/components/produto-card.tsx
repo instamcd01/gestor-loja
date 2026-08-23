@@ -8,7 +8,7 @@ import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { useCarrinhoRapidoContext } from "@/components/carrinho/carrinho-rapido-provider";
-import { formatarPreco, percentualDesconto } from "@/lib/utils";
+import { formatarPreco, percentualDesconto, precoExibicao } from "@/lib/utils";
 import { extrairPeso } from "@/lib/variantes";
 
 export function ProdutoCard({
@@ -16,11 +16,14 @@ export function ProdutoCard({
   slug,
   variantes,
   moderno,
+  usarPrecoAncoraMarketplace = false,
 }: {
   produto: ProdutoCatalogo;
   slug: string;
   variantes?: VarianteProduto[];
   moderno: boolean;
+  /** Configurações > Catálogo Online (app Gestor) — ver `precoExibicao` em lib/utils.ts. */
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const opcoes: VarianteProduto[] = [
     {
@@ -34,6 +37,7 @@ export function ProdutoCard({
       preco: produto.preco,
       preco_promocional: produto.preco_promocional,
       estoque_disponivel: produto.estoque_disponivel,
+      preco_ancora_canais: produto.preco_ancora_canais,
     },
     ...(variantes ?? []),
   ];
@@ -50,10 +54,10 @@ export function ProdutoCard({
   const temPromocao =
     selecionada.preco_promocional != null &&
     selecionada.preco_promocional < selecionada.preco;
-  const percentualOff = percentualDesconto(
-    selecionada.preco,
-    selecionada.preco_promocional,
-  );
+  // Preço "de"/"por" exibido — inclui o comparativo de marketplace quando
+  // ligado (ver precoExibicao em lib/utils.ts); nunca usado como preço
+  // cobrado de verdade (isso continua sendo temPromocao/preco_promocional).
+  const exibicao = precoExibicao(selecionada, usarPrecoAncoraMarketplace);
 
   // Kit: o "riscado" compara com a soma dos componentes (preco_cheio_kit),
   // não com preco_promocional (que aqui seria um desconto extra em cima do
@@ -89,14 +93,13 @@ export function ProdutoCard({
   async function confirmarAdicionar(varianteId: string, quantidade: number) {
     const opcao = opcoes.find((o) => o.id === varianteId);
     if (!opcao) return;
-    const opcaoTemPromocao =
-      opcao.preco_promocional != null && opcao.preco_promocional < opcao.preco;
+    const exibicaoOpcao = precoExibicao(opcao, usarPrecoAncoraMarketplace);
     await carrinhoRapido.adicionar(opcao.id, quantidade, {
       nome: opcao.nome,
       imagemUrl: produto.imagem_url,
       categoria: produto.categoria,
-      preco: opcaoTemPromocao ? opcao.preco_promocional! : opcao.preco,
-      precoOriginal: opcaoTemPromocao ? opcao.preco : null,
+      preco: exibicaoOpcao.precoAtual,
+      precoOriginal: exibicaoOpcao.temComparativo ? exibicaoOpcao.precoDe : null,
       estoqueDisponivel: opcao.estoque_disponivel,
     });
     setModalAberto(false);
@@ -118,9 +121,9 @@ export function ProdutoCard({
           />
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {produto.eh_kit && <Badge variant="neutral">Kit</Badge>}
-            {(temDescontoKit ? percentualOffKit : percentualOff) > 0 && (
+            {(temDescontoKit ? percentualOffKit : exibicao.percentual) > 0 && (
               <Badge variant="secondary">
-                {temDescontoKit ? percentualOffKit : percentualOff}% OFF
+                {temDescontoKit ? percentualOffKit : exibicao.percentual}% OFF
               </Badge>
             )}
             {produto.destaque && <Badge variant="neutral">Destaque</Badge>}
@@ -185,9 +188,9 @@ export function ProdutoCard({
                 {formatarPreco(produto.preco_cheio_kit!)}
               </span>
             ) : (
-              temPromocao && (
+              exibicao.temComparativo && (
                 <span className="text-xs text-black/40 line-through dark:text-white/40">
-                  {formatarPreco(selecionada.preco)}
+                  {formatarPreco(exibicao.precoDe)}
                 </span>
               )
             )}
@@ -209,6 +212,7 @@ export function ProdutoCard({
           opcoes={opcoes}
           varianteInicialId={selecionada.id}
           carregando={carrinhoRapido.carregando}
+          usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
           onConfirmar={confirmarAdicionar}
           onFechar={() => setModalAberto(false)}
         />

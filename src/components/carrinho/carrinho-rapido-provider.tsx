@@ -30,6 +30,7 @@ export function CarrinhoRapidoProvider({
   slug,
   empresaId,
   enderecoEmpresa,
+  usarPrecoAncoraMarketplace = false,
   children,
 }: {
   slug: string;
@@ -40,9 +41,10 @@ export function CarrinhoRapidoProvider({
     estado: string | null;
     cep: string | null;
   };
+  usarPrecoAncoraMarketplace?: boolean;
   children: ReactNode;
 }) {
-  const carrinhoRapido = useCarrinhoRapido(slug, empresaId);
+  const carrinhoRapido = useCarrinhoRapido(slug, empresaId, usarPrecoAncoraMarketplace);
   // Nunca aparece nas próprias páginas de carrinho/checkout — o cliente já
   // está vendo o carrinho ali, uma gaveta ou barra por cima seria
   // redundante (e, no caso da gaveta cheia, esconderia a página de baixo

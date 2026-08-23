@@ -18,6 +18,7 @@ import {
   notificarCarrinhoAtualizado,
 } from "@/lib/carrinho-eventos";
 import type { ItemCarrinho } from "@/lib/types";
+import { precoExibicao } from "@/lib/utils";
 import { useDebounceQuantidade } from "@/lib/use-debounce-quantidade";
 
 export interface EstadoDrawerCarrinho {
@@ -37,13 +38,11 @@ type ProdutoParaAdicionar = {
   estoqueDisponivel: number;
 };
 
-function precoOriginalDoItem(item: ItemCarrinho): number | null {
+function precoOriginalDoItem(item: ItemCarrinho, usarPrecoAncoraMarketplace: boolean): number | null {
   const produto = item.produto;
   if (!produto) return null;
-  return produto.preco_promocional != null &&
-    produto.preco_promocional < produto.preco
-    ? produto.preco
-    : null;
+  const exibicao = precoExibicao(produto, usarPrecoAncoraMarketplace);
+  return exibicao.temComparativo ? exibicao.precoDe : null;
 }
 
 /**
@@ -52,7 +51,7 @@ function precoOriginalDoItem(item: ItemCarrinho): number | null {
  * no card do catálogo — mesmo comportamento nos dois lugares, sem
  * duplicar a parte de convidado/logado/estoque/debounce.
  */
-export function useCarrinhoRapido(slug: string, empresaId: string) {
+export function useCarrinhoRapido(slug: string, empresaId: string, usarPrecoAncoraMarketplace = false) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<EstadoDrawerCarrinho | null>(null);
@@ -113,7 +112,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
             imagemUrl: item.produto?.imagem_url ?? null,
             categoria: item.produto?.categoria ?? null,
             preco: item.preco_unitario,
-            precoOriginal: precoOriginalDoItem(item),
+            precoOriginal: precoOriginalDoItem(item, usarPrecoAncoraMarketplace),
             quantidade: item.quantidade,
             estoqueDisponivel:
               item.produto?.estoque_disponivel ?? item.quantidade,
@@ -157,7 +156,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
       cancelado = true;
       cancelarAssinatura();
     };
-  }, [logado, empresaId]);
+  }, [logado, empresaId, usarPrecoAncoraMarketplace]);
 
   async function adicionar(
     produtoId: string,
@@ -266,7 +265,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
         imagemUrl: item.produto?.imagem_url ?? null,
         categoria: item.produto?.categoria ?? null,
         preco: item.preco_unitario,
-        precoOriginal: precoOriginalDoItem(item),
+        precoOriginal: precoOriginalDoItem(item, usarPrecoAncoraMarketplace),
         quantidade: item.quantidade,
         estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
       })),
@@ -370,7 +369,7 @@ export function useCarrinhoRapido(slug: string, empresaId: string) {
             imagemUrl: item.produto?.imagem_url ?? null,
             categoria: item.produto?.categoria ?? null,
             preco: item.preco_unitario,
-            precoOriginal: precoOriginalDoItem(item),
+            precoOriginal: precoOriginalDoItem(item, usarPrecoAncoraMarketplace),
             quantidade: item.quantidade,
             estoqueDisponivel:
               item.produto?.estoque_disponivel ?? item.quantidade,

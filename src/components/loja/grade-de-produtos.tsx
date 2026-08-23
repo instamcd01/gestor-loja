@@ -17,11 +17,13 @@ export async function GradeDeProdutos({
   slug,
   empresaId,
   moderno,
+  usarPrecoAncoraMarketplace = false,
 }: {
   produtos: ProdutoCatalogo[];
   slug: string;
   empresaId: string;
   moderno: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const variantesPorPai = await getVariantesEmLote(empresaId, produtos);
 
@@ -34,6 +36,7 @@ export async function GradeDeProdutos({
           slug={slug}
           variantes={variantesPorPai.get(produto.id)}
           moderno={moderno}
+          usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
         />
       ))}
     </div>

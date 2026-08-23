@@ -17,7 +17,7 @@ import {
   getProdutosCatalogo,
   getVariantesDoProduto,
 } from "@/lib/catalogo";
-import { formatarPreco, percentualDesconto } from "@/lib/utils";
+import { formatarPreco, percentualDesconto, precoExibicao } from "@/lib/utils";
 import { rotuloSeletorVariante } from "@/lib/variantes";
 
 export const revalidate = 60;
@@ -67,10 +67,11 @@ export default async function ProdutoPage({
   const temPromocao =
     produto.preco_promocional != null &&
     produto.preco_promocional < produto.preco;
-  const percentualOff = percentualDesconto(
-    produto.preco,
-    produto.preco_promocional,
-  );
+  // Preço "de"/"por" exibido — inclui o comparativo de marketplace quando
+  // ligado (ver precoExibicao em lib/utils.ts). Só a exibição muda: o que
+  // vai pro carrinho (AdicionarCarrinhoButton abaixo) continua usando só
+  // preco/preco_promocional reais, nunca o comparativo.
+  const exibicao = precoExibicao(produto, empresa.preco_ancora_marketplace_ativo);
 
   // Kit: "riscado" compara com a soma dos componentes (preco_cheio_kit),
   // mesmo padrão do card na grade.
@@ -108,9 +109,9 @@ export default async function ProdutoPage({
           <div className="relative">
             <div className="absolute top-2 left-2 z-[1] flex flex-col gap-1">
               {produto.eh_kit && <Badge variant="neutral">Kit</Badge>}
-              {(temDescontoKit ? percentualOffKit : percentualOff) > 0 && (
+              {(temDescontoKit ? percentualOffKit : exibicao.percentual) > 0 && (
                 <Badge variant="secondary">
-                  {temDescontoKit ? percentualOffKit : percentualOff}% OFF
+                  {temDescontoKit ? percentualOffKit : exibicao.percentual}% OFF
                 </Badge>
               )}
             </div>
@@ -142,9 +143,9 @@ export default async function ProdutoPage({
                   {formatarPreco(produto.preco_cheio_kit!)}
                 </span>
               ) : (
-                temPromocao && (
+                exibicao.temComparativo && (
                   <span className="text-base text-black/40 line-through dark:text-white/40">
-                    {formatarPreco(produto.preco)}
+                    {formatarPreco(exibicao.precoDe)}
                   </span>
                 )
               )}
@@ -197,8 +198,8 @@ export default async function ProdutoPage({
                   preco: precoExibidoKit,
                   precoOriginal: temDescontoKit
                     ? produto.preco_cheio_kit!
-                    : temPromocao
-                      ? produto.preco
+                    : exibicao.temComparativo
+                      ? exibicao.precoDe
                       : null,
                   estoqueDisponivel: produto.estoque_disponivel,
                 }}
@@ -233,6 +234,7 @@ export default async function ProdutoPage({
         produtos={relacionados}
         slug={slug}
         moderno={moderno}
+        usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
       />
     </div>
   );

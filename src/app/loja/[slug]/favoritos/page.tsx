@@ -57,6 +57,7 @@ export default async function FavoritosPage({
               slug={slug}
               variantes={variantesPorPai.get(produto.id)}
               moderno={moderno}
+              usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
             />
           ))}
         </div>

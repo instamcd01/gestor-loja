@@ -18,6 +18,7 @@ export async function CategoriasEmLinha({
   moderno,
   especie,
   departamento,
+  usarPrecoAncoraMarketplace = false,
 }: {
   slug: string;
   empresaId: string;
@@ -26,6 +27,7 @@ export async function CategoriasEmLinha({
   especie?: string;
   /** Restringe as linhas às categorias do departamento escolhido ("Tudo em X" do menu). */
   departamento?: string;
+  usarPrecoAncoraMarketplace?: boolean;
 }) {
   const produtos = await getProdutosHomeAgrupados(empresaId, 10, {
     especie,
@@ -67,6 +69,7 @@ export async function CategoriasEmLinha({
                   slug={slug}
                   variantes={variantesPorPai.get(produto.id)}
                   moderno={moderno}
+                  usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
                 />
               </div>
             ))}
