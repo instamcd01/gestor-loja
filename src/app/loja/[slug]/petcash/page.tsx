@@ -40,6 +40,18 @@ export default async function PetCashPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/loja/${slug}/entrar`);
 
+  // Autenticado sem linha em `clientes` = cadastro pendente (ver
+  // conta/page.tsx pro caso real que motivou essa checagem) — sem isso,
+  // mostraria "nenhum crédito ainda" pra quem na verdade nunca completou o
+  // cadastro.
+  const { data: cliente } = await supabase
+    .from("clientes")
+    .select("id")
+    .eq("empresa_id", empresa.id)
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  if (!cliente) redirect(`/loja/${slug}/pos-login`);
+
   const creditos = await getExtratoPetCash(empresa.id);
   const saldoTotal = creditos.reduce((soma, c) => soma + (c.status === "disponivel" ? c.valorDisponivel : 0), 0);
 

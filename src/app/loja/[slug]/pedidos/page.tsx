@@ -50,14 +50,18 @@ export default async function PedidosPage({
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  const { data: pedidos } = cliente
-    ? await supabase
-        .from("pedidos")
-        .select("id, numero_sequencial, status, valor_total, created_at")
-        .eq("empresa_id", empresa.id)
-        .eq("cliente_id", cliente.id)
-        .order("created_at", { ascending: false })
-    : { data: [] };
+  // Autenticado sem linha em `clientes` = cadastro pendente (ver
+  // conta/page.tsx pro caso real que motivou essa checagem) — sem isso,
+  // mostraria "você ainda não fez nenhum pedido" pra quem na verdade nunca
+  // completou o cadastro, dando a entender que é só esperar em vez de agir.
+  if (!cliente) redirect(`/loja/${slug}/pos-login`);
+
+  const { data: pedidos } = await supabase
+    .from("pedidos")
+    .select("id, numero_sequencial, status, valor_total, created_at")
+    .eq("empresa_id", empresa.id)
+    .eq("cliente_id", cliente.id)
+    .order("created_at", { ascending: false });
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 py-8">
