@@ -6,8 +6,7 @@ import { CompletarCadastroForm } from "@/components/auth/completar-cadastro-form
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { mesclarCarrinhoConvidado } from "@/lib/carrinho";
-import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-convidado";
+import { concluirLoginEIrPara } from "@/lib/pos-login";
 import { createClient } from "@/lib/supabase/client";
 import { formatarTelefoneBr, paraE164, telefoneValido } from "@/lib/telefone";
 
@@ -108,19 +107,32 @@ export function LoginForm({
 
   /** Merge do carrinho de visitante + navegação final — só roda quando o
    * cadastro já está completo (perfil já preenchido antes, ou acabou de
-   * preencher agora). */
-  async function concluirEIrPara() {
-    const itensConvidado = lerCarrinhoConvidado(empresaId);
-    if (itensConvidado.length > 0) {
-      await mesclarCarrinhoConvidado(
-        slug,
-        empresaId,
-        itensConvidado.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
-      );
-      limparCarrinhoConvidado(empresaId);
+   * preencher agora). Extraído pra lib/pos-login.ts, reaproveitado também
+   * pelo retorno do login com Google (pos-login/page.tsx) — ver comentário
+   * lá sobre por que esse fluxo não pode ficar só aqui dentro do state
+   * deste formulário. */
+  function concluirEIrPara() {
+    return concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin });
+  }
+
+  /** Login com Google é um redirect de página inteira — ao contrário de
+   * telefone/email, não tem como continuar rodando `finalizarEntrada` no
+   * state deste componente depois. O retorno cai em `pos-login/page.tsx`,
+   * que refaz a mesma decisão (completar cadastro ou seguir direto). */
+  async function entrarComGoogle() {
+    setErro(null);
+    setCarregando(true);
+    const destino = rotaPosLogin === "carrinho" ? "?redirect=carrinho" : "";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/loja/${slug}/pos-login${destino}` },
+    });
+    if (error) {
+      setCarregando(false);
+      setErro(error.message);
     }
-    router.push(`/loja/${slug}/${rotaPosLogin}`);
-    router.refresh();
+    // Sem tratamento de sucesso aqui: o navegador já foi redirecionado pro
+    // Google, este componente nem continua montado.
   }
 
   async function enviarCodigo(e: React.FormEvent) {
@@ -538,6 +550,33 @@ export function LoginForm({
         className="py-3 text-base"
       >
         Entrar com email e senha
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={entrarComGoogle}
+        disabled={carregando}
+        className="flex items-center justify-center gap-2.5 py-3 text-base"
+      >
+        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
+          <path
+            fill="#4285F4"
+            d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.58-5.17 3.58-8.82z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 24c3.24 0 5.96-1.07 7.94-2.9l-3.87-3.01c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.11A12 12 0 0 0 12 24z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.27A12 12 0 0 0 0 12c0 1.94.46 3.77 1.27 5.39z"
+          />
+          <path
+            fill="#EA4335"
+            d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.27 6.61l4 3.11C6.22 6.86 8.87 4.75 12 4.75z"
+          />
+        </svg>
+        Entrar com Google
       </Button>
     </div>
   );
