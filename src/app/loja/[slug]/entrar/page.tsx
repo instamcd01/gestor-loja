@@ -17,6 +17,45 @@ export async function generateMetadata({
   return { title: empresa ? `Entrar — ${empresa.nome}` : "Entrar" };
 }
 
+// Mesma receita visual de `SelosConfianca` (selos-confianca.tsx) no modelo
+// clássico — ícone num círculo na cor da marca + card de superfície, em vez
+// do painel com gradiente que estava aqui antes (chamativo mas fora do
+// idioma visual do resto do site, que não usa blocos de cor sólida grandes
+// assim em lugar nenhum). Conteúdo próprio da tela de entrar (pedido,
+// endereço, saldo), por isso não reaproveita o componente compartilhado
+// diretamente — só o mesmo estilo de card.
+const beneficios: { titulo: string; icone: React.ReactNode }[] = [
+  {
+    titulo: "Acompanhe seus pedidos do início ao fim",
+    icone: (
+      <>
+        <path d="M3 8l9-4 9 4-9 4-9-4z" />
+        <path d="M3 8v9l9 4 9-4V8" />
+        <path d="M12 12v9" />
+      </>
+    ),
+  },
+  {
+    titulo: "Endereço salvo, sem digitar tudo de novo",
+    icone: (
+      <>
+        <path d="M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z" />
+        <circle cx="12" cy="9" r="2.3" />
+      </>
+    ),
+  },
+  {
+    titulo: "Use seu saldo direto na próxima compra",
+    icone: (
+      <>
+        <rect x="3" y="6" width="18" height="13" rx="2" />
+        <path d="M3 10.5h18" />
+        <path d="M16 14.5h2.5" />
+      </>
+    ),
+  },
+];
+
 export default async function EntrarPage({
   params,
   searchParams,
@@ -37,54 +76,39 @@ export default async function EntrarPage({
   } = await supabase.auth.getUser();
   if (user) redirect(`/loja/${slug}/${rotaPosLogin}`);
 
-  const beneficios = [
-    "Acompanhe seus pedidos do início ao fim",
-    "Endereço salvo, sem digitar tudo de novo",
-    "Use seu saldo direto na próxima compra",
-  ];
-
   return (
-    <div className="mx-auto grid max-w-4xl gap-8 py-10 md:grid-cols-2 md:items-center">
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Entrar</h1>
-          <p className="text-sm text-black/50 dark:text-white/50">{empresa.nome}</p>
-        </div>
-
-        {/* Versão compacta do painel de benefícios — no desktop ele já
-            aparece ao lado (mais abaixo), então aqui só existe pra telas
-            pequenas, onde o painel grande nunca era visto (`hidden md:flex`
-            escondia por completo, deixando quem acessa pelo celular sem
-            nenhum motivo pra criar conta em vez de só comprar como
-            convidado). */}
-        <div className="rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] p-4 text-white md:hidden">
-          <ul className="flex flex-col gap-2 text-sm text-white/90">
-            {beneficios.map((beneficio) => (
-              <li key={beneficio} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-                {beneficio}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <Card className="p-6">
-          <LoginForm empresaId={empresa.id} slug={slug} rotaPosLogin={rotaPosLogin} />
-        </Card>
+    <div className="mx-auto flex max-w-md flex-col gap-6 py-10">
+      <div>
+        <h1 className="text-2xl font-semibold">Entrar</h1>
+        <p className="text-sm text-black/50 dark:text-white/50">{empresa.nome}</p>
       </div>
 
-      <div className="relative hidden overflow-hidden rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] p-8 text-white md:flex md:flex-col md:justify-center md:gap-5">
-        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-10 h-56 w-56 rounded-full bg-black/10 blur-3xl" />
-        <h2 className="relative text-xl font-bold">Sua conta na {empresa.nome}</h2>
-        <ul className="relative flex flex-col gap-3 text-sm text-white/90">
+      <Card className="p-6">
+        <LoginForm empresaId={empresa.id} slug={slug} rotaPosLogin={rotaPosLogin} />
+      </Card>
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-black/60 dark:text-white/60">Vantagens da sua conta</p>
+        <div className="flex flex-col gap-3">
           {beneficios.map((beneficio) => (
-            <li key={beneficio} className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-              {beneficio}
-            </li>
+            <Card key={beneficio.titulo} className="flex items-center gap-3 px-4 py-3.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4.5 w-4.5 text-[var(--brand-primary)]"
+                >
+                  {beneficio.icone}
+                </svg>
+              </div>
+              <span className="text-xs font-semibold">{beneficio.titulo}</span>
+            </Card>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );
