@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CompletarCadastroForm } from "@/components/auth/completar-cadastro-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { mesclarCarrinhoConvidado } from "@/lib/carrinho";
 import { lerCarrinhoConvidado, limparCarrinhoConvidado } from "@/lib/carrinho-convidado";
 import { createClient } from "@/lib/supabase/client";
@@ -471,9 +472,8 @@ export function LoginForm({
           <label htmlFor="senha" className="text-sm font-medium">
             Senha
           </label>
-          <Input
+          <PasswordInput
             id="senha"
-            type="password"
             autoComplete={modoEmail === "entrar" ? "current-password" : "new-password"}
             value={senha}
             onChange={(e) => setSenha(e.target.value)}

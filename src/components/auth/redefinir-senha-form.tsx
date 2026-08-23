@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { createClient } from "@/lib/supabase/client";
 
 /** Formulário de nova senha, aberto a partir do link de "Esqueci minha
@@ -68,9 +68,8 @@ export function RedefinirSenhaForm({ slug }: { slug: string }) {
         <label htmlFor="nova-senha" className="text-sm font-medium">
           Nova senha
         </label>
-        <Input
+        <PasswordInput
           id="nova-senha"
-          type="password"
           autoComplete="new-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}

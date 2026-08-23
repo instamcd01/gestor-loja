@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { apenasDigitos, cnpjValido, cpfValido, formatarCnpj, formatarCpf } from "@/lib/cpf-cnpj";
 import { dataBrParaIso, dataBrValida, formatarDataBr } from "@/lib/data-br";
 import { createClient } from "@/lib/supabase/client";
@@ -292,9 +293,8 @@ export function CompletarCadastroForm({
             <label htmlFor="cadastroSenha" className="text-sm font-medium">
               Crie uma senha
             </label>
-            <Input
+            <PasswordInput
               id="cadastroSenha"
-              type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               placeholder="Mínimo 8 caracteres"
