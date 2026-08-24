@@ -32,7 +32,7 @@ jobs:
         run: |
           DATA=$(date +%Y-%m-%d)
           echo "DATA=$DATA" >> "$GITHUB_ENV"
-          pg_dump "${{ secrets.BACKUP_DATABASE_URL }}" \
+          /usr/lib/postgresql/17/bin/pg_dump "${{ secrets.BACKUP_DATABASE_URL }}" \
             --no-owner --no-privileges --format=custom --compress=9 \
             --file="backup-$DATA.dump"
 
