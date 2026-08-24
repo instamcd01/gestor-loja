@@ -1,0 +1,55 @@
+name: Backup do banco (Supabase -> Backblaze B2)
+
+# Roda com um usuário Postgres só-leitura dedicado (backup_gestor_loja),
+# separado do usuário "postgres" que o n8n usa em produção — assim um
+# problema aqui nunca arrisca a senha que 36+ workflows ativos dependem.
+# Retém 30 dias de dumps no bucket; formato --format=custom permite
+# restaurar seletivamente (tabela por tabela) com pg_restore, não só o
+# banco inteiro de uma vez.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 03:00 America/Sao_Paulo (sem horário de verão)
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente Postgres 17
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Gerar dump comprimido
+        env:
+          PGCONNECT_TIMEOUT: "30"
+        run: |
+          DATA=$(date +%Y-%m-%d)
+          echo "DATA=$DATA" >> "$GITHUB_ENV"
+          pg_dump "${{ secrets.BACKUP_DATABASE_URL }}" \
+            --no-owner --no-privileges --format=custom --compress=9 \
+            --file="backup-$DATA.dump"
+
+      - name: Configurar AWS CLI para o Backblaze B2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.B2_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.B2_APPLICATION_KEY }}"
+
+      - name: Enviar para o Backblaze B2
+        run: |
+          aws s3 cp "backup-$DATA.dump" \
+            "s3://${{ secrets.B2_BUCKET }}/backups/backup-$DATA.dump" \
+            --endpoint-url "https://${{ secrets.B2_ENDPOINT }}"
+
+      - name: Remover backups com mais de 30 dias
+        run: |
+          CUTOFF=$(date -d "30 days ago" +%Y-%m-%d)
+          aws s3 ls "s3://${{ secrets.B2_BUCKET }}/backups/" \
+            --endpoint-url "https://${{ secrets.B2_ENDPOINT }}" | while read -r _ _ _ FILE; do
+            FILEDATE=$(echo "$FILE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)
+            if [ -n "$FILEDATE" ] && [[ "$FILEDATE" < "$CUTOFF" ]]; then
+              aws s3 rm "s3://${{ secrets.B2_BUCKET }}/backups/$FILE" \
+                --endpoint-url "https://${{ secrets.B2_ENDPOINT }}"
+            fi
+          done
