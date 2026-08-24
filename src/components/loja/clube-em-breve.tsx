@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
  * algo) quando a loja tem PetCash ativo; sem isso não há nada real pra
  * anunciar, então não mostra nada em vez de um teaser vazio. Sem citar o
  * percentual, mesma decisão de tom discreto já tomada em `PetcashFaixaInfo`
- * (que substituiu um banner antigo considerado chamativo demais).
+ * (que substituiu um banner antigo considerado chamativo demais) — mesmo
+ * emoji de moeda usado lá, pra manter o mesmo símbolo do PetCash em todo o
+ * site.
  *
  * No modelo clássico, a receita é a mesma de `SelosConfianca`/`entrar/page.tsx`
  * ("Vantagens da sua conta"): `Card` de superfície + círculo de ícone, não um
@@ -24,10 +26,9 @@ export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; mo
     return (
       <div className="flex items-center gap-4 rounded-[var(--radius-lg)] p-5" style={{ background: "var(--benefit-orange-bg)" }}>
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60"
-          style={{ color: "var(--benefit-orange-fg)" }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-xl"
         >
-          <IconePata className="h-5 w-5" />
+          🪙
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold" style={{ color: "var(--benefit-orange-fg)" }}>
@@ -38,7 +39,7 @@ export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; mo
           </p>
         </div>
         <Badge variant="outline" className="shrink-0 border-current" style={{ color: "var(--benefit-orange-fg)" }}>
-          🐾 Ativo
+          🪙 Ativo
         </Badge>
       </div>
     );
@@ -46,36 +47,16 @@ export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; mo
 
   return (
     <Card className="flex items-center gap-4 p-4 sm:p-5">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
-        <IconePata className="h-5 w-5" />
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary)]/10 text-xl">
+        🪙
       </div>
       <div className="flex-1">
         <p className="text-sm font-semibold">{titulo}</p>
         <p className="text-xs text-black/50 dark:text-white/50">{subtitulo}</p>
       </div>
       <Badge variant="outline" className="shrink-0">
-        🐾 Ativo
+        🪙 Ativo
       </Badge>
     </Card>
-  );
-}
-
-function IconePata({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <ellipse cx="12" cy="16.5" rx="5" ry="4" />
-      <circle cx="5.5" cy="9.5" r="2" />
-      <circle cx="10.2" cy="6" r="2" />
-      <circle cx="15.3" cy="6" r="2" />
-      <circle cx="18.5" cy="9.5" r="2" />
-    </svg>
   );
 }
