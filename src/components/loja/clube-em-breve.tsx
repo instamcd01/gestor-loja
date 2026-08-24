@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 /**
@@ -19,8 +18,13 @@ import { Card } from "@/components/ui/card";
 export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; moderno: boolean; petcashAtivo: boolean }) {
   if (!petcashAtivo) return null;
 
-  const titulo = "Você ganha PetCash comprando aqui";
-  const subtitulo = `Um crédito que soma sozinho quando seu pedido for entregue — use em compras futuras na ${nome}.`;
+  const titulo = "Ganhe PetCash nesta compra";
+  const subtitulo = `Seu cashback é adicionado ao saldo após a entrega. Use em suas próximas compras na ${nome}.`;
+  // Texto e badge "🪙 Ativo" anteriores, pra reverter se necessário:
+  // const titulo = "Você ganha PetCash comprando aqui";
+  // const subtitulo = `Um crédito que soma sozinho quando seu pedido for entregue — use em compras futuras na ${nome}.`;
+  // <Badge variant="outline" className="shrink-0 border-current" style={{ color: "var(--benefit-orange-fg)" }}>🪙 Ativo</Badge> (versão moderno)
+  // <Badge variant="outline" className="shrink-0">🪙 Ativo</Badge> (versão clássica)
 
   if (moderno) {
     return (
@@ -38,9 +42,6 @@ export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; mo
             {subtitulo}
           </p>
         </div>
-        <Badge variant="outline" className="shrink-0 border-current" style={{ color: "var(--benefit-orange-fg)" }}>
-          🪙 Ativo
-        </Badge>
       </div>
     );
   }
@@ -54,9 +55,6 @@ export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; mo
         <p className="text-sm font-semibold">{titulo}</p>
         <p className="text-xs text-black/50 dark:text-white/50">{subtitulo}</p>
       </div>
-      <Badge variant="outline" className="shrink-0">
-        🪙 Ativo
-      </Badge>
     </Card>
   );
 }

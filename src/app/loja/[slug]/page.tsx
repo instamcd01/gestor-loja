@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { FiltrosDrawer } from "@/components/catalogo/filtros-drawer";
+// Corrigido de "essaFiltrosDrawer" (nome quebrado, sem export correspondente) de volta pro
+// nome real exportado por filtros-drawer.tsx — reverter é só trocar o nome de volta acima.
 import { OrdenarPor } from "@/components/catalogo/ordenar-por";
 import { SugestaoProduto } from "@/components/catalogo/sugestao-produto";
 import { BannerCarousel } from "@/components/loja/banner-carousel";
