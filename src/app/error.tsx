@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportarErroCliente } from "@/lib/erros-cliente";
 
 /**
  * error.tsx é sempre client component (exigência do App Router). Loga
  * o erro real só no console — a mensagem pro usuário não expõe stack
- * trace nem detalhe técnico.
+ * trace nem detalhe técnico. Também reporta pro rastreamento caseiro
+ * (registrarErroSistema, ver src/lib/erros.ts) via Server Action —
+ * é assim que um erro capturado aqui (renderização) chega a virar
+ * alerta de WhatsApp.
  */
 export default function ErroGlobal({
   error,
@@ -16,6 +20,7 @@ export default function ErroGlobal({
 }) {
   useEffect(() => {
     console.error(error);
+    reportarErroCliente(error.message, window.location.pathname, error.stack);
   }, [error]);
 
   return (
