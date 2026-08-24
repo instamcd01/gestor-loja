@@ -217,7 +217,7 @@ export default async function ProdutoPage({
               )}
             </Card>
 
-            <ClubeEmBreve nome={empresa.nome} moderno={moderno} />
+            <ClubeEmBreve nome={empresa.nome} moderno={moderno} petcashAtivo={empresa.petcash_ativo} />
 
             <ButtonLink
               href={`/loja/${slug}`}

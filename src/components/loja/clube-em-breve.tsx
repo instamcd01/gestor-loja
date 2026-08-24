@@ -1,11 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 
 /**
- * Teaser de um programa de vantagens que ainda não existe de verdade —
- * a pedido do lojista, pra ser revelado depois. Por isso não promete
- * mecânica nenhuma (sem %, sem pontos), só avisa que algo vem por aí.
+ * Card de vantagem na página de produto. Quando a loja tem PetCash ativo,
+ * avisa sobre ele (sem citar o percentual — mesma decisão de tom discreto
+ * já tomada em `PetcashFaixaInfo`, que substituiu um banner antigo
+ * considerado chamativo demais). Sem PetCash configurado, cai no teaser
+ * genérico original ("programa de vantagens" ainda sem mecânica definida),
+ * pra lojas que ainda não ligaram nada.
  */
-export function ClubeEmBreve({ nome, moderno }: { nome: string; moderno: boolean }) {
+export function ClubeEmBreve({ nome, moderno, petcashAtivo }: { nome: string; moderno: boolean; petcashAtivo: boolean }) {
+  const titulo = petcashAtivo ? "Você ganha PetCash comprando aqui" : "Um jeito novo de economizar está chegando";
+  const subtitulo = petcashAtivo
+    ? `Um crédito que soma sozinho quando seu pedido for entregue — use em compras futuras na ${nome}.`
+    : `Em breve, mais vantagens pra quem compra sempre na ${nome}.`;
+  const selo = petcashAtivo ? "🐾 Ativo" : "Em breve";
+
   if (moderno) {
     return (
       <div className="flex items-center gap-4 rounded-[var(--radius-lg)] p-5" style={{ background: "var(--benefit-orange-bg)" }}>
@@ -17,14 +26,14 @@ export function ClubeEmBreve({ nome, moderno }: { nome: string; moderno: boolean
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold" style={{ color: "var(--benefit-orange-fg)" }}>
-            Um jeito novo de economizar está chegando
+            {titulo}
           </p>
           <p className="text-xs" style={{ color: "var(--benefit-orange-fg-secondary)" }}>
-            Em breve, mais vantagens pra quem compra sempre na {nome}.
+            {subtitulo}
           </p>
         </div>
         <Badge variant="outline" className="shrink-0 border-current" style={{ color: "var(--benefit-orange-fg)" }}>
-          Em breve
+          {selo}
         </Badge>
       </div>
     );
@@ -36,13 +45,11 @@ export function ClubeEmBreve({ nome, moderno }: { nome: string; moderno: boolean
         <IconeEstrela className="h-5 w-5" />
       </div>
       <div className="flex-1">
-        <p className="text-sm font-semibold">Um jeito novo de economizar está chegando</p>
-        <p className="text-xs text-black/50 dark:text-white/50">
-          Em breve, mais vantagens pra quem compra sempre na {nome}.
-        </p>
+        <p className="text-sm font-semibold">{titulo}</p>
+        <p className="text-xs text-black/50 dark:text-white/50">{subtitulo}</p>
       </div>
       <Badge variant="outline" className="shrink-0">
-        Em breve
+        {selo}
       </Badge>
     </div>
   );

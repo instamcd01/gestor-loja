@@ -8,6 +8,7 @@ import { PixPagamento } from "@/components/pedido/pix-pagamento";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
+import { getExtratoPetCash } from "@/lib/cliente";
 import { gerarPixCopiaECola } from "@/lib/pix";
 import { createClient } from "@/lib/supabase/server";
 import type { EmpresaCatalogo } from "@/lib/types";
@@ -100,6 +101,23 @@ export default async function PedidoPage({
     empresa.petcash_ativo && empresa.petcash_percentual && pedido.status !== "entregue" && pedido.status !== "cancelado"
       ? Math.round((pedido.valor_produtos ?? 0) * empresa.petcash_percentual) / 100
       : 0;
+
+  // Uma vez entregue, o crédito real já existe em `petcash_creditos` — a
+  // tabela não tem policy nenhuma pra leitura direta (ver
+  // gestor_loja_petcash_cashback na memória), então reaproveita a mesma RPC
+  // já usada no extrato (`meu_extrato_petcash`) em vez de duplicar a regra
+  // de segurança aqui. Casamento por `pedidoOrigemNumero`, não pedido.id,
+  // porque é o que a RPC devolve.
+  let petcashRecebido = 0;
+  let petcashValidadeEm: string | null = null;
+  if (pedido.status === "entregue") {
+    const extrato = await getExtratoPetCash(empresa.id);
+    const credito = extrato.find((c) => c.pedidoOrigemNumero === pedido.numero_sequencial);
+    if (credito) {
+      petcashRecebido = credito.valorTotal;
+      petcashValidadeEm = credito.expiraEm;
+    }
+  }
   const troco =
     metadata.trocoPara != null ? metadata.trocoPara - (pedido.valor_total ?? 0) : null;
   // entregaSelecionada só existe em pedidos de entrega (ver finalizar_pedido_site) —
@@ -209,6 +227,8 @@ export default async function PedidoPage({
             saldoAplicado={metadata.saldoAplicado}
             petcashAplicado={metadata.petcashAplicado}
             petcashPrevisto={petcashPrevisto}
+            petcashRecebido={petcashRecebido}
+            petcashValidadeEm={petcashValidadeEm}
             total={pedido.valor_total ?? 0}
           />
         </div>

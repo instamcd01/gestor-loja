@@ -1,4 +1,4 @@
-import { formatarPreco } from "@/lib/utils";
+import { formatarData, formatarPreco } from "@/lib/utils";
 
 /**
  * Bloco de totais único, reaproveitado na gaveta, carrinho de visitante,
@@ -32,6 +32,8 @@ export function ResumoTotais({
   saldoAplicado,
   petcashAplicado,
   petcashPrevisto,
+  petcashRecebido,
+  petcashValidadeEm,
   total,
 }: {
   subtotal: number;
@@ -59,6 +61,10 @@ export function ResumoTotais({
   petcashAplicado?: number;
   /** Prévia informativa (não afeta o total) de quanto o pedido vai gerar em PetCash quando entregue — só exibida quando a loja tem PetCash ativo. */
   petcashPrevisto?: number;
+  /** Crédito de PetCash já concedido de verdade (pedido entregue) — substitui a prévia. */
+  petcashRecebido?: number;
+  /** Data de expiração do crédito acima (ISO) — só faz sentido junto de petcashRecebido. */
+  petcashValidadeEm?: string | null;
   total: number;
 }) {
   const freteGratisComoDesconto = entregaValor === 0 && !!entregaValorOriginal && entregaValorOriginal > 0;
@@ -171,10 +177,18 @@ export function ResumoTotais({
         <span>{formatarPreco(total)}</span>
       </div>
 
-      {!!petcashPrevisto && petcashPrevisto > 0 && (
-        <p className="mt-0.5 text-xs font-medium text-[var(--brand-primary)]">
-          🐾 Você vai ganhar {formatarPreco(petcashPrevisto)} em PetCash quando esse pedido for entregue
+      {!!petcashRecebido && petcashRecebido > 0 ? (
+        <p className="mt-0.5 text-xs font-medium text-[var(--color-success)]">
+          🐾 Você ganhou {formatarPreco(petcashRecebido)} em PetCash
+          {petcashValidadeEm ? ` — válido até ${formatarData(petcashValidadeEm)}` : ""}
         </p>
+      ) : (
+        !!petcashPrevisto &&
+        petcashPrevisto > 0 && (
+          <p className="mt-0.5 text-xs font-medium text-[var(--brand-primary)]">
+            🐾 Você vai ganhar {formatarPreco(petcashPrevisto)} em PetCash quando esse pedido for entregue
+          </p>
+        )
       )}
     </div>
   );
