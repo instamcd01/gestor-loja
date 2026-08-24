@@ -17,8 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Instalar cliente Postgres 17
+        # O Ubuntu 24.04 do runner só traz postgresql-client-16 no repositório
+        # padrão — precisa do repo oficial do PGDG pra pegar a versão 17 (mesma
+        # major do banco; pg_dump de versão menor que o servidor não é confiável).
         run: |
           sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
 
       - name: Gerar dump comprimido
