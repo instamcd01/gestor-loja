@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import { AccountLink } from "@/components/auth/account-link";
 import { SessaoProvider } from "@/components/auth/sessao-provider";
@@ -51,16 +52,33 @@ export default async function LojaLayout({
   };
 
   return (
-    <div
-      data-modelo={empresa.catalogo_modelo}
-      style={
-        {
-          "--brand-primary": corPrimaria,
-          "--brand-secondary": corSecundaria,
-        } as React.CSSProperties
-      }
-      className="flex min-h-screen"
-    >
+    <>
+      {empresa.ga4_measurement_id && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${empresa.ga4_measurement_id}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga4-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${empresa.ga4_measurement_id}');
+            `}
+          </Script>
+        </>
+      )}
+      <div
+        data-modelo={empresa.catalogo_modelo}
+        style={
+          {
+            "--brand-primary": corPrimaria,
+            "--brand-secondary": corSecundaria,
+          } as React.CSSProperties
+        }
+        className="flex min-h-screen"
+      >
       <SessaoProvider>
         <CarrinhoRapidoProvider
           slug={slug}
@@ -148,6 +166,7 @@ export default async function LojaLayout({
         nomeEmpresa={empresa.nome}
         whatsapp={empresa.whatsapp_catalogo}
       />
-    </div>
+      </div>
+    </>
   );
 }

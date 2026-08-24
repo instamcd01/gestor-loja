@@ -58,6 +58,8 @@ export interface EmpresaCatalogo {
   petcash_pedido_minimo_uso: number;
   /** Quando true, produto sem promoção real mas com preço maior em algum marketplace (produto_canal) mostra esse preço maior como "de" comparativo — sem revelar que vem de outro canal. Configurado em Configurações > Catálogo Online (app Gestor). */
   preco_ancora_marketplace_ativo: boolean;
+  /** Measurement ID do GA4 (formato "G-XXXXXXXXXX") — null = loja ainda não configurou Google Analytics. */
+  ga4_measurement_id: string | null;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */
