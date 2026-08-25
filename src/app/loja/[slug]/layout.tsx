@@ -10,6 +10,7 @@ import { CarrinhoRapidoProvider } from "@/components/carrinho/carrinho-rapido-pr
 import { FavoritosLink } from "@/components/favoritos/favoritos-link";
 import { FavoritosProvider } from "@/components/favoritos/favoritos-provider";
 import { LojaFooter } from "@/components/loja/loja-footer";
+import { PushNotificationsRegistrador } from "@/components/push/push-notifications-registrador";
 import {
   Sidebar,
   SidebarProvider,
@@ -80,6 +81,7 @@ export default async function LojaLayout({
         className="flex min-h-screen"
       >
       <SessaoProvider>
+        <PushNotificationsRegistrador />
         <CarrinhoRapidoProvider
           slug={slug}
           empresaId={empresa.id}

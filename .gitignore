@@ -46,3 +46,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor (wrapper nativo pra Play Store/App Store) — projeto android/ e
+# ios/ ficam versionados (não tem CI de mobile, precisa persistir entre
+# sessões/máquinas), só os artefatos de build e caminhos locais da máquina
+# ficam de fora.
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/google-services.json
+android/captures/
+android/.externalNativeBuild/
+android/.cxx/
+ios/App/Pods/
+ios/App/App/GoogleService-Info.plist
+ios/App/build/
+ios/App/output/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
