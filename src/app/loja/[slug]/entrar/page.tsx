@@ -61,11 +61,17 @@ export default async function EntrarPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: string; retomar?: string; telefone?: string }>;
 }) {
   const { slug } = await params;
-  const { redirect: destino } = await searchParams;
+  const { redirect: destino, retomar, telefone: telefoneRetomada } = await searchParams;
   const rotaPosLogin = destino === "carrinho" ? "carrinho" : "conta";
+  // Vem do botão de "voltar ao site" mandado por WhatsApp logo depois do
+  // código (ver api/whatsapp/link-retomar) — pula direto pra tela de
+  // confirmação com o mesmo telefone, sem reenviar outro código. Sem
+  // isso, o único link que o cliente tinha no WhatsApp pra voltar era o
+  // do catálogo, que reabre a home e obriga reiniciar o login inteiro.
+  const retomarTelefone = retomar === "1" && telefoneRetomada ? telefoneRetomada : undefined;
 
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
@@ -84,7 +90,7 @@ export default async function EntrarPage({
       </div>
 
       <Card className="p-6">
-        <LoginForm empresaId={empresa.id} slug={slug} rotaPosLogin={rotaPosLogin} />
+        <LoginForm empresaId={empresa.id} slug={slug} rotaPosLogin={rotaPosLogin} retomarTelefone={retomarTelefone} />
       </Card>
 
       <div className="flex flex-col gap-3">

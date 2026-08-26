@@ -38,18 +38,33 @@ type Etapa =
   | "recuperarSenhaEnviada";
 type ModoEmail = "entrar" | "cadastrar";
 
+/** Do "+5521998877477" (E.164, vem da URL de retomada) pra "21998877477"
+ * (formato BR local que o resto do componente espera — mesma coisa que o
+ * campo de telefone produz enquanto o cliente digita). */
+function e164ParaLocal(e164: string): string {
+  const digitos = e164.replace(/\D/g, "");
+  return digitos.startsWith("55") && digitos.length >= 12 ? digitos.slice(2) : digitos;
+}
+
 export function LoginForm({
   empresaId,
   slug,
   rotaPosLogin = "conta",
+  retomarTelefone,
 }: {
   empresaId: string;
   slug: string;
   rotaPosLogin?: string;
+  /** Telefone (E.164) de quem voltou pelo link de retomada — pula direto
+   * pra tela de código, sem reenviar um novo (ver page.tsx e
+   * api/whatsapp/link-retomar). */
+  retomarTelefone?: string;
 }) {
   const router = useRouter();
-  const [etapa, setEtapa] = useState<Etapa>("escolha");
-  const [telefone, setTelefone] = useState("");
+  const [etapa, setEtapa] = useState<Etapa>(retomarTelefone ? "codigo" : "escolha");
+  const [telefone, setTelefone] = useState(() =>
+    retomarTelefone ? formatarTelefoneBr(e164ParaLocal(retomarTelefone)) : "",
+  );
   const [codigo, setCodigo] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -112,6 +127,18 @@ export function LoginForm({
       document.removeEventListener("visibilitychange", aoVoltarParaAba);
     };
   }, [etapa]);
+
+  // Quem chega pelo link de retomada pula o enviarCodigo normal (que é
+  // quem faz essa consulta) -- refaz aqui só pra decidir se mostra a
+  // caixinha de opt-in, sem reenviar nenhum código.
+  useEffect(() => {
+    if (!retomarTelefone) return;
+    supabase.rpc("consultar_aceita_lembrete_whatsapp", { p_empresa_id: empresaId, p_telefone: retomarTelefone }).then(
+      ({ data }) => setJaAceitaLembrete(!!data),
+      () => {},
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const supabase = createClient();
 
@@ -230,6 +257,16 @@ export function LoginForm({
     }
     setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setEtapa("codigo");
+
+    // Fire-and-forget — manda uma mensagem de WhatsApp com um botão que
+    // volta direto pra essa tela de código. Nunca bloqueia nem falha o
+    // login se der errado, é só uma conveniência de navegação (ver
+    // api/whatsapp/link-retomar pro motivo real disso existir).
+    fetch("/api/whatsapp/link-retomar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefone: paraE164(telefone), slug }),
+    }).catch(() => {});
   }
 
   /** Reenvia o código pro mesmo telefone sem sair da tela — pedido do
@@ -249,6 +286,12 @@ export function LoginForm({
     }
     setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setMensagemInfo("Código reenviado!");
+
+    fetch("/api/whatsapp/link-retomar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefone: paraE164(telefone), slug }),
+    }).catch(() => {});
   }
 
   async function confirmarCodigo(e: React.FormEvent) {
