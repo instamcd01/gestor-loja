@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { Card } from "@/components/ui/card";
+import { WhatsappRefBeacon } from "@/components/whatsapp/whatsapp-ref-beacon";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -84,6 +86,10 @@ export default async function EntrarPage({
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6 py-10">
+      <Suspense fallback={null}>
+        <WhatsappRefBeacon />
+      </Suspense>
+
       <div>
         <h1 className="text-2xl font-semibold">Entrar</h1>
         <p className="text-sm text-black/50 dark:text-white/50">{empresa.nome}</p>

@@ -18,6 +18,7 @@ import { HeroBanner } from "@/components/loja/hero-banner";
 import { MaisVendidos, PromocoesDoDia } from "@/components/loja/linha-produtos-destaque";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
+import { WhatsappRefBeacon } from "@/components/whatsapp/whatsapp-ref-beacon";
 import {
   getBannersCatalogo,
   getContagemProdutosCatalogo,
@@ -146,6 +147,10 @@ export default async function LojaPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <Suspense fallback={null}>
+        <WhatsappRefBeacon />
+      </Suspense>
+
       {!filtroAtivo && (
         // -mx-4 cancela o padding do <main>, mesmo truque do BannerCarousel
         // logo abaixo — fica colada no header, sem borda, como uma linha só.

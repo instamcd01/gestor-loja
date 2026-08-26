@@ -1,24 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createServiceClient } from "@/lib/supabase/service";
-
-/**
- * Log temporario pra depurar o health-check de publicação do Flow
- * ("Endpoint Not Available") — confirma se a Meta está de fato batendo
- * aqui e se a descriptografia funciona antes de suspeitar de proxy/TLS.
- * Remover depois que o Flow publicar com sucesso.
- */
-async function logDebug(evento: string, dados: Record<string, unknown>) {
-  try {
-    const supabase = createServiceClient();
-    await supabase.from("eventos_sistema").insert({
-      tipo_evento: "whatsapp_flow_debug_" + evento,
-      dados,
-    });
-  } catch {
-    // nunca deixar o log derrubar a resposta real
-  }
-}
 
 /**
  * Endpoint de data_exchange do WhatsApp Flow "Buscar produto" (teste ao
@@ -124,34 +105,25 @@ async function resolverTela(payload: {
 }
 
 export async function POST(request: NextRequest) {
-  await logDebug("hit", {
-    hasPrivateKey: !!PRIVATE_KEY,
-    userAgent: request.headers.get("user-agent"),
-    contentType: request.headers.get("content-type"),
-  });
-
   if (!PRIVATE_KEY) {
     return NextResponse.json({ erro: "chave de criptografia do Flow não configurada" }, { status: 500 });
   }
 
   const body = (await request.json().catch(() => null)) as FlowRequestBody | null;
   if (!body?.encrypted_flow_data || !body?.encrypted_aes_key || !body?.initial_vector) {
-    await logDebug("payload_invalido", { bodyKeys: body ? Object.keys(body) : null });
     return NextResponse.json({ erro: "payload inválido" }, { status: 400 });
   }
 
   let decrypted;
   try {
     decrypted = decryptRequest(body);
-  } catch (e) {
+  } catch {
     // A Meta espera 421 quando a descriptografia falha (ex: chave pública
     // desatualizada do lado dela) — ela refaz o handshake sozinha.
-    await logDebug("decrypt_falhou", { erro: e instanceof Error ? e.message : String(e) });
     return new NextResponse(null, { status: 421 });
   }
 
   const { payload, aesKey, initialVector } = decrypted;
-  await logDebug("decrypt_ok", { action: payload.action, screen: payload.screen ?? null });
 
   const responsePayload = await resolverTela(payload);
   const encryptedBody = encryptResponse(responsePayload, aesKey, initialVector);
