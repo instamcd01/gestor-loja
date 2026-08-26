@@ -457,8 +457,9 @@ export function LoginForm({
             inputMode="numeric"
             autoComplete="one-time-code"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="000000"
+            maxLength={6}
             className="text-center text-lg tracking-[0.5em]"
           />
         </div>
