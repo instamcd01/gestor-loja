@@ -1,0 +1,169 @@
+{
+  "version": "7.1",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "BUSCAR": ["BUSCAR", "RESULTADOS"],
+    "RESULTADOS": ["RESULTADOS", "RESUMO"],
+    "RESUMO": []
+  },
+  "screens": [
+    {
+      "id": "BUSCAR",
+      "title": "Buscar produto",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "O que você procura?"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.error_message}",
+            "visible": "${data.error_message != ''}"
+          },
+          {
+            "type": "TextInput",
+            "name": "consulta",
+            "label": "Ex: ração pro cachorro adulto",
+            "input-type": "text",
+            "required": true
+          },
+          {
+            "type": "Footer",
+            "label": "Buscar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": {
+                "consulta": "${form.consulta}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESULTADOS",
+      "title": "Resultados",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "visible_1": { "type": "boolean", "__example__": true },
+        "tem_foto_1": { "type": "boolean", "__example__": true },
+        "nome_1": { "type": "string", "__example__": "" },
+        "preco_1": { "type": "string", "__example__": "" },
+        "imagem_1": { "type": "string", "__example__": "" },
+        "produto_id_1": { "type": "string", "__example__": "" },
+        "visible_2": { "type": "boolean", "__example__": false },
+        "tem_foto_2": { "type": "boolean", "__example__": false },
+        "nome_2": { "type": "string", "__example__": "" },
+        "preco_2": { "type": "string", "__example__": "" },
+        "imagem_2": { "type": "string", "__example__": "" },
+        "produto_id_2": { "type": "string", "__example__": "" },
+        "visible_3": { "type": "boolean", "__example__": false },
+        "tem_foto_3": { "type": "boolean", "__example__": false },
+        "nome_3": { "type": "string", "__example__": "" },
+        "preco_3": { "type": "string", "__example__": "" },
+        "imagem_3": { "type": "string", "__example__": "" },
+        "produto_id_3": { "type": "string", "__example__": "" },
+        "visible_4": { "type": "boolean", "__example__": false },
+        "tem_foto_4": { "type": "boolean", "__example__": false },
+        "nome_4": { "type": "string", "__example__": "" },
+        "preco_4": { "type": "string", "__example__": "" },
+        "imagem_4": { "type": "string", "__example__": "" },
+        "produto_id_4": { "type": "string", "__example__": "" },
+        "visible_5": { "type": "boolean", "__example__": false },
+        "tem_foto_5": { "type": "boolean", "__example__": false },
+        "nome_5": { "type": "string", "__example__": "" },
+        "preco_5": { "type": "string", "__example__": "" },
+        "imagem_5": { "type": "string", "__example__": "" },
+        "produto_id_5": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextBody",
+            "text": "${data.error_message}",
+            "visible": "${data.error_message != ''}"
+          },
+          { "type": "Image", "src": "${data.imagem_1}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_1}" },
+          { "type": "TextSubheading", "text": "${data.nome_1}", "visible": "${data.visible_1}" },
+          { "type": "TextCaption", "text": "${data.preco_1}", "visible": "${data.visible_1}" },
+          { "type": "TextInput", "name": "qtd_1", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_1}" },
+
+          { "type": "Image", "src": "${data.imagem_2}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_2}" },
+          { "type": "TextSubheading", "text": "${data.nome_2}", "visible": "${data.visible_2}" },
+          { "type": "TextCaption", "text": "${data.preco_2}", "visible": "${data.visible_2}" },
+          { "type": "TextInput", "name": "qtd_2", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_2}" },
+
+          { "type": "Image", "src": "${data.imagem_3}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_3}" },
+          { "type": "TextSubheading", "text": "${data.nome_3}", "visible": "${data.visible_3}" },
+          { "type": "TextCaption", "text": "${data.preco_3}", "visible": "${data.visible_3}" },
+          { "type": "TextInput", "name": "qtd_3", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_3}" },
+
+          { "type": "Image", "src": "${data.imagem_4}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_4}" },
+          { "type": "TextSubheading", "text": "${data.nome_4}", "visible": "${data.visible_4}" },
+          { "type": "TextCaption", "text": "${data.preco_4}", "visible": "${data.visible_4}" },
+          { "type": "TextInput", "name": "qtd_4", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_4}" },
+
+          { "type": "Image", "src": "${data.imagem_5}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_5}" },
+          { "type": "TextSubheading", "text": "${data.nome_5}", "visible": "${data.visible_5}" },
+          { "type": "TextCaption", "text": "${data.preco_5}", "visible": "${data.visible_5}" },
+          { "type": "TextInput", "name": "qtd_5", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_5}" },
+
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": {
+                "qtd_1": "${form.qtd_1}", "produto_id_1": "${data.produto_id_1}",
+                "qtd_2": "${form.qtd_2}", "produto_id_2": "${data.produto_id_2}",
+                "qtd_3": "${form.qtd_3}", "produto_id_3": "${data.produto_id_3}",
+                "qtd_4": "${form.qtd_4}", "produto_id_4": "${data.produto_id_4}",
+                "qtd_5": "${form.qtd_5}", "produto_id_5": "${data.produto_id_5}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESUMO",
+      "title": "Resumo do pedido",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "resumo_texto": { "type": "string", "__example__": "" },
+        "total": { "type": "string", "__example__": "" },
+        "erro": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextBody",
+            "text": "${data.erro}",
+            "visible": "${data.erro != ''}"
+          },
+          { "type": "TextBody", "text": "${data.resumo_texto}" },
+          { "type": "TextSubheading", "text": "${data.total}" },
+          {
+            "type": "Footer",
+            "label": "Confirmar pedido",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "resumo": "${data.resumo_texto}",
+                "total": "${data.total}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
