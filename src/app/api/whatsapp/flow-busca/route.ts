@@ -29,7 +29,11 @@ async function logDebug(evento: string, dados: Record<string, unknown>) {
  * do n8n bloqueia `require('crypto')` neste ambiente.
  */
 
-const PRIVATE_KEY = process.env.WHATSAPP_FLOW_PRIVATE_KEY?.replace(/\\n/g, "\n");
+// Vem em base64 (não como PEM cru) pra sobreviver copy/paste no painel do
+// Easypanel sem risco de barras/quebras de linha se perderem no caminho.
+const PRIVATE_KEY = process.env.WHATSAPP_FLOW_PRIVATE_KEY_B64
+  ? Buffer.from(process.env.WHATSAPP_FLOW_PRIVATE_KEY_B64, "base64").toString("utf-8")
+  : undefined;
 const N8N_FLOW_WEBHOOK_URL = process.env.N8N_WEBHOOK_WHATSAPP_FLOW_URL;
 
 type FlowRequestBody = {
