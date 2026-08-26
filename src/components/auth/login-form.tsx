@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CompletarCadastroForm } from "@/components/auth/completar-cadastro-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,12 @@ import { formatarTelefoneBr, paraE164, telefoneValido } from "@/lib/telefone";
 // pra `true` assim que decidir sobre o domínio customizado — nenhuma outra
 // mudança de código é necessária.
 const GOOGLE_LOGIN_HABILITADO = false;
+
+// Janela mínima entre reenvios do código — evita gerar vários códigos em
+// sequência clicando repetido (o código anterior continua válido até
+// expirar ou até um novo ser confirmado, então reenviar rápido demais só
+// teria efeito de gastar a cota de SMS/WhatsApp da conta à toa).
+const REENVIO_COOLDOWN_SEGUNDOS = 60;
 
 type Etapa =
   | "escolha"
@@ -63,6 +69,49 @@ export function LoginForm({
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [mensagemInfo, setMensagemInfo] = useState<string | null>(null);
+  const [segundosParaReenviar, setSegundosParaReenviar] = useState(0);
+
+  useEffect(() => {
+    if (segundosParaReenviar <= 0) return;
+    const id = setTimeout(() => setSegundosParaReenviar((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [segundosParaReenviar]);
+
+  // Preenchimento automático do código ao voltar pra aba/site — pedido do
+  // usuário pra quem está no navegador embutido do WhatsApp (o código
+  // chega como mensagem, não como SMS real, então a WebOTP API nativa do
+  // navegador NÃO funciona aqui: ela só lê a caixa de SMS do sistema, por
+  // design de privacidade não tem acesso ao conteúdo de outros apps de
+  // mensagem, WhatsApp incluso). O melhor substituto real: se o cliente
+  // copiar o código lá no WhatsApp e voltar pra aba, a gente tenta ler a
+  // área de transferência e preenche sozinho quando achar 6 dígitos —
+  // nunca trava o preenchimento manual se a permissão for negada ou a
+  // API não existir nesse navegador.
+  useEffect(() => {
+    if (etapa !== "codigo") return;
+
+    async function tentarPreencherDoClipboard() {
+      try {
+        const texto = await navigator.clipboard.readText();
+        const match = texto.trim().match(/\b\d{6}\b/);
+        if (match) setCodigo(match[0]);
+      } catch {
+        // Sem permissão ou API indisponível nesse contexto — segue
+        // funcionando normalmente com preenchimento manual.
+      }
+    }
+
+    function aoVoltarParaAba() {
+      if (document.visibilityState === "visible") tentarPreencherDoClipboard();
+    }
+
+    window.addEventListener("focus", tentarPreencherDoClipboard);
+    document.addEventListener("visibilitychange", aoVoltarParaAba);
+    return () => {
+      window.removeEventListener("focus", tentarPreencherDoClipboard);
+      document.removeEventListener("visibilitychange", aoVoltarParaAba);
+    };
+  }, [etapa]);
 
   const supabase = createClient();
 
@@ -179,6 +228,7 @@ export function LoginForm({
       setErro(error.message);
       return;
     }
+    setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setEtapa("codigo");
   }
 
@@ -186,6 +236,7 @@ export function LoginForm({
    * usuário: código expirado obrigava voltar e redigitar o número, fricção
    * desnecessária já que o telefone continua no state. */
   async function reenviarCodigo() {
+    if (segundosParaReenviar > 0) return;
     setErro(null);
     setMensagemInfo(null);
     setCodigo("");
@@ -196,6 +247,7 @@ export function LoginForm({
       setErro(error.message);
       return;
     }
+    setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setMensagemInfo("Código reenviado!");
   }
 
@@ -474,10 +526,10 @@ export function LoginForm({
           <button
             type="button"
             onClick={reenviarCodigo}
-            disabled={carregando}
-            className="text-xs text-black/40 hover:underline dark:text-white/40"
+            disabled={carregando || segundosParaReenviar > 0}
+            className="text-xs text-black/40 enabled:hover:underline disabled:opacity-50 dark:text-white/40"
           >
-            Reenviar código
+            {segundosParaReenviar > 0 ? `Reenviar código (${segundosParaReenviar}s)` : "Reenviar código"}
           </button>
           <button
             type="button"
