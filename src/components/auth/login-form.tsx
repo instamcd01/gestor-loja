@@ -49,18 +49,24 @@ export function LoginForm({
   const [senha, setSenha] = useState("");
   const [modoEmail, setModoEmail] = useState<ModoEmail>("entrar");
   // Telefone já conhecido/verificado, passado pro perfil pra não pedir de
-  // novo — só setado quando a entrada foi por SMS.
+  // novo — só setado quando a entrada foi por telefone/WhatsApp.
   const [telefoneVerificado, setTelefoneVerificado] = useState<string | null>(null);
   // Opt-in explícito — nunca marcado por padrão, precisa de ação real do
   // cliente (ver aceita_lembrete_whatsapp, coluna separada da antiga
   // aceita_marketing, que tinha default true sem nunca perguntar de verdade).
   const [aceitaLembrete, setAceitaLembrete] = useState(false);
+  // Consultado assim que o código é enviado (ver enviarCodigo) — cliente
+  // que já aceitou antes não vê a caixinha de novo (só confundia: "se eu
+  // não marcar de novo, será que desativa?" — não desativa, mas perguntar
+  // toda vez sem mostrar o estado atual é a causa da dúvida).
+  const [jaAceitaLembrete, setJaAceitaLembrete] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [mensagemInfo, setMensagemInfo] = useState<string | null>(null);
 
   const supabase = createClient();
 
-  /** Chamado depois de qualquer entrada bem-sucedida (SMS ou email+senha) —
+  /** Chamado depois de qualquer entrada bem-sucedida (WhatsApp ou email+senha) —
    * cria/reconecta o cliente, decide se falta completar o perfil (primeira
    * vez) ou já pode seguir pro carrinho/conta. */
   async function finalizarEntrada() {
@@ -157,6 +163,16 @@ export function LoginForm({
 
     setCarregando(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: paraE164(telefone) });
+
+    // Consulta se esse telefone já tem o opt-in ativo pra decidir se mostra
+    // a caixinha na tela seguinte — não bloqueia o envio do código se falhar
+    // (pior caso, a caixinha aparece de novo pra quem já tinha aceitado).
+    const { data: jaAceita } = await supabase.rpc("consultar_aceita_lembrete_whatsapp", {
+      p_empresa_id: empresaId,
+      p_telefone: paraE164(telefone),
+    });
+    setJaAceitaLembrete(!!jaAceita);
+
     setCarregando(false);
 
     if (error) {
@@ -166,15 +182,33 @@ export function LoginForm({
     setEtapa("codigo");
   }
 
+  /** Reenvia o código pro mesmo telefone sem sair da tela — pedido do
+   * usuário: código expirado obrigava voltar e redigitar o número, fricção
+   * desnecessária já que o telefone continua no state. */
+  async function reenviarCodigo() {
+    setErro(null);
+    setMensagemInfo(null);
+    setCodigo("");
+    setCarregando(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: paraE164(telefone) });
+    setCarregando(false);
+    if (error) {
+      setErro(error.message);
+      return;
+    }
+    setMensagemInfo("Código reenviado!");
+  }
+
   async function confirmarCodigo(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
 
     if (codigo.trim().length < 6) {
-      setErro("Digite o código de 6 dígitos recebido por SMS.");
+      setErro("Digite o código de 6 dígitos recebido por WhatsApp.");
       return;
     }
 
+    setMensagemInfo(null);
     setCarregando(true);
     const { error: verifyError } = await supabase.auth.verifyOtp({
       phone: paraE164(telefone),
@@ -387,7 +421,7 @@ export function LoginForm({
     return (
       <form onSubmit={confirmarCodigo} className="flex flex-col gap-4">
         <p className="text-sm text-black/60 dark:text-white/60">
-          Enviamos um código por SMS para {formatarTelefoneBr(telefone)}.
+          Enviamos um código por WhatsApp para {formatarTelefoneBr(telefone)}.
         </p>
 
         {/* Nome não é pedido aqui — quem ainda não completou o cadastro
@@ -395,18 +429,24 @@ export function LoginForm({
             também mostrava esse campo pra clientes que JÁ tinham cadastro,
             mesmo prometendo "só na primeira vez" (bug real reportado pelo
             usuário 21/08/2026). Opt-in específico, separado do aceite de
-            termos (esse fica no passo de completar cadastro). */}
-        <label className="flex cursor-pointer items-start gap-2.5 text-sm">
-          <input
-            type="checkbox"
-            checked={aceitaLembrete}
-            onChange={(e) => setAceitaLembrete(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-primary)]"
-          />
-          <span className="text-black/70 dark:text-white/70">
-            Quero receber um aviso no WhatsApp quando for hora de repor meus produtos
-          </span>
-        </label>
+            termos (esse fica no passo de completar cadastro). Só aparece
+            pra quem ainda não tinha aceitado antes (ver enviarCodigo) —
+            reaparecer sempre, mesmo já aceito, gerava dúvida real do
+            usuário se desmarcar de novo desativaria o aviso (não desativa,
+            mas simplesmente parar de perguntar de novo é mais claro). */}
+        {!jaAceitaLembrete && (
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={aceitaLembrete}
+              onChange={(e) => setAceitaLembrete(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-primary)]"
+            />
+            <span className="text-black/70 dark:text-white/70">
+              Quero receber um aviso no WhatsApp quando for hora de repor meus produtos
+            </span>
+          </label>
+        )}
 
         <div className="flex flex-col gap-1">
           <label htmlFor="codigo" className="text-sm font-medium">
@@ -424,17 +464,28 @@ export function LoginForm({
         </div>
 
         {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
+        {mensagemInfo && !erro && <p className="text-sm text-black/60 dark:text-white/60">{mensagemInfo}</p>}
 
         <Button type="submit" disabled={carregando} className="py-3 text-base">
           {carregando ? "Confirmando..." : "Confirmar"}
         </Button>
-        <button
-          type="button"
-          onClick={() => setEtapa("telefone")}
-          className="text-xs text-black/40 hover:underline dark:text-white/40"
-        >
-          Trocar número
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={reenviarCodigo}
+            disabled={carregando}
+            className="text-xs text-black/40 hover:underline dark:text-white/40"
+          >
+            Reenviar código
+          </button>
+          <button
+            type="button"
+            onClick={() => setEtapa("telefone")}
+            className="text-xs text-black/40 hover:underline dark:text-white/40"
+          >
+            Trocar número
+          </button>
+        </div>
       </form>
     );
   }
@@ -459,7 +510,7 @@ export function LoginForm({
         {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
         <Button type="submit" disabled={carregando} className="py-3 text-base">
-          {carregando ? "Enviando..." : "Enviar código por SMS"}
+          {carregando ? "Enviando..." : "Enviar código por WhatsApp"}
         </Button>
         <button
           type="button"
