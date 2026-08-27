@@ -1,5 +1,6 @@
 {
   "version": "7.1",
+  "data_api_version": "3.0",
   "screens": [
     {
       "id": "ENDERECO",
