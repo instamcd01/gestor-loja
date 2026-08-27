@@ -76,14 +76,14 @@ async function resolverTela(payload: {
   }
 
   if (payload.action === "INIT") {
-    return { version: "3.0", screen: "BUSCAR", data: { error_message: "" } };
+    return { version: "3.0", screen: "CATEGORIA", data: { error_message: "" } };
   }
 
   if (payload.action === "data_exchange") {
     if (!N8N_FLOW_WEBHOOK_URL) {
       return {
         version: "3.0",
-        screen: payload.screen ?? "BUSCAR",
+        screen: payload.screen ?? "CATEGORIA",
         data: { error_message: "Serviço indisponível no momento, tenta de novo em instantes." },
       };
     }
@@ -101,7 +101,7 @@ async function resolverTela(payload: {
     return { version: "3.0", screen: resposta.screen, data: resposta.data };
   }
 
-  return { version: "3.0", screen: payload.screen ?? "BUSCAR", data: payload.data ?? {} };
+  return { version: "3.0", screen: payload.screen ?? "CATEGORIA", data: payload.data ?? {} };
 }
 
 export async function POST(request: NextRequest) {
