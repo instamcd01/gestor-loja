@@ -1,0 +1,164 @@
+{
+  "version": "7.1",
+  "screens": [
+    {
+      "id": "ENDERECO",
+      "title": "Endereço de entrega",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "candidatos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": []
+        },
+        "mostrar_candidatos": { "type": "boolean", "__example__": false }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form_endereco",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "rua",
+                "label": "Rua",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "bairro",
+                "label": "Bairro",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "cidade",
+                "label": "Cidade",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "estado",
+                "label": "UF",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "cep",
+                "label": "CEP (opcional)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "TextBody",
+                "text": "Não encontramos esse endereço, confira os dados.",
+                "visible": "`${data.error_message} != ''`"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "candidato_escolhido",
+                "label": "Encontramos mais de um endereço parecido, qual é o seu?",
+                "data-source": "${data.candidatos}",
+                "visible": "${data.mostrar_candidatos}",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "Buscar endereço",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "rua": "${form.rua}",
+                    "bairro": "${form.bairro}",
+                    "cidade": "${form.cidade}",
+                    "estado": "${form.estado}",
+                    "cep": "${form.cep}",
+                    "candidato_escolhido": "${form.candidato_escolhido}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONFIRMAR",
+      "title": "Confirmar endereço",
+      "terminal": true,
+      "data": {
+        "endereco_resolvido": { "type": "string", "__example__": "" },
+        "rua": { "type": "string", "__example__": "" },
+        "bairro": { "type": "string", "__example__": "" },
+        "cidade": { "type": "string", "__example__": "" },
+        "estado": { "type": "string", "__example__": "" },
+        "cep": { "type": "string", "__example__": "" },
+        "lat": { "type": "number", "__example__": 0 },
+        "lng": { "type": "number", "__example__": 0 }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form_confirmar",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "${data.endereco_resolvido}"
+              },
+              {
+                "type": "TextInput",
+                "name": "numero",
+                "label": "Número",
+                "input-type": "number",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "complemento",
+                "label": "Complemento (opcional)",
+                "input-type": "text",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "Confirmar endereço",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "numero": "${form.numero}",
+                    "complemento": "${form.complemento}",
+                    "rua": "${data.rua}",
+                    "bairro": "${data.bairro}",
+                    "cidade": "${data.cidade}",
+                    "estado": "${data.estado}",
+                    "cep": "${data.cep}",
+                    "lat": "${data.lat}",
+                    "lng": "${data.lng}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "routing_model": {
+    "ENDERECO": ["CONFIRMAR"],
+    "CONFIRMAR": []
+  }
+}
