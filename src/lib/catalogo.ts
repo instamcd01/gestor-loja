@@ -232,6 +232,9 @@ export async function getProdutosCatalogo(
     marca?: string;
     especie?: string;
     fase?: string;
+    porte?: string;
+    pesoMin?: number;
+    pesoMax?: number;
     precoMin?: number;
     precoMax?: number;
     ordenar?: Ordenacao;
@@ -292,6 +295,15 @@ export async function getProdutosCatalogo(
   }
   if (filtros?.fase) {
     query = query.ilike("fase", `%${filtros.fase}%`);
+  }
+  if (filtros?.porte) {
+    query = query.ilike("porte", `%${filtros.porte}%`);
+  }
+  if (filtros?.pesoMin != null) {
+    query = query.gte("peso", filtros.pesoMin);
+  }
+  if (filtros?.pesoMax != null) {
+    query = query.lt("peso", filtros.pesoMax);
   }
   if (filtros?.precoMin != null) {
     query = query.gte("preco", filtros.precoMin);
@@ -583,12 +595,37 @@ export interface FaixaPreco {
  */
 const ESPECIES_FILTRO = ["Cães", "Gatos", "Pássaros"];
 const FASES_FILTRO = ["Filhotes", "Adultos", "Sênior", "Castrados"];
+// Mesmo problema do porte: texto livre no banco, às vezes uma célula
+// combinada ("Pequeno, Médio e Grande") — rótulo fixo + substring, igual
+// espécie/fase acima. Só 2 rótulos reais existem no catálogo hoje.
+const PORTES_FILTRO = ["Pequeno", "Médio e Grande"];
+
+/**
+ * Faixas fixas de peso da embalagem (kg), calibradas pela distribuição real
+ * deste catálogo (mín 0,01kg, mediana 2,25kg, p75 10kg, máx 20kg) — mesmo
+ * espírito de FAIXAS_PRECO_BASE acima, não um chute genérico.
+ */
+const FAIXAS_PESO_BASE: { min: number; max?: number }[] = [
+  { min: 0, max: 0.5 },
+  { min: 0.5, max: 3 },
+  { min: 3, max: 10 },
+  { min: 10, max: 15 },
+  { min: 15 },
+];
+
+export interface FaixaPeso {
+  min: number;
+  max?: number;
+  total: number;
+}
 
 export interface FiltrosCatalogo {
   faixasPreco: FaixaPreco[];
+  faixasPeso: FaixaPeso[];
   marcas: { marca: string; total: number }[];
   especies: { especie: string; total: number }[];
   fases: { fase: string; total: number }[];
+  portes: { porte: string; total: number }[];
 }
 
 /**
@@ -605,13 +642,13 @@ export async function getFiltrosCatalogo(empresaId: string): Promise<FiltrosCata
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("catalogo_produtos_publico")
-    .select("preco, fabricante, especie, fase")
+    .select("preco, fabricante, especie, fase, porte, peso")
     .eq("empresa_id", empresaId)
     .is("produto_pai_id", null);
 
   if (error) {
     console.error("Erro ao buscar filtros do catálogo:", error.message);
-    return { faixasPreco: [], marcas: [], especies: [], fases: [] };
+    return { faixasPreco: [], faixasPeso: [], marcas: [], especies: [], fases: [], portes: [] };
   }
 
   const linhas = data ?? [];
@@ -647,7 +684,19 @@ export async function getFiltrosCatalogo(empresaId: string): Promise<FiltrosCata
     total: valoresFase.filter((v) => v.toLowerCase().includes(fase.toLowerCase())).length,
   })).filter((l) => l.total > 0);
 
-  return { faixasPreco, marcas, especies, fases };
+  const valoresPorte = linhas.map((l) => l.porte ?? "");
+  const portes = PORTES_FILTRO.map((porte) => ({
+    porte,
+    total: valoresPorte.filter((v) => v.toLowerCase().includes(porte.toLowerCase())).length,
+  })).filter((l) => l.total > 0);
+
+  const valoresPeso = linhas.map(({ peso }) => peso).filter((p): p is number => p != null);
+  const faixasPeso = FAIXAS_PESO_BASE.map((faixa) => ({
+    ...faixa,
+    total: valoresPeso.filter((peso) => peso >= faixa.min && (faixa.max == null || peso < faixa.max)).length,
+  })).filter((faixa) => faixa.total > 0);
+
+  return { faixasPreco, faixasPeso, marcas, especies, fases, portes };
 }
 
 /**

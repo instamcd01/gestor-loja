@@ -64,6 +64,9 @@ export default async function LojaPage({
     marca?: string;
     especie?: string;
     fase?: string;
+    porte?: string;
+    pesoMin?: string;
+    pesoMax?: string;
     precoMin?: string;
     precoMax?: string;
     ordenar?: Ordenacao;
@@ -78,6 +81,9 @@ export default async function LojaPage({
     marca,
     especie,
     fase,
+    porte,
+    pesoMin,
+    pesoMax,
     precoMin,
     precoMax,
     ordenar,
@@ -94,6 +100,8 @@ export default async function LojaPage({
     !!marca ||
     !!especie ||
     !!fase ||
+    !!porte ||
+    !!pesoMin ||
     !!precoMin ||
     promocaoAtiva;
   const moderno = empresa.catalogo_modelo === "moderno";
@@ -106,13 +114,21 @@ export default async function LojaPage({
   // uma CATEGORIA final (ou busca/marca/fase/faixa de preço/ordenação) é
   // escolhida a grade plana precisa da lista real (é o que ela renderiza).
   const exigeGradeFinal =
-    !!q || !!categoria || !!marca || !!fase || !!precoMin || !!ordenar || promocaoAtiva;
+    !!q ||
+    !!categoria ||
+    !!marca ||
+    !!fase ||
+    !!porte ||
+    !!pesoMin ||
+    !!precoMin ||
+    !!ordenar ||
+    promocaoAtiva;
   const usaLinhasPorCategoria = !exigeGradeFinal;
 
   const [
     produtos,
     totalSemOutrosFiltros,
-    { marcas, especies, fases, faixasPreco },
+    { marcas, especies, fases, portes, faixasPreco, faixasPeso },
     banners,
   ] = await Promise.all([
     usaLinhasPorCategoria
@@ -124,6 +140,9 @@ export default async function LojaPage({
           marca,
           especie,
           fase,
+          porte,
+          pesoMin: pesoMin ? Number(pesoMin) : undefined,
+          pesoMax: pesoMax ? Number(pesoMax) : undefined,
           precoMin: precoMin ? Number(precoMin) : undefined,
           precoMax: precoMax ? Number(precoMax) : undefined,
           ordenar,
@@ -143,6 +162,10 @@ export default async function LojaPage({
   const faixaAtiva =
     precoMin != null
       ? { min: Number(precoMin), max: precoMax ? Number(precoMax) : undefined }
+      : null;
+  const faixaPesoAtiva =
+    pesoMin != null
+      ? { min: Number(pesoMin), max: pesoMax ? Number(pesoMax) : undefined }
       : null;
 
   return (
@@ -224,8 +247,12 @@ export default async function LojaPage({
           especieAtiva={especie ?? null}
           fases={fases}
           faseAtiva={fase ?? null}
+          portes={portes}
+          porteAtiva={porte ?? null}
           faixasPreco={faixasPreco}
           faixaAtiva={faixaAtiva}
+          faixasPeso={faixasPeso}
+          faixaPesoAtiva={faixaPesoAtiva}
         />
         <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
       </div>
