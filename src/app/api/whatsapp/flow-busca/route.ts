@@ -67,9 +67,12 @@ function encryptResponse(payload: unknown, aesKey: Buffer, initialVector: Buffer
 
 async function buscarViaN8n(screen: string, data: Record<string, unknown>, flowToken?: string) {
   if (!N8N_FLOW_WEBHOOK_URL) {
+    // "FILTROS" aqui é só o sinal interno pro n8n rodar a busca (ver
+    // resolverTela) -- nunca é uma tela real do flow_json, então o
+    // fallback de erro sempre devolve a tela de resultados de verdade.
     return {
       version: "3.0",
-      screen,
+      screen: screen === "FILTROS" ? "RESULTADOS_A" : screen,
       data: { error_message: "Serviço indisponível no momento, tenta de novo em instantes." },
     };
   }
@@ -94,48 +97,27 @@ async function resolverTela(payload: {
   }
 
   if (payload.action === "INIT") {
-    // A Meta só permite abrir o Flow na tela CATEGORIA, e a resposta do
-    // INIT também só pode declarar screen "CATEGORIA" — testado ao vivo
-    // em produção 28/08: se o INIT responde com uma tela diferente (ex:
-    // RESULTADOS_A), o app simplesmente ignora e renderiza CATEGORIA do
-    // jeito estático mesmo. A única forma de já abrir mostrando produtos
-    // é a própria tela CATEGORIA mudar de layout via dado (ver
-    // "tem_produtos_prefiltrado" no flow JSON) — nunca trocar de tela.
-    let filtros: Record<string, unknown> | null = null;
+    // Esse Flow só tem telas de resultado -- sem seletor de categoria nem
+    // de filtro. A tela RESULTADOS_A é a única tela de abertura permitida
+    // pela Meta, então o INIT sempre roda a busca com os filtros que já
+    // vieram prontos no flow_token (definidos pelo agente na conversa) e
+    // devolve RESULTADOS_A com os produtos direto.
+    let filtros: Record<string, unknown> = {};
     try {
       const token = payload.flow_token ? JSON.parse(payload.flow_token) : null;
-      filtros = token?.filtros ?? null;
+      filtros = token?.filtros ?? {};
     } catch {
-      filtros = null;
+      filtros = {};
     }
 
-    const defaults = {
-      error_message: "",
-      modo: "",
-      opcoes_produto: [] as unknown[],
-      tem_mais: false,
-      selecionados_anteriores: "",
-      criterios_json: "{}",
-    };
-
-    if (filtros && Object.keys(filtros).length > 0) {
-      const resultado = await buscarViaN8n("FILTROS", filtros, payload.flow_token);
-      const temProdutos = Array.isArray(resultado.data?.opcoes_produto) && resultado.data.opcoes_produto.length > 0;
-      return {
-        version: "3.0",
-        screen: "CATEGORIA",
-        data: { ...defaults, ...resultado.data, modo: temProdutos ? "resultados" : "" },
-      };
-    }
-
-    return { version: "3.0", screen: "CATEGORIA", data: defaults };
+    return buscarViaN8n("FILTROS", filtros, payload.flow_token);
   }
 
   if (payload.action === "data_exchange") {
-    return buscarViaN8n(payload.screen ?? "CATEGORIA", payload.data ?? {}, payload.flow_token);
+    return buscarViaN8n(payload.screen ?? "RESULTADOS_A", payload.data ?? {}, payload.flow_token);
   }
 
-  return { version: "3.0", screen: payload.screen ?? "CATEGORIA", data: payload.data ?? {} };
+  return { version: "3.0", screen: payload.screen ?? "RESULTADOS_A", data: payload.data ?? {} };
 }
 
 export async function POST(request: NextRequest) {

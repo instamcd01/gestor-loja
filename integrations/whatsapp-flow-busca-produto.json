@@ -2,14 +2,6 @@
   "version": "7.1",
   "data_api_version": "3.0",
   "routing_model": {
-    "CATEGORIA": [
-      "FILTROS",
-      "RESULTADOS_A",
-      "QUANTIDADE"
-    ],
-    "FILTROS": [
-      "RESULTADOS_A"
-    ],
     "RESULTADOS_A": [
       "RESULTADOS_B",
       "QUANTIDADE"
@@ -36,170 +28,8 @@
   },
   "screens": [
     {
-      "id": "CATEGORIA",
-      "title": "Buscar produto",
-      "data": {
-        "error_message": { "type": "string", "__example__": "" },
-        "modo": { "type": "string", "__example__": "" },
-        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
-        "tem_mais": { "type": "boolean", "__example__": false },
-        "selecionados_anteriores": { "type": "string", "__example__": "" },
-        "criterios_json": { "type": "string", "__example__": "{}" }
-      },
-      "layout": {
-        "type": "SingleColumnLayout",
-        "children": [
-          {
-            "type": "TextHeading",
-            "text": "O que você está procurando?",
-            "visible": "`${data.modo} != 'resultados'`"
-          },
-          {
-            "type": "TextBody",
-            "text": "${data.error_message}",
-            "visible": "`${data.error_message} != ''`"
-          },
-          {
-            "type": "RadioButtonsGroup",
-            "name": "categoria",
-            "label": "Categoria",
-            "visible": "`${data.modo} != 'resultados'`",
-            "data-source": [
-              { "id": "Ração", "title": "Ração" },
-              { "id": "Sachês", "title": "Sachês" },
-              { "id": "Petiscos", "title": "Petiscos" },
-              { "id": "Antipulgas", "title": "Antipulgas" },
-              { "id": "Farmácia", "title": "Farmácia" },
-              { "id": "Vermífugos", "title": "Vermífugos" },
-              { "id": "Dermatológicos", "title": "Dermatológicos" },
-              { "id": "Areia Sanitária", "title": "Areia Sanitária" },
-              { "id": "Shampoos e Perfumes", "title": "Shampoos e Perfumes" },
-              { "id": "Tapetes Higiênicos", "title": "Tapetes Higiênicos" },
-              { "id": "Limpeza da Casa", "title": "Limpeza da Casa" },
-              { "id": "Outros", "title": "Outros" }
-            ]
-          },
-          {
-            "type": "CheckboxGroup",
-            "name": "selecionados",
-            "label": "Toque pra escolher (pode marcar mais de um)",
-            "visible": "`${data.modo} == 'resultados'`",
-            "data-source": "${data.opcoes_produto}"
-          },
-          {
-            "type": "EmbeddedLink",
-            "text": "Ver mais opções",
-            "visible": "${data.tem_mais}",
-            "on-click-action": {
-              "name": "data_exchange",
-              "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
-            }
-          },
-          {
-            "type": "Footer",
-            "label": "Continuar",
-            "on-click-action": {
-              "name": "data_exchange",
-              "payload": {
-                "modo": "${data.modo}",
-                "categoria": "${form.categoria}",
-                "selecionados": "${form.selecionados}",
-                "selecionados_anteriores": "${data.selecionados_anteriores}"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "FILTROS",
-      "title": "Filtros",
-      "data": {
-        "error_message": { "type": "string", "__example__": "" },
-        "categoria": { "type": "string", "__example__": "" },
-        "mostrar_especie": { "type": "boolean", "__example__": false },
-        "mostrar_porte": { "type": "boolean", "__example__": false },
-        "mostrar_fase": { "type": "boolean", "__example__": false },
-        "mostrar_peso": { "type": "boolean", "__example__": false },
-        "mostrar_sabor": { "type": "boolean", "__example__": false },
-        "mostrar_subcategoria": { "type": "boolean", "__example__": false },
-        "mostrar_composicao": { "type": "boolean", "__example__": false },
-        "mostrar_dose": { "type": "boolean", "__example__": false },
-        "mostrar_apresentacao": { "type": "boolean", "__example__": false },
-        "mostrar_marca": { "type": "boolean", "__example__": false },
-        "opcoes_porte": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Médio" }] },
-        "opcoes_fase": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Adulto" }] },
-        "opcoes_peso": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "10kg" }] },
-        "opcoes_sabor": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Frango" }] },
-        "opcoes_subcategoria": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Comprimido" }] },
-        "opcoes_composicao": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Fipronil" }] },
-        "opcoes_dose": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Até 10kg" }] },
-        "opcoes_apresentacao": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Pipeta" }] },
-        "opcoes_marca": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Marca X" }] }
-      },
-      "layout": {
-        "type": "SingleColumnLayout",
-        "children": [
-          { "type": "TextHeading", "text": "Me ajuda a encontrar certo" },
-          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
-          {
-            "type": "RadioButtonsGroup",
-            "name": "especie",
-            "label": "Pra qual pet?",
-            "visible": "${data.mostrar_especie}",
-            "data-source": [
-              { "id": "cachorro", "title": "Cachorro" },
-              { "id": "gato", "title": "Gato" }
-            ]
-          },
-          { "type": "Dropdown", "name": "porte", "label": "Porte", "visible": "${data.mostrar_porte}", "data-source": "${data.opcoes_porte}" },
-          { "type": "Dropdown", "name": "fase", "label": "Fase", "visible": "${data.mostrar_fase}", "data-source": "${data.opcoes_fase}" },
-          { "type": "Dropdown", "name": "sabor", "label": "Sabor", "visible": "${data.mostrar_sabor}", "data-source": "${data.opcoes_sabor}" },
-          { "type": "Dropdown", "name": "subcategoria", "label": "Tipo de tratamento", "visible": "${data.mostrar_subcategoria}", "data-source": "${data.opcoes_subcategoria}" },
-          { "type": "Dropdown", "name": "composicao", "label": "Princípio ativo", "visible": "${data.mostrar_composicao}", "data-source": "${data.opcoes_composicao}" },
-          { "type": "Dropdown", "name": "dose", "label": "Dose / peso do pet", "visible": "${data.mostrar_dose}", "data-source": "${data.opcoes_dose}" },
-          { "type": "Dropdown", "name": "apresentacao", "label": "Apresentação", "visible": "${data.mostrar_apresentacao}", "data-source": "${data.opcoes_apresentacao}" },
-          { "type": "Dropdown", "name": "peso", "label": "Peso da embalagem", "visible": "${data.mostrar_peso}", "data-source": "${data.opcoes_peso}" },
-          { "type": "Dropdown", "name": "marca", "label": "Marca", "visible": "${data.mostrar_marca}", "data-source": "${data.opcoes_marca}" },
-          {
-            "type": "Dropdown",
-            "name": "preco",
-            "label": "Faixa de preço",
-            "data-source": [
-              { "id": "0-25", "title": "Até R$ 25" },
-              { "id": "25-50", "title": "R$ 25 a R$ 50" },
-              { "id": "50-100", "title": "R$ 50 a R$ 100" },
-              { "id": "100-200", "title": "R$ 100 a R$ 200" },
-              { "id": "200-", "title": "Acima de R$ 200" }
-            ]
-          },
-          {
-            "type": "Footer",
-            "label": "Buscar",
-            "on-click-action": {
-              "name": "data_exchange",
-              "payload": {
-                "categoria": "${data.categoria}",
-                "especie": "${form.especie}",
-                "porte": "${form.porte}",
-                "fase": "${form.fase}",
-                "sabor": "${form.sabor}",
-                "subcategoria": "${form.subcategoria}",
-                "composicao": "${form.composicao}",
-                "dose": "${form.dose}",
-                "apresentacao": "${form.apresentacao}",
-                "peso": "${form.peso}",
-                "marca": "${form.marca}",
-                "preco": "${form.preco}"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "id": "RESULTADOS_A",
-      "title": "Resultados",
+      "title": "Produtos",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
@@ -234,7 +64,7 @@
     },
     {
       "id": "RESULTADOS_B",
-      "title": "Resultados",
+      "title": "Produtos",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
@@ -269,7 +99,7 @@
     },
     {
       "id": "RESULTADOS_C",
-      "title": "Resultados",
+      "title": "Produtos",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
@@ -304,7 +134,7 @@
     },
     {
       "id": "RESULTADOS_D",
-      "title": "Resultados",
+      "title": "Produtos",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
@@ -339,7 +169,7 @@
     },
     {
       "id": "RESULTADOS_E",
-      "title": "Resultados",
+      "title": "Produtos",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
