@@ -94,12 +94,13 @@ async function resolverTela(payload: {
   }
 
   if (payload.action === "INIT") {
-    // A Meta só permite abrir o Flow na tela CATEGORIA (nunca é possível
-    // pedir pra ela renderizar RESULTADOS_A direto na mensagem inicial —
-    // erro 131009 confirmado em produção 28/08). Quando o agente já sabe
-    // categoria/espécie/etc (embutido no flow_token na hora de mandar a
-    // mensagem), a gente pula a etapa CATEGORIA/FILTROS aqui dentro, no
-    // exato momento em que o Flow abre — o cliente nunca vê a tela vazia.
+    // A Meta só permite abrir o Flow na tela CATEGORIA, e a resposta do
+    // INIT também só pode declarar screen "CATEGORIA" — testado ao vivo
+    // em produção 28/08: se o INIT responde com uma tela diferente (ex:
+    // RESULTADOS_A), o app simplesmente ignora e renderiza CATEGORIA do
+    // jeito estático mesmo. A única forma de já abrir mostrando produtos
+    // é a própria tela CATEGORIA mudar de layout via dado (ver
+    // "tem_produtos_prefiltrado" no flow JSON) — nunca trocar de tela.
     let filtros: Record<string, unknown> | null = null;
     try {
       const token = payload.flow_token ? JSON.parse(payload.flow_token) : null;
@@ -109,10 +110,16 @@ async function resolverTela(payload: {
     }
 
     if (filtros && Object.keys(filtros).length > 0) {
-      return buscarViaN8n("FILTROS", filtros, payload.flow_token);
+      const resultado = await buscarViaN8n("FILTROS", filtros, payload.flow_token);
+      const temProdutos = Array.isArray(resultado.data?.opcoes_produto) && resultado.data.opcoes_produto.length > 0;
+      return {
+        version: "3.0",
+        screen: "CATEGORIA",
+        data: { ...resultado.data, tem_produtos_prefiltrado: temProdutos },
+      };
     }
 
-    return { version: "3.0", screen: "CATEGORIA", data: { error_message: "" } };
+    return { version: "3.0", screen: "CATEGORIA", data: { error_message: "", tem_produtos_prefiltrado: false } };
   }
 
   if (payload.action === "data_exchange") {
