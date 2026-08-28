@@ -30,10 +30,7 @@
     "QUANTIDADE": [
       "RESUMO"
     ],
-    "RESUMO": [
-      "CONFIRMADO"
-    ],
-    "CONFIRMADO": []
+    "RESUMO": []
   },
   "screens": [
     {
@@ -406,12 +403,12 @@
     {
       "id": "RESUMO",
       "title": "Resumo do pedido",
-      "terminal": false,
+      "terminal": true,
+      "success": true,
       "data": {
         "resumo_texto": { "type": "string", "__example__": "" },
         "total": { "type": "string", "__example__": "" },
-        "erro": { "type": "string", "__example__": "" },
-        "itens_json": { "type": "string", "__example__": "" }
+        "erro": { "type": "string", "__example__": "" }
       },
       "layout": {
         "type": "SingleColumnLayout",
@@ -422,29 +419,6 @@
           {
             "type": "Footer",
             "label": "Confirmar pedido",
-            "on-click-action": {
-              "name": "data_exchange",
-              "payload": { "acao": "confirmar", "itens_json": "${data.itens_json}" }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "CONFIRMADO",
-      "title": "Pedido confirmado",
-      "terminal": true,
-      "success": true,
-      "data": {
-        "mensagem": { "type": "string", "__example__": "" }
-      },
-      "layout": {
-        "type": "SingleColumnLayout",
-        "children": [
-          { "type": "TextBody", "text": "${data.mensagem}" },
-          {
-            "type": "Footer",
-            "label": "Fechar",
             "on-click-action": { "name": "complete", "payload": {} }
           }
         ]
