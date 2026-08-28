@@ -65,6 +65,24 @@ function encryptResponse(payload: unknown, aesKey: Buffer, initialVector: Buffer
   return Buffer.concat([encrypted, authTag]).toString("base64");
 }
 
+async function buscarViaN8n(screen: string, data: Record<string, unknown>, flowToken?: string) {
+  if (!N8N_FLOW_WEBHOOK_URL) {
+    return {
+      version: "3.0",
+      screen,
+      data: { error_message: "Serviço indisponível no momento, tenta de novo em instantes." },
+    };
+  }
+
+  const resposta = await fetch(N8N_FLOW_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ screen, data, flow_token: flowToken }),
+  }).then((r) => r.json());
+
+  return { version: "3.0", screen: resposta.screen, data: resposta.data };
+}
+
 async function resolverTela(payload: {
   action: string;
   screen?: string;
@@ -76,29 +94,29 @@ async function resolverTela(payload: {
   }
 
   if (payload.action === "INIT") {
+    // A Meta só permite abrir o Flow na tela CATEGORIA (nunca é possível
+    // pedir pra ela renderizar RESULTADOS_A direto na mensagem inicial —
+    // erro 131009 confirmado em produção 28/08). Quando o agente já sabe
+    // categoria/espécie/etc (embutido no flow_token na hora de mandar a
+    // mensagem), a gente pula a etapa CATEGORIA/FILTROS aqui dentro, no
+    // exato momento em que o Flow abre — o cliente nunca vê a tela vazia.
+    let filtros: Record<string, unknown> | null = null;
+    try {
+      const token = payload.flow_token ? JSON.parse(payload.flow_token) : null;
+      filtros = token?.filtros ?? null;
+    } catch {
+      filtros = null;
+    }
+
+    if (filtros && Object.keys(filtros).length > 0) {
+      return buscarViaN8n("FILTROS", filtros, payload.flow_token);
+    }
+
     return { version: "3.0", screen: "CATEGORIA", data: { error_message: "" } };
   }
 
   if (payload.action === "data_exchange") {
-    if (!N8N_FLOW_WEBHOOK_URL) {
-      return {
-        version: "3.0",
-        screen: payload.screen ?? "CATEGORIA",
-        data: { error_message: "Serviço indisponível no momento, tenta de novo em instantes." },
-      };
-    }
-
-    const resposta = await fetch(N8N_FLOW_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        screen: payload.screen,
-        data: payload.data ?? {},
-        flow_token: payload.flow_token,
-      }),
-    }).then((r) => r.json());
-
-    return { version: "3.0", screen: resposta.screen, data: resposta.data };
+    return buscarViaN8n(payload.screen ?? "CATEGORIA", payload.data ?? {}, payload.flow_token);
   }
 
   return { version: "3.0", screen: payload.screen ?? "CATEGORIA", data: payload.data ?? {} };
