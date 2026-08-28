@@ -40,7 +40,7 @@
       "title": "Buscar produto",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
-        "tem_produtos_prefiltrado": { "type": "boolean", "__example__": false },
+        "modo": { "type": "string", "__example__": "" },
         "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
         "tem_mais": { "type": "boolean", "__example__": false },
         "selecionados_anteriores": { "type": "string", "__example__": "" },
@@ -52,7 +52,7 @@
           {
             "type": "TextHeading",
             "text": "O que você está procurando?",
-            "visible": "`${data.tem_produtos_prefiltrado} == false`"
+            "visible": "`${data.modo} != 'resultados'`"
           },
           {
             "type": "TextBody",
@@ -63,7 +63,7 @@
             "type": "RadioButtonsGroup",
             "name": "categoria",
             "label": "Categoria",
-            "visible": "`${data.tem_produtos_prefiltrado} == false`",
+            "visible": "`${data.modo} != 'resultados'`",
             "data-source": [
               { "id": "Ração", "title": "Ração" },
               { "id": "Sachês", "title": "Sachês" },
@@ -83,13 +83,13 @@
             "type": "CheckboxGroup",
             "name": "selecionados",
             "label": "Toque pra escolher (pode marcar mais de um)",
-            "visible": "${data.tem_produtos_prefiltrado}",
+            "visible": "`${data.modo} == 'resultados'`",
             "data-source": "${data.opcoes_produto}"
           },
           {
             "type": "EmbeddedLink",
             "text": "Ver mais opções",
-            "visible": "`${data.tem_produtos_prefiltrado} == true && ${data.tem_mais} == true`",
+            "visible": "${data.tem_mais}",
             "on-click-action": {
               "name": "data_exchange",
               "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
@@ -101,7 +101,7 @@
             "on-click-action": {
               "name": "data_exchange",
               "payload": {
-                "modo": "${data.tem_produtos_prefiltrado}",
+                "modo": "${data.modo}",
                 "categoria": "${form.categoria}",
                 "selecionados": "${form.selecionados}",
                 "selecionados_anteriores": "${data.selecionados_anteriores}"

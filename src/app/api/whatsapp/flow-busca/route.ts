@@ -109,17 +109,26 @@ async function resolverTela(payload: {
       filtros = null;
     }
 
+    const defaults = {
+      error_message: "",
+      modo: "",
+      opcoes_produto: [] as unknown[],
+      tem_mais: false,
+      selecionados_anteriores: "",
+      criterios_json: "{}",
+    };
+
     if (filtros && Object.keys(filtros).length > 0) {
       const resultado = await buscarViaN8n("FILTROS", filtros, payload.flow_token);
       const temProdutos = Array.isArray(resultado.data?.opcoes_produto) && resultado.data.opcoes_produto.length > 0;
       return {
         version: "3.0",
         screen: "CATEGORIA",
-        data: { ...resultado.data, tem_produtos_prefiltrado: temProdutos },
+        data: { ...defaults, ...resultado.data, modo: temProdutos ? "resultados" : "" },
       };
     }
 
-    return { version: "3.0", screen: "CATEGORIA", data: { error_message: "", tem_produtos_prefiltrado: false } };
+    return { version: "3.0", screen: "CATEGORIA", data: defaults };
   }
 
   if (payload.action === "data_exchange") {
