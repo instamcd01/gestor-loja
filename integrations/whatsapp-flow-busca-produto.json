@@ -2,23 +2,55 @@
   "version": "7.1",
   "data_api_version": "3.0",
   "routing_model": {
-    "BUSCAR": ["RESULTADOS"],
-    "RESULTADOS": ["RESUMO"],
-    "RESUMO": []
+    "CATEGORIA": [
+      "FILTROS"
+    ],
+    "FILTROS": [
+      "RESULTADOS_A"
+    ],
+    "RESULTADOS_A": [
+      "RESULTADOS_B",
+      "QUANTIDADE"
+    ],
+    "RESULTADOS_B": [
+      "RESULTADOS_C",
+      "QUANTIDADE"
+    ],
+    "RESULTADOS_C": [
+      "RESULTADOS_D",
+      "QUANTIDADE"
+    ],
+    "RESULTADOS_D": [
+      "RESULTADOS_E",
+      "QUANTIDADE"
+    ],
+    "RESULTADOS_E": [
+      "QUANTIDADE"
+    ],
+    "QUANTIDADE": [
+      "RESUMO"
+    ],
+    "RESUMO": [
+      "CONFIRMADO"
+    ],
+    "CONFIRMADO": []
   },
   "screens": [
     {
-      "id": "BUSCAR",
+      "id": "CATEGORIA",
       "title": "Buscar produto",
       "data": {
-        "error_message": { "type": "string", "__example__": "" }
+        "error_message": {
+          "type": "string",
+          "__example__": ""
+        }
       },
       "layout": {
         "type": "SingleColumnLayout",
         "children": [
           {
             "type": "TextHeading",
-            "text": "O que você procura?"
+            "text": "O que você está procurando?"
           },
           {
             "type": "TextBody",
@@ -26,11 +58,97 @@
             "visible": "`${data.error_message} != ''`"
           },
           {
-            "type": "TextInput",
-            "name": "consulta",
-            "label": "Ex: ração pro cachorro adulto",
-            "input-type": "text",
-            "required": true
+            "type": "RadioButtonsGroup",
+            "name": "categoria",
+            "label": "Categoria",
+            "required": true,
+            "data-source": [
+              { "id": "Ração", "title": "Ração" },
+              { "id": "Sachês", "title": "Sachês" },
+              { "id": "Petiscos", "title": "Petiscos" },
+              { "id": "Antipulgas", "title": "Antipulgas" },
+              { "id": "Farmácia", "title": "Farmácia" },
+              { "id": "Vermífugos", "title": "Vermífugos" },
+              { "id": "Dermatológicos", "title": "Dermatológicos" },
+              { "id": "Areia Sanitária", "title": "Areia Sanitária" },
+              { "id": "Shampoos e Perfumes", "title": "Shampoos e Perfumes" },
+              { "id": "Tapetes Higiênicos", "title": "Tapetes Higiênicos" },
+              { "id": "Limpeza da Casa", "title": "Limpeza da Casa" },
+              { "id": "Outros", "title": "Outros" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "categoria": "${form.categoria}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "FILTROS",
+      "title": "Filtros",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "categoria": { "type": "string", "__example__": "" },
+        "mostrar_especie": { "type": "boolean", "__example__": false },
+        "mostrar_porte": { "type": "boolean", "__example__": false },
+        "mostrar_fase": { "type": "boolean", "__example__": false },
+        "mostrar_peso": { "type": "boolean", "__example__": false },
+        "mostrar_sabor": { "type": "boolean", "__example__": false },
+        "mostrar_subcategoria": { "type": "boolean", "__example__": false },
+        "mostrar_composicao": { "type": "boolean", "__example__": false },
+        "mostrar_dose": { "type": "boolean", "__example__": false },
+        "mostrar_apresentacao": { "type": "boolean", "__example__": false },
+        "mostrar_marca": { "type": "boolean", "__example__": false },
+        "opcoes_porte": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Médio" }] },
+        "opcoes_fase": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Adulto" }] },
+        "opcoes_peso": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "10kg" }] },
+        "opcoes_sabor": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Frango" }] },
+        "opcoes_subcategoria": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Comprimido" }] },
+        "opcoes_composicao": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Fipronil" }] },
+        "opcoes_dose": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Até 10kg" }] },
+        "opcoes_apresentacao": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Pipeta" }] },
+        "opcoes_marca": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Marca X" }] }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "Me ajuda a encontrar certo" },
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "especie",
+            "label": "Pra qual pet?",
+            "visible": "${data.mostrar_especie}",
+            "data-source": [
+              { "id": "cachorro", "title": "Cachorro" },
+              { "id": "gato", "title": "Gato" }
+            ]
+          },
+          { "type": "Dropdown", "name": "porte", "label": "Porte", "visible": "${data.mostrar_porte}", "data-source": "${data.opcoes_porte}" },
+          { "type": "Dropdown", "name": "fase", "label": "Fase", "visible": "${data.mostrar_fase}", "data-source": "${data.opcoes_fase}" },
+          { "type": "Dropdown", "name": "sabor", "label": "Sabor", "visible": "${data.mostrar_sabor}", "data-source": "${data.opcoes_sabor}" },
+          { "type": "Dropdown", "name": "subcategoria", "label": "Tipo de tratamento", "visible": "${data.mostrar_subcategoria}", "data-source": "${data.opcoes_subcategoria}" },
+          { "type": "Dropdown", "name": "composicao", "label": "Princípio ativo", "visible": "${data.mostrar_composicao}", "data-source": "${data.opcoes_composicao}" },
+          { "type": "Dropdown", "name": "dose", "label": "Dose / peso do pet", "visible": "${data.mostrar_dose}", "data-source": "${data.opcoes_dose}" },
+          { "type": "Dropdown", "name": "apresentacao", "label": "Apresentação", "visible": "${data.mostrar_apresentacao}", "data-source": "${data.opcoes_apresentacao}" },
+          { "type": "Dropdown", "name": "peso", "label": "Peso da embalagem", "visible": "${data.mostrar_peso}", "data-source": "${data.opcoes_peso}" },
+          { "type": "Dropdown", "name": "marca", "label": "Marca", "visible": "${data.mostrar_marca}", "data-source": "${data.opcoes_marca}" },
+          {
+            "type": "Dropdown",
+            "name": "preco",
+            "label": "Faixa de preço",
+            "data-source": [
+              { "id": "0-25", "title": "Até R$ 25" },
+              { "id": "25-50", "title": "R$ 25 a R$ 50" },
+              { "id": "50-100", "title": "R$ 50 a R$ 100" },
+              { "id": "100-200", "title": "R$ 100 a R$ 200" },
+              { "id": "200-", "title": "Acima de R$ 200" }
+            ]
           },
           {
             "type": "Footer",
@@ -38,7 +156,18 @@
             "on-click-action": {
               "name": "data_exchange",
               "payload": {
-                "consulta": "${form.consulta}"
+                "categoria": "${data.categoria}",
+                "especie": "${form.especie}",
+                "porte": "${form.porte}",
+                "fase": "${form.fase}",
+                "sabor": "${form.sabor}",
+                "subcategoria": "${form.subcategoria}",
+                "composicao": "${form.composicao}",
+                "dose": "${form.dose}",
+                "apresentacao": "${form.apresentacao}",
+                "peso": "${form.peso}",
+                "marca": "${form.marca}",
+                "preco": "${form.preco}"
               }
             }
           }
@@ -46,52 +175,214 @@
       }
     },
     {
-      "id": "RESULTADOS",
+      "id": "RESULTADOS_A",
       "title": "Resultados",
       "data": {
         "error_message": { "type": "string", "__example__": "" },
-        "visible_1": { "type": "boolean", "__example__": true },
-        "tem_foto_1": { "type": "boolean", "__example__": true },
-        "nome_1": { "type": "string", "__example__": "" },
-        "preco_1": { "type": "string", "__example__": "" },
-        "imagem_1": { "type": "string", "__example__": "" },
-        "produto_id_1": { "type": "string", "__example__": "" },
-        "visible_2": { "type": "boolean", "__example__": false },
-        "tem_foto_2": { "type": "boolean", "__example__": false },
-        "nome_2": { "type": "string", "__example__": "" },
-        "preco_2": { "type": "string", "__example__": "" },
-        "imagem_2": { "type": "string", "__example__": "" },
-        "produto_id_2": { "type": "string", "__example__": "" },
-        "visible_3": { "type": "boolean", "__example__": false },
-        "tem_foto_3": { "type": "boolean", "__example__": false },
-        "nome_3": { "type": "string", "__example__": "" },
-        "preco_3": { "type": "string", "__example__": "" },
-        "imagem_3": { "type": "string", "__example__": "" },
-        "produto_id_3": { "type": "string", "__example__": "" }
+        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
+        "tem_mais": { "type": "boolean", "__example__": false },
+        "selecionados_anteriores": { "type": "string", "__example__": "" },
+        "criterios_json": { "type": "string", "__example__": "{}" }
       },
       "layout": {
         "type": "SingleColumnLayout",
         "children": [
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          { "type": "CheckboxGroup", "name": "selecionados", "label": "Toque pra escolher (pode marcar mais de um)", "data-source": "${data.opcoes_produto}" },
           {
-            "type": "TextBody",
-            "text": "${data.error_message}",
-            "visible": "`${data.error_message} != ''`"
+            "type": "EmbeddedLink",
+            "text": "Ver mais opções",
+            "visible": "${data.tem_mais}",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
+            }
           },
-          { "type": "Image", "src": "${data.imagem_1}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_1}" },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "continuar", "selecionados": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESULTADOS_B",
+      "title": "Resultados",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
+        "tem_mais": { "type": "boolean", "__example__": false },
+        "selecionados_anteriores": { "type": "string", "__example__": "" },
+        "criterios_json": { "type": "string", "__example__": "{}" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          { "type": "CheckboxGroup", "name": "selecionados", "label": "Toque pra escolher (pode marcar mais de um)", "data-source": "${data.opcoes_produto}" },
+          {
+            "type": "EmbeddedLink",
+            "text": "Ver mais opções",
+            "visible": "${data.tem_mais}",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
+            }
+          },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "continuar", "selecionados": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESULTADOS_C",
+      "title": "Resultados",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
+        "tem_mais": { "type": "boolean", "__example__": false },
+        "selecionados_anteriores": { "type": "string", "__example__": "" },
+        "criterios_json": { "type": "string", "__example__": "{}" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          { "type": "CheckboxGroup", "name": "selecionados", "label": "Toque pra escolher (pode marcar mais de um)", "data-source": "${data.opcoes_produto}" },
+          {
+            "type": "EmbeddedLink",
+            "text": "Ver mais opções",
+            "visible": "${data.tem_mais}",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
+            }
+          },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "continuar", "selecionados": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESULTADOS_D",
+      "title": "Resultados",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
+        "tem_mais": { "type": "boolean", "__example__": false },
+        "selecionados_anteriores": { "type": "string", "__example__": "" },
+        "criterios_json": { "type": "string", "__example__": "{}" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          { "type": "CheckboxGroup", "name": "selecionados", "label": "Toque pra escolher (pode marcar mais de um)", "data-source": "${data.opcoes_produto}" },
+          {
+            "type": "EmbeddedLink",
+            "text": "Ver mais opções",
+            "visible": "${data.tem_mais}",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "ver_mais", "selecionados_pagina_atual": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}", "criterios_json": "${data.criterios_json}" }
+            }
+          },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "continuar", "selecionados": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RESULTADOS_E",
+      "title": "Resultados",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "opcoes_produto": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" }, "image": { "type": "string" } } }, "__example__": [{ "id": "1", "title": "Produto exemplo", "description": "R$ 0,00" }] },
+        "tem_mais": { "type": "boolean", "__example__": false },
+        "selecionados_anteriores": { "type": "string", "__example__": "" },
+        "criterios_json": { "type": "string", "__example__": "{}" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
+          { "type": "CheckboxGroup", "name": "selecionados", "label": "Toque pra escolher (pode marcar mais de um)", "data-source": "${data.opcoes_produto}" },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": { "acao": "continuar", "selecionados": "${form.selecionados}", "selecionados_anteriores": "${data.selecionados_anteriores}" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "QUANTIDADE",
+      "title": "Quantidade",
+      "data": {
+        "error_message": { "type": "string", "__example__": "" },
+        "visible_1": { "type": "boolean", "__example__": true }, "nome_1": { "type": "string", "__example__": "" }, "preco_1": { "type": "string", "__example__": "" }, "produto_id_1": { "type": "string", "__example__": "" },
+        "visible_2": { "type": "boolean", "__example__": false }, "nome_2": { "type": "string", "__example__": "" }, "preco_2": { "type": "string", "__example__": "" }, "produto_id_2": { "type": "string", "__example__": "" },
+        "visible_3": { "type": "boolean", "__example__": false }, "nome_3": { "type": "string", "__example__": "" }, "preco_3": { "type": "string", "__example__": "" }, "produto_id_3": { "type": "string", "__example__": "" },
+        "visible_4": { "type": "boolean", "__example__": false }, "nome_4": { "type": "string", "__example__": "" }, "preco_4": { "type": "string", "__example__": "" }, "produto_id_4": { "type": "string", "__example__": "" },
+        "visible_5": { "type": "boolean", "__example__": false }, "nome_5": { "type": "string", "__example__": "" }, "preco_5": { "type": "string", "__example__": "" }, "produto_id_5": { "type": "string", "__example__": "" },
+        "visible_6": { "type": "boolean", "__example__": false }, "nome_6": { "type": "string", "__example__": "" }, "preco_6": { "type": "string", "__example__": "" }, "produto_id_6": { "type": "string", "__example__": "" },
+        "visible_7": { "type": "boolean", "__example__": false }, "nome_7": { "type": "string", "__example__": "" }, "preco_7": { "type": "string", "__example__": "" }, "produto_id_7": { "type": "string", "__example__": "" },
+        "visible_8": { "type": "boolean", "__example__": false }, "nome_8": { "type": "string", "__example__": "" }, "preco_8": { "type": "string", "__example__": "" }, "produto_id_8": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "Quantas unidades de cada?" },
+          { "type": "TextBody", "text": "${data.error_message}", "visible": "`${data.error_message} != ''`" },
           { "type": "TextSubheading", "text": "${data.nome_1}", "visible": "${data.visible_1}" },
           { "type": "TextCaption", "text": "${data.preco_1}", "visible": "${data.visible_1}" },
-          { "type": "TextInput", "name": "qtd_1", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_1}" },
-
-          { "type": "Image", "src": "${data.imagem_2}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_2}" },
+          { "type": "TextInput", "name": "qtd_1", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_1}" },
           { "type": "TextSubheading", "text": "${data.nome_2}", "visible": "${data.visible_2}" },
           { "type": "TextCaption", "text": "${data.preco_2}", "visible": "${data.visible_2}" },
-          { "type": "TextInput", "name": "qtd_2", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_2}" },
-
-          { "type": "Image", "src": "${data.imagem_3}", "width": 120, "height": 120, "scale-type": "cover", "visible": "${data.tem_foto_3}" },
+          { "type": "TextInput", "name": "qtd_2", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_2}" },
           { "type": "TextSubheading", "text": "${data.nome_3}", "visible": "${data.visible_3}" },
           { "type": "TextCaption", "text": "${data.preco_3}", "visible": "${data.visible_3}" },
-          { "type": "TextInput", "name": "qtd_3", "label": "Quantidade (0 = não quero)", "input-type": "number", "visible": "${data.visible_3}" },
-
+          { "type": "TextInput", "name": "qtd_3", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_3}" },
+          { "type": "TextSubheading", "text": "${data.nome_4}", "visible": "${data.visible_4}" },
+          { "type": "TextCaption", "text": "${data.preco_4}", "visible": "${data.visible_4}" },
+          { "type": "TextInput", "name": "qtd_4", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_4}" },
+          { "type": "TextSubheading", "text": "${data.nome_5}", "visible": "${data.visible_5}" },
+          { "type": "TextCaption", "text": "${data.preco_5}", "visible": "${data.visible_5}" },
+          { "type": "TextInput", "name": "qtd_5", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_5}" },
+          { "type": "TextSubheading", "text": "${data.nome_6}", "visible": "${data.visible_6}" },
+          { "type": "TextCaption", "text": "${data.preco_6}", "visible": "${data.visible_6}" },
+          { "type": "TextInput", "name": "qtd_6", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_6}" },
+          { "type": "TextSubheading", "text": "${data.nome_7}", "visible": "${data.visible_7}" },
+          { "type": "TextCaption", "text": "${data.preco_7}", "visible": "${data.visible_7}" },
+          { "type": "TextInput", "name": "qtd_7", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_7}" },
+          { "type": "TextSubheading", "text": "${data.nome_8}", "visible": "${data.visible_8}" },
+          { "type": "TextCaption", "text": "${data.preco_8}", "visible": "${data.visible_8}" },
+          { "type": "TextInput", "name": "qtd_8", "label": "Quantidade", "input-type": "number", "visible": "${data.visible_8}" },
           {
             "type": "Footer",
             "label": "Continuar",
@@ -100,7 +391,12 @@
               "payload": {
                 "qtd_1": "${form.qtd_1}", "produto_id_1": "${data.produto_id_1}",
                 "qtd_2": "${form.qtd_2}", "produto_id_2": "${data.produto_id_2}",
-                "qtd_3": "${form.qtd_3}", "produto_id_3": "${data.produto_id_3}"
+                "qtd_3": "${form.qtd_3}", "produto_id_3": "${data.produto_id_3}",
+                "qtd_4": "${form.qtd_4}", "produto_id_4": "${data.produto_id_4}",
+                "qtd_5": "${form.qtd_5}", "produto_id_5": "${data.produto_id_5}",
+                "qtd_6": "${form.qtd_6}", "produto_id_6": "${data.produto_id_6}",
+                "qtd_7": "${form.qtd_7}", "produto_id_7": "${data.produto_id_7}",
+                "qtd_8": "${form.qtd_8}", "produto_id_8": "${data.produto_id_8}"
               }
             }
           }
@@ -110,33 +406,46 @@
     {
       "id": "RESUMO",
       "title": "Resumo do pedido",
-      "terminal": true,
-      "success": true,
+      "terminal": false,
       "data": {
         "resumo_texto": { "type": "string", "__example__": "" },
         "total": { "type": "string", "__example__": "" },
-        "erro": { "type": "string", "__example__": "" }
+        "erro": { "type": "string", "__example__": "" },
+        "itens_json": { "type": "string", "__example__": "" }
       },
       "layout": {
         "type": "SingleColumnLayout",
         "children": [
-          {
-            "type": "TextBody",
-            "text": "${data.erro}",
-            "visible": "`${data.erro} != ''`"
-          },
+          { "type": "TextBody", "text": "${data.erro}", "visible": "`${data.erro} != ''`" },
           { "type": "TextBody", "text": "${data.resumo_texto}" },
           { "type": "TextSubheading", "text": "${data.total}" },
           {
             "type": "Footer",
             "label": "Confirmar pedido",
             "on-click-action": {
-              "name": "complete",
-              "payload": {
-                "resumo": "${data.resumo_texto}",
-                "total": "${data.total}"
-              }
+              "name": "data_exchange",
+              "payload": { "acao": "confirmar", "itens_json": "${data.itens_json}" }
             }
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONFIRMADO",
+      "title": "Pedido confirmado",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "mensagem": { "type": "string", "__example__": "" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextBody", "text": "${data.mensagem}" },
+          {
+            "type": "Footer",
+            "label": "Fechar",
+            "on-click-action": { "name": "complete", "payload": {} }
           }
         ]
       }
