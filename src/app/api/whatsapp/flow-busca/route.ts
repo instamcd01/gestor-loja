@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { createServiceClient } from "@/lib/supabase/service";
+
+// Log de diagnóstico temporário (29/08) -- Flow travando em "Carregando..."
+// mesmo com o endpoint validado isoladamente. Remover depois de resolvido.
+async function logDebug(etapa: string, payload: unknown, erro?: string) {
+  try {
+    await createServiceClient()
+      .from("whatsapp_flow_debug_log")
+      .insert({ etapa, payload: payload as object, erro: erro ?? null });
+  } catch {
+    // log nunca pode derrubar a resposta real ao WhatsApp
+  }
+}
 
 /**
  * Endpoint de data_exchange do WhatsApp Flow "Buscar produto" (teste ao
@@ -121,27 +134,41 @@ async function resolverTela(payload: {
 }
 
 export async function POST(request: NextRequest) {
+  await logDebug("requisicao_recebida", { headers: Object.fromEntries(request.headers) });
+
   if (!PRIVATE_KEY) {
+    await logDebug("erro_config", null, "chave de criptografia não configurada");
     return NextResponse.json({ erro: "chave de criptografia do Flow não configurada" }, { status: 500 });
   }
 
   const body = (await request.json().catch(() => null)) as FlowRequestBody | null;
   if (!body?.encrypted_flow_data || !body?.encrypted_aes_key || !body?.initial_vector) {
+    await logDebug("erro_payload_invalido", body);
     return NextResponse.json({ erro: "payload inválido" }, { status: 400 });
   }
 
   let decrypted;
   try {
     decrypted = decryptRequest(body);
-  } catch {
+  } catch (e) {
+    await logDebug("erro_descriptografia", null, e instanceof Error ? e.message : String(e));
     // A Meta espera 421 quando a descriptografia falha (ex: chave pública
     // desatualizada do lado dela) — ela refaz o handshake sozinha.
     return new NextResponse(null, { status: 421 });
   }
 
   const { payload, aesKey, initialVector } = decrypted;
+  await logDebug("payload_decriptografado", payload);
 
-  const responsePayload = await resolverTela(payload);
+  let responsePayload;
+  try {
+    responsePayload = await resolverTela(payload);
+  } catch (e) {
+    await logDebug("erro_resolver_tela", payload, e instanceof Error ? e.message : String(e));
+    throw e;
+  }
+  await logDebug("resposta_montada", responsePayload);
+
   const encryptedBody = encryptResponse(responsePayload, aesKey, initialVector);
 
   return new NextResponse(encryptedBody, {
