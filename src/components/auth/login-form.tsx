@@ -148,13 +148,16 @@ export function LoginForm({
       fetch("/api/whatsapp/link-retomar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telefone: paraE164(telefone), slug }),
+        // rotaPosLogin junto pra não perder o destino original (ex: quem
+        // entrou pra finalizar o carrinho continua indo pro carrinho depois
+        // de retomar, não pro destino padrão).
+        body: JSON.stringify({ telefone: paraE164(telefone), slug, rotaPosLogin }),
       }).catch(() => {});
     }
 
     document.addEventListener("visibilitychange", aoSairDaAba);
     return () => document.removeEventListener("visibilitychange", aoSairDaAba);
-  }, [etapa, telefone, slug]);
+  }, [etapa, telefone, slug, rotaPosLogin]);
 
   // Quem chega pelo link de retomada pula o enviarCodigo normal (que é
   // quem faz essa consulta) -- refaz aqui só pra decidir se mostra a

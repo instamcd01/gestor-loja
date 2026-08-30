@@ -12,7 +12,11 @@ import { NextRequest, NextResponse } from "next/server";
 const N8N_URL = process.env.N8N_WEBHOOK_LINK_RETOMAR_URL;
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => null)) as { telefone?: string; slug?: string } | null;
+  const body = (await request.json().catch(() => null)) as {
+    telefone?: string;
+    slug?: string;
+    rotaPosLogin?: string;
+  } | null;
 
   if (!N8N_URL || !body?.telefone || !body?.slug) {
     return NextResponse.json({ ok: false }, { status: 200 });
@@ -25,6 +29,10 @@ export async function POST(request: NextRequest) {
   const url = new URL(`/loja/${body.slug}/entrar`, process.env.SITE_URL);
   url.searchParams.set("retomar", "1");
   url.searchParams.set("telefone", body.telefone);
+  // Preserva o destino original (ex: quem entrou pra finalizar o carrinho)
+  // — sem isso, entrar/page.tsx não vê o "redirect=carrinho" que só existe
+  // na URL da visita inicial, e quem retoma pelo link cai no destino padrão.
+  if (body.rotaPosLogin === "carrinho") url.searchParams.set("redirect", "carrinho");
 
   try {
     await fetch(N8N_URL, {
