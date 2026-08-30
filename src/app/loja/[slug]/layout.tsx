@@ -11,6 +11,7 @@ import { FavoritosLink } from "@/components/favoritos/favoritos-link";
 import { FavoritosProvider } from "@/components/favoritos/favoritos-provider";
 import { LojaFooter } from "@/components/loja/loja-footer";
 import { PushNotificationsRegistrador } from "@/components/push/push-notifications-registrador";
+import { RodapeVisivel } from "@/components/loja/rodape-visivel";
 import {
   Sidebar,
   SidebarProvider,
@@ -151,13 +152,15 @@ export default async function LojaLayout({
                   {children}
                 </main>
 
-                <LojaFooter
-                  slug={slug}
-                  nome={empresa.nome}
-                  whatsapp={empresa.whatsapp_catalogo}
-                  instagram={empresa.instagram}
-                  facebook={empresa.facebook}
-                />
+                <RodapeVisivel slug={slug}>
+                  <LojaFooter
+                    slug={slug}
+                    nome={empresa.nome}
+                    whatsapp={empresa.whatsapp_catalogo}
+                    instagram={empresa.instagram}
+                    facebook={empresa.facebook}
+                  />
+                </RodapeVisivel>
               </div>
             </SidebarProvider>
           </FavoritosProvider>
