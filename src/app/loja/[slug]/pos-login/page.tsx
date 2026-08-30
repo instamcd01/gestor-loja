@@ -41,7 +41,8 @@ export default async function PosLoginPage({
 }) {
   const { slug } = await params;
   const { redirect: destino } = await searchParams;
-  const rotaPosLogin = destino === "carrinho" ? "carrinho" : "conta";
+  // "" = tela principal (catálogo) — mesmo destino padrão de entrar/page.tsx.
+  const rotaPosLogin = destino === "carrinho" ? "carrinho" : "";
 
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();

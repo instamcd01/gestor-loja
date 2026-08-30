@@ -24,6 +24,6 @@ export async function concluirLoginEIrPara(
     );
     limparCarrinhoConvidado(empresaId);
   }
-  router.push(`/loja/${slug}/${rotaPosLogin}`);
+  router.push(rotaPosLogin ? `/loja/${slug}/${rotaPosLogin}` : `/loja/${slug}`);
   router.refresh();
 }

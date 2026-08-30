@@ -67,7 +67,9 @@ export default async function EntrarPage({
 }) {
   const { slug } = await params;
   const { redirect: destino, retomar, telefone: telefoneRetomada } = await searchParams;
-  const rotaPosLogin = destino === "carrinho" ? "carrinho" : "conta";
+  // "" = tela principal (catálogo) — destino padrão pedido pelo usuário
+  // 2026-08-30, antes caía sempre em "conta".
+  const rotaPosLogin = destino === "carrinho" ? "carrinho" : "";
   // Vem do botão de "voltar ao site" mandado por WhatsApp logo depois do
   // código (ver api/whatsapp/link-retomar) — pula direto pra tela de
   // confirmação com o mesmo telefone, sem reenviar outro código. Sem
@@ -82,7 +84,7 @@ export default async function EntrarPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(`/loja/${slug}/${rotaPosLogin}`);
+  if (user) redirect(rotaPosLogin ? `/loja/${slug}/${rotaPosLogin}` : `/loja/${slug}`);
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6 py-10">

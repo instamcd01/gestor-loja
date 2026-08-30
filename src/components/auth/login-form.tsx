@@ -49,7 +49,7 @@ function e164ParaLocal(e164: string): string {
 export function LoginForm({
   empresaId,
   slug,
-  rotaPosLogin = "conta",
+  rotaPosLogin = "",
   retomarTelefone,
 }: {
   empresaId: string;
