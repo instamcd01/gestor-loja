@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PagamentoForm } from "@/components/carrinho/pagamento-form";
+import { CALC_PADDING_RESERVADO_CHECKOUT } from "@/lib/altura-barra-fixa-carrinho";
 import { getEmpresaPorSlug, getMercadoPagoPublicKey } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getMercadoPagoCustomerId, getSaldoCliente, getSaldoPetCash } from "@/lib/cliente";
@@ -92,10 +93,11 @@ export default async function CarrinhoPagamentoPage({
 
   return (
     // padding-bottom reserva espaço pra barra fixa de total/"Confirmar
-    // pedido" não cobrir o fim do conteúdo — mesma CSS var que o botão do
-    // WhatsApp lê (ver altura-barra-fixa-carrinho.ts), em vez de um valor
-    // fixo chutado.
-    <div className="mx-auto max-w-2xl pt-3" style={{ paddingBottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1rem)" }}>
+    // pedido" E pro botão do WhatsApp por cima dela não cobrirem o fim do
+    // conteúdo — mesma constante que whatsapp-suporte-button.tsx usa pra
+    // se posicionar (ver altura-barra-fixa-carrinho.ts), em vez de um
+    // valor fixo chutado.
+    <div className="mx-auto max-w-2xl pt-3" style={{ paddingBottom: CALC_PADDING_RESERVADO_CHECKOUT }}>
       <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/loja/${slug}/carrinho`}

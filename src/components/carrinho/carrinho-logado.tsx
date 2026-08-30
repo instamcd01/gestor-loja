@@ -6,6 +6,7 @@ import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { ItemCarrinhoRow } from "@/components/carrinho/item-carrinho-row";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
 import { Card } from "@/components/ui/card";
+import { CALC_PADDING_RESERVADO_CHECKOUT } from "@/lib/altura-barra-fixa-carrinho";
 import { adicionarAoCarrinho, atualizarQuantidade, limparCarrinho } from "@/lib/carrinho";
 import { notificarCarrinhoAtualizado } from "@/lib/carrinho-eventos";
 import type { Carrinho, EmpresaCatalogo, EnderecoCliente, ProdutoCatalogo } from "@/lib/types";
@@ -111,13 +112,14 @@ export function CarrinhoLogado({
 
   return (
     // padding-bottom reserva espaço pra barra fixa de total/"Ir para
-    // pagamento" do EntregaForm não cobrir o fim do conteúdo — a barra é
-    // `fixed`, então não empurra o layout sozinha. Usa a mesma CSS var que
-    // o botão do WhatsApp lê (ver altura-barra-fixa-carrinho.ts) em vez de
+    // pagamento" do EntregaForm E pro botão do WhatsApp por cima dela não
+    // cobrirem o fim do conteúdo — nenhum dos dois empurra o layout
+    // sozinho (são `fixed`). Mesma constante que whatsapp-suporte-button.tsx
+    // usa pra se posicionar (ver altura-barra-fixa-carrinho.ts), em vez de
     // um valor fixo chutado, que já ficou curto uma vez.
     <div
       className="mx-auto flex max-w-2xl flex-col gap-6 pt-3"
-      style={{ paddingBottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1rem)" }}
+      style={{ paddingBottom: CALC_PADDING_RESERVADO_CHECKOUT }}
     >
       <div className="flex items-center justify-between">
         <div>

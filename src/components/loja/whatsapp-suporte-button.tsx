@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { CALC_BOTTOM_BOTAO_WHATSAPP } from "@/lib/altura-barra-fixa-carrinho";
 import { linkWhatsApp } from "@/lib/utils";
 
 /**
@@ -12,6 +13,12 @@ import { linkWhatsApp } from "@/lib/utils";
  * um valor fixo chutado (já ficou baixo demais uma vez, cobrindo o valor
  * total) usa a CSS var que entrega-form.tsx/pagamento-form.tsx mantêm
  * atualizada com a altura real (ver altura-barra-fixa-carrinho.ts).
+ *
+ * z-40 (acima da barrinha "adicionado ao carrinho"/CarrinhoMiniBarra e das
+ * barras fixas do checkout, ambas z-30) — nas outras telas, com item no
+ * carrinho, a barrinha cheia (mobile, full-width) cobria o botão por
+ * completo; abaixo só da gaveta cheia do carrinho (MiniCarrinhoDrawer,
+ * z-50), que é modal e deve mesmo cobrir tudo quando aberta.
  */
 export function WhatsappSuporteButton({ nomeEmpresa, whatsapp }: { nomeEmpresa: string; whatsapp: string | null }) {
   const pathname = usePathname();
@@ -27,8 +34,8 @@ export function WhatsappSuporteButton({ nomeEmpresa, whatsapp }: { nomeEmpresa: 
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a loja no WhatsApp"
-      style={noCarrinho ? { bottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1.25rem)" } : undefined}
-      className={`fixed right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 ${
+      style={noCarrinho ? { bottom: CALC_BOTTOM_BOTAO_WHATSAPP } : undefined}
+      className={`fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 ${
         noCarrinho ? "" : "bottom-5"
       }`}
     >
