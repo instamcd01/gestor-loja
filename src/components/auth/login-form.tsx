@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CompletarCadastroForm } from "@/components/auth/completar-cadastro-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +85,9 @@ export function LoginForm({
   const [erro, setErro] = useState<string | null>(null);
   const [mensagemInfo, setMensagemInfo] = useState<string | null>(null);
   const [segundosParaReenviar, setSegundosParaReenviar] = useState(0);
+  // Guarda se o link de retomada já foi mandado pro código atual — ver o
+  // efeito de visibilitychange abaixo.
+  const linkRetomarEnviadoRef = useRef(false);
 
   useEffect(() => {
     if (segundosParaReenviar <= 0) return;
@@ -127,6 +130,31 @@ export function LoginForm({
       document.removeEventListener("visibilitychange", aoVoltarParaAba);
     };
   }, [etapa]);
+
+  // Manda o link de retomada só quando o cliente REALMENTE sai da aba (ex:
+  // troca pro app do WhatsApp), não no instante em que o código é enviado —
+  // antes disparava sempre, junto com a mensagem do código, e as duas
+  // notificações chegando quase juntas faziam o WhatsApp sobrepor uma na
+  // outra (a do código sumia da bandeja). Uma vez só por código gerado
+  // (linkRetomarEnviadoRef é resetado em enviarCodigo/reenviarCodigo) —
+  // trocar de app várias vezes não manda várias mensagens.
+  useEffect(() => {
+    if (etapa !== "codigo") return;
+
+    function aoSairDaAba() {
+      if (document.visibilityState !== "hidden") return;
+      if (linkRetomarEnviadoRef.current) return;
+      linkRetomarEnviadoRef.current = true;
+      fetch("/api/whatsapp/link-retomar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefone: paraE164(telefone), slug }),
+      }).catch(() => {});
+    }
+
+    document.addEventListener("visibilitychange", aoSairDaAba);
+    return () => document.removeEventListener("visibilitychange", aoSairDaAba);
+  }, [etapa, telefone, slug]);
 
   // Quem chega pelo link de retomada pula o enviarCodigo normal (que é
   // quem faz essa consulta) -- refaz aqui só pra decidir se mostra a
@@ -257,16 +285,11 @@ export function LoginForm({
     }
     setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setEtapa("codigo");
-
-    // Fire-and-forget — manda uma mensagem de WhatsApp com um botão que
-    // volta direto pra essa tela de código. Nunca bloqueia nem falha o
-    // login se der errado, é só uma conveniência de navegação (ver
-    // api/whatsapp/link-retomar pro motivo real disso existir).
-    fetch("/api/whatsapp/link-retomar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telefone: paraE164(telefone), slug }),
-    }).catch(() => {});
+    // Libera o envio do link de retomada de novo pro código que acabou de
+    // sair — quem disparar de fato é o efeito de visibilitychange, só
+    // quando o cliente sair da aba (ver api/whatsapp/link-retomar pro
+    // motivo desse link existir).
+    linkRetomarEnviadoRef.current = false;
   }
 
   /** Reenvia o código pro mesmo telefone sem sair da tela — pedido do
@@ -286,12 +309,7 @@ export function LoginForm({
     }
     setSegundosParaReenviar(REENVIO_COOLDOWN_SEGUNDOS);
     setMensagemInfo("Código reenviado!");
-
-    fetch("/api/whatsapp/link-retomar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telefone: paraE164(telefone), slug }),
-    }).catch(() => {});
+    linkRetomarEnviadoRef.current = false;
   }
 
   async function confirmarCodigo(e: React.FormEvent) {
