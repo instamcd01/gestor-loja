@@ -18,7 +18,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 200 });
   }
 
-  const url = new URL(`/loja/${body.slug}/entrar`, request.nextUrl.origin);
+  // SITE_URL (não request.nextUrl.origin) de propósito — atrás do proxy do
+  // Easypanel o Host visto pela request resolve pro endereço interno do
+  // container (0.0.0.0), não pro domínio público; mesmo padrão já usado em
+  // mercadopago.ts pro mesmo motivo.
+  const url = new URL(`/loja/${body.slug}/entrar`, process.env.SITE_URL);
   url.searchParams.set("retomar", "1");
   url.searchParams.set("telefone", body.telefone);
 
