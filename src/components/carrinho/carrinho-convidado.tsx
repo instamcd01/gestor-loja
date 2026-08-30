@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
+import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
 import { ResumoTotais } from "@/components/carrinho/resumo-totais";
 import { IconeLixeira } from "@/components/icone-lixeira";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CALC_PADDING_RESERVADO_CHECKOUT, useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import {
   adicionarItemConvidado,
   assinarCarrinhoConvidado,
@@ -58,6 +60,8 @@ export function CarrinhoConvidado({
   );
 
   const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
+  const barraFixaRef = useRef<HTMLDivElement>(null);
+  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
 
   function mudarQuantidade(produtoId: string, quantidade: number) {
     atualizarItemConvidado(empresaId, produtoId, quantidade);
@@ -119,7 +123,14 @@ export function CarrinhoConvidado({
   );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-3 pb-6">
+    // padding-bottom reserva espaço pra barra fixa de total/"Finalizar
+    // pedido" abaixo E pro botão do WhatsApp por cima dela não cobrirem o
+    // fim do conteúdo — mesma constante que o carrinho de quem já entrou
+    // usa (ver altura-barra-fixa-carrinho.ts), pra manter os dois em sync.
+    <div
+      className="mx-auto flex max-w-2xl flex-col gap-6 pt-3"
+      style={{ paddingBottom: CALC_PADDING_RESERVADO_CHECKOUT }}
+    >
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Seu carrinho</h1>
         <LimparCarrinhoButton onConfirmar={() => limparCarrinhoConvidado(empresaId)} />
@@ -231,13 +242,35 @@ export function CarrinhoConvidado({
         />
       </div>
 
-      <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="w-full py-3 text-base">
-        Finalizar pedido
-      </ButtonLink>
       <p className="text-center text-xs text-black/40 dark:text-white/40">
         Confirme seu telefone pra continuar — se você já tinha algo no carrinho (inclusive pelo
         WhatsApp), ele aparece aqui junto com esses itens.
       </p>
+
+      {/* Barra fixa: total + "Finalizar pedido" sempre visíveis rolando a
+          tela — mesmo padrão visual do carrinho de quem já entrou (ver
+          entrega-form.tsx), com o indicador de progresso de frete grátis
+          empilhado por cima quando dá pra calcular. z-30 fica abaixo do
+          botão do WhatsApp (z-40 — ver whatsapp-suporte-button.tsx). */}
+      <div
+        ref={barraFixaRef}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10"
+      >
+        <div className="mx-auto flex max-w-2xl flex-col gap-3">
+          {estimado?.valorMinimoFreteGratis != null && (
+            <FreteGratisProgresso subtotal={total} minimo={estimado.valorMinimoFreteGratis} />
+          )}
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-black/50 dark:text-white/50">Total</p>
+              <p className="truncate text-lg font-bold">{formatarPreco(total + (entregaValor ?? 0))}</p>
+            </div>
+            <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="flex-1 py-3 text-base">
+              Finalizar pedido
+            </ButtonLink>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
