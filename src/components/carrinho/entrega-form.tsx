@@ -15,6 +15,7 @@ import {
   horarioFechamentoNoDia,
   type JanelaHorarioAgendamento,
 } from "@/lib/agendamento";
+import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import { calcularFretePorEndereco } from "@/lib/checkout";
 import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-estimado";
 import { salvarEndereco } from "@/lib/cliente";
@@ -87,6 +88,8 @@ export function EntregaForm({
   // abaixo (endereço resolvido tarde, ex: estimativa pré-carrinho só
   // chega depois da hidratação) para de tentar mudar a seleção sozinho.
   const escolhaManual = useRef(false);
+  const barraFixaRef = useRef<HTMLDivElement>(null);
+  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
   // Endereço ativo pra esse carrinho: SEMPRE o cache compartilhado
   // (enderecoEstimado, ver endereco-estimado.ts) — mesmo lugar que a
   // barra "frete grátis" acima lê e escreve, então os dois nunca
@@ -397,7 +400,10 @@ export function EntregaForm({
           whatsapp-suporte-button.tsx). Altura varia com o indicador: se
           mudar padding/conteúdo aqui, ajustar o `pb-*` reservado em
           carrinho-logado.tsx e o `bottom-*` do WhatsApp nesta página. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10">
+      <div
+        ref={barraFixaRef}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10"
+      >
         <div className="mx-auto flex max-w-2xl flex-col gap-3">
           {tipoEntrega === "entrega" && freteResolvido?.valor_minimo_frete_gratis != null && (
             <FreteGratisProgresso subtotal={subtotal} minimo={freteResolvido.valor_minimo_frete_gratis} />

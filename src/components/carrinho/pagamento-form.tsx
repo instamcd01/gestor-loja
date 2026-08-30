@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import {
   assinarCheckoutEstimado,
   obterSnapshotCheckoutEstimado,
@@ -101,6 +102,8 @@ export function PagamentoForm({
   usarPrecoAncoraMarketplace?: boolean;
 }) {
   const router = useRouter();
+  const barraFixaRef = useRef<HTMLDivElement>(null);
+  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
 
   useEffect(() => {
     if (mpPublicKey) initMercadoPago(mpPublicKey, { locale: "pt-BR" });
@@ -766,7 +769,10 @@ export function PagamentoForm({
           whatsapp-suporte-button.tsx). Some pro método "Pagamento Online":
           o Payment Brick (acima, no fluxo normal) já tem o próprio botão
           de envio — dois botões fariam parecer que são ações diferentes. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10">
+      <div
+        ref={barraFixaRef}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10"
+      >
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-xs text-black/50 dark:text-white/50">Total</p>

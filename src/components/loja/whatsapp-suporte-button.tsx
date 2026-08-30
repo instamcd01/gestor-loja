@@ -5,13 +5,13 @@ import { linkWhatsApp } from "@/lib/utils";
 
 /**
  * Botão flutuante de suporte — só renderiza quando a loja tem WhatsApp
- * configurado. Sobe mais alto nas duas telas do checkout (carrinho e
- * pagamento) pra não ficar embaixo da barra fixa de total/confirmar, que
- * cresce quando leva o indicador de progresso de frete grátis embutido
- * (ver entrega-form.tsx/pagamento-form.tsx) — mesma classe de bug já
- * resolvida antes (cards cortados pela barra do WhatsApp no catálogo),
- * agora na direção oposta: o elemento novo é que precisa desviar do
- * botão antigo, não o contrário.
+ * configurado. Nas duas telas do checkout (carrinho e pagamento) precisa
+ * ficar colado em cima da barra fixa de total/confirmar sem cobri-la — a
+ * altura dessa barra varia (indicador de frete grátis, texto que quebra
+ * linha em tela estreita, etapa de entrega vs. pagamento), então em vez de
+ * um valor fixo chutado (já ficou baixo demais uma vez, cobrindo o valor
+ * total) usa a CSS var que entrega-form.tsx/pagamento-form.tsx mantêm
+ * atualizada com a altura real (ver altura-barra-fixa-carrinho.ts).
  */
 export function WhatsappSuporteButton({ nomeEmpresa, whatsapp }: { nomeEmpresa: string; whatsapp: string | null }) {
   const pathname = usePathname();
@@ -27,8 +27,9 @@ export function WhatsappSuporteButton({ nomeEmpresa, whatsapp }: { nomeEmpresa: 
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Falar com a loja no WhatsApp"
+      style={noCarrinho ? { bottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1.25rem)" } : undefined}
       className={`fixed right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 ${
-        noCarrinho ? "bottom-44" : "bottom-5"
+        noCarrinho ? "" : "bottom-5"
       }`}
     >
       <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7">
