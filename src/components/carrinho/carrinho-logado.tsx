@@ -110,12 +110,15 @@ export function CarrinhoLogado({
   }
 
   return (
-    // pb-44 reserva espaço pra barra fixa de total/"Ir para pagamento" do
-    // EntregaForm não cobrir o fim do conteúdo — a barra é `fixed`, então
-    // não empurra o layout sozinha. Generoso de propósito porque a barra
-    // cresce quando leva o indicador de progresso de frete grátis
-    // embutido (ver comentário em entrega-form.tsx).
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-44 pt-3">
+    // padding-bottom reserva espaço pra barra fixa de total/"Ir para
+    // pagamento" do EntregaForm não cobrir o fim do conteúdo — a barra é
+    // `fixed`, então não empurra o layout sozinha. Usa a mesma CSS var que
+    // o botão do WhatsApp lê (ver altura-barra-fixa-carrinho.ts) em vez de
+    // um valor fixo chutado, que já ficou curto uma vez.
+    <div
+      className="mx-auto flex max-w-2xl flex-col gap-6 pt-3"
+      style={{ paddingBottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1rem)" }}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-black/40 dark:text-white/40">Etapa 1 de 2</p>

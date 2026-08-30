@@ -91,7 +91,11 @@ export default async function CarrinhoPagamentoPage({
         : metodosEntrega;
 
   return (
-    <div className="mx-auto max-w-2xl pb-44 pt-3">
+    // padding-bottom reserva espaço pra barra fixa de total/"Confirmar
+    // pedido" não cobrir o fim do conteúdo — mesma CSS var que o botão do
+    // WhatsApp lê (ver altura-barra-fixa-carrinho.ts), em vez de um valor
+    // fixo chutado.
+    <div className="mx-auto max-w-2xl pt-3" style={{ paddingBottom: "calc(var(--altura-barra-fixa-carrinho, 11rem) + 1rem)" }}>
       <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/loja/${slug}/carrinho`}
