@@ -468,7 +468,15 @@ export async function estornarPagamentoOnline(
 
   const resposta = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      // Obrigatório pelo Mercado Pago desde algum momento depois da integração original
+      // (não documentado quando exatamente) — sem isso a API recusa com 400
+      // "Header X-Idempotency-Key can't be null". Usa o pedidoId como chave: uma
+      // eventual repetição da mesma tentativa de estorno não deve gerar um segundo
+      // estorno duplicado no Mercado Pago.
+      "X-Idempotency-Key": `estorno-${pedidoId}`,
+    },
   });
   if (!resposta.ok) {
     const erroResposta = await resposta.json().catch(() => null);
