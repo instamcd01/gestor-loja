@@ -139,13 +139,14 @@ export function PagamentoForm({
   // destaque do badge "Instantâneo" abaixo) — é pra onde a categoria
   // entrega pré-seleciona ao ser escolhida, quando a loja oferecer Pix.
   const metodoEntregaPreferido = metodosEntrega.includes("Pix") ? "Pix" : (metodosEntrega[0] ?? "Dinheiro");
-  // Pedido explícito do usuário: quando as duas categorias existem,
-  // "Pagamento Online" começa pré-selecionado (é a opção recomendada,
-  // ver o card abaixo) — só cai pro primeiro método de entrega quando
-  // online não é uma opção real pra essa loja.
-  const [tipoPagamento, setTipoPagamento] = useState(temOnlineEEntrega ? NOME_PAGAMENTO_ONLINE : metodosPagamento[0] ?? "Dinheiro");
-  const [categoriaPagamento, setCategoriaPagamento] = useState<"online" | "entrega">(
-    temOnlineEEntrega ? "online" : "entrega",
+  // Pedido explícito do usuário (01/09): quando as duas categorias
+  // existem, nenhuma vem pré-selecionada — o cliente escolhe "Pagamento
+  // online" ou "Pagar na entrega" manualmente antes de qualquer método
+  // aparecer marcado. Só cai direto num método quando não há essa escolha
+  // real (loja não conectou Mercado Pago, por exemplo).
+  const [tipoPagamento, setTipoPagamento] = useState(temOnlineEEntrega ? "" : metodosPagamento[0] ?? "Dinheiro");
+  const [categoriaPagamento, setCategoriaPagamento] = useState<"online" | "entrega" | null>(
+    temOnlineEEntrega ? null : "entrega",
   );
   const [mostrarObservacoes, setMostrarObservacoes] = useState(false);
   const [observacoes, setObservacoes] = useState("");
@@ -365,7 +366,11 @@ export function PagamentoForm({
   const podeConfirmar =
     !!checkoutEstimado &&
     (checkoutEstimado.tipoEntrega === "retirada" || checkoutEstimado.zonaId != null) &&
-    dinheiroResolvido;
+    dinheiroResolvido &&
+    // Sem isso, com "tipoPagamento" ainda vazio (nenhuma categoria
+    // escolhida — ver estado inicial acima), o botão "Confirmar pedido"
+    // ficava clicável mesmo sem nenhum método selecionado.
+    !!tipoPagamento;
 
   if (!checkoutEstimado) {
     return <p className="pt-6 text-sm text-black/50 dark:text-white/50">Redirecionando para o carrinho...</p>;
@@ -756,7 +761,7 @@ export function PagamentoForm({
 
       {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
 
-      {tipoPagamento !== NOME_PAGAMENTO_ONLINE && (
+      {tipoPagamento && tipoPagamento !== NOME_PAGAMENTO_ONLINE && (
         <p className="text-center text-xs text-black/40 dark:text-white/40">
           Pedido é confirmado direto com o lojista — pagamento só na entrega/retirada.
         </p>
