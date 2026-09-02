@@ -42,6 +42,14 @@ export async function registrarErroSistema(params: {
   const webhookUrl = process.env.N8N_WEBHOOK_ERRO_SISTEMA_URL;
   if (!webhookUrl) return;
 
+  // Campos de contexto conhecidos que valem a pena destacar pro lojista
+  // agir rápido (quem é o cliente, qual pedido) — nunca confiado como
+  // dado estruturado de negócio, só passado adiante como texto de apoio.
+  const contexto = params.contexto ?? {};
+  const clienteNome = typeof contexto.clienteNome === "string" ? contexto.clienteNome.slice(0, 200) : null;
+  const clienteTelefone = typeof contexto.clienteTelefone === "string" ? contexto.clienteTelefone.slice(0, 40) : null;
+  const pedidoId = typeof contexto.pedidoId === "string" ? contexto.pedidoId : null;
+
   // Fire-and-forget: nunca deixa o alerta atrasar/derrubar o fluxo que
   // originou o erro (já está quebrado, não pode depender de mais uma rede).
   fetch(webhookUrl, {
@@ -50,6 +58,9 @@ export async function registrarErroSistema(params: {
     body: JSON.stringify({
       mensagem: rota ? `${params.mensagem.slice(0, 200)} em ${rota}` : params.mensagem.slice(0, 200),
       contagem: linha.contagem,
+      clienteNome,
+      clienteTelefone,
+      pedidoId,
     }),
   }).catch((e) => console.error("Falha ao notificar erro via n8n:", e));
 }

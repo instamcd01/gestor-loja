@@ -7,8 +7,38 @@ import { cobrarPagamentoOnline, type DadosPagamentoOnline } from "@/lib/mercadop
 import { createClient } from "@/lib/supabase/server";
 import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
+import { registrarErroSistema } from "@/lib/erros";
 
 export type ResultadoCheckout = { ok: false; erro: string };
+
+/**
+ * Busca nome/telefone do cliente autenticado (RLS já restringe à própria
+ * linha via auth_user_id) só pra enriquecer o alerta de erro do checkout
+ * com "quem" foi afetado — nunca usado pra decisão de negócio, só contexto
+ * de suporte. Falha silenciosa (retorna null) se não conseguir: o alerta
+ * genérico ainda sai, só sem esse dado extra.
+ */
+async function getClienteAtualResumo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<{ nome: string; telefone: string } | null> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data } = await supabase
+      .from("clientes")
+      .select("nome, telefone")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (!data?.nome) return null;
+    return { nome: data.nome, telefone: data.telefone ?? "" };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Só a parte de gravar o pedido (chama o RPC, que revalida tudo de
@@ -62,6 +92,12 @@ async function criarPedido(
   });
 
   if (error) {
+    const cliente = await getClienteAtualResumo(supabase);
+    await registrarErroSistema({
+      mensagem: `Falha ao criar pedido (finalizar_pedido_site): ${error.message}`,
+      rota: `/loja/checkout (tipo_pagamento=${tipoPagamento})`,
+      contexto: cliente ? { clienteNome: cliente.nome, clienteTelefone: cliente.telefone } : undefined,
+    });
     return { ok: false, erro: error.message };
   }
   return { ok: true, pedidoId };
@@ -146,6 +182,16 @@ export async function finalizarPedidoOnline(
     // na mão) — mas aqui a cobrança nem chegou a ser tentada de verdade
     // (ex: token inválido), então ainda faz sentido mostrar o erro em
     // vez de mandar pra confirmação como se tivesse dado certo.
+    const supabase = await createClient();
+    const cliente = await getClienteAtualResumo(supabase);
+    await registrarErroSistema({
+      mensagem: `Falha ao cobrar pagamento online (Mercado Pago): ${cobranca.erro}`,
+      rota: `/loja/${slug}/carrinho/pagamento`,
+      contexto: {
+        pedidoId: resultado.pedidoId,
+        ...(cliente ? { clienteNome: cliente.nome, clienteTelefone: cliente.telefone } : {}),
+      },
+    });
     return { ok: false, erro: cobranca.erro };
   }
 
