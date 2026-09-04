@@ -51,7 +51,20 @@ export async function generateMetadata({
   const { slug, id } = await params;
   const dados = await carregar(slug, id);
   if (!dados) return {};
-  return { title: `${dados.produto.nome} · ${dados.empresa.nome}` };
+  return {
+    title: `${dados.produto.nome} · ${dados.empresa.nome}`,
+    // Caminho relativo (sem domínio fixo) de propósito: cada loja pode ter
+    // domínio próprio (ver dominio-tenant.ts), e ler o host da requisição
+    // aqui pra montar uma URL absoluta forçaria a rota inteira a virar
+    // dinâmica, perdendo o cache ISR (revalidate=60 acima). Um href
+    // relativo em <link rel="canonical"> resolve certo contra a própria
+    // origem da página em qualquer domínio, sem precisar saber qual é.
+    // Sem isso, o Google trata cada variante de produto (peso/dose/sabor
+    // diferentes, conteúdo quase idêntico) como cópia da outra e escolhe
+    // sozinho qual indexar — achado real: 153 páginas de produto marcadas
+    // "Cópia sem página canônica selecionada" no Search Console (04/09).
+    alternates: { canonical: `/loja/${slug}/produto/${id}` },
+  };
 }
 
 export default async function ProdutoPage({

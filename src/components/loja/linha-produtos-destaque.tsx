@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ProdutoCard } from "@/components/produto-card";
-import { getMaisVendidos, getPromocoesDoDia, getVariantesEmLote } from "@/lib/catalogo";
+import { getMaisVendidos, getPromocoesDoDia, getProdutosDestaque, getVariantesEmLote } from "@/lib/catalogo";
 import type { ProdutoCatalogo } from "@/lib/types";
 
 /**
@@ -81,6 +81,31 @@ export async function PromocoesDoDia({
       empresaId={empresaId}
       moderno={moderno}
       verMaisHref={`/loja/${slug}?promocao=1`}
+      usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
+    />
+  );
+}
+
+export async function Destaques({
+  slug,
+  empresaId,
+  moderno,
+  usarPrecoAncoraMarketplace = false,
+}: {
+  slug: string;
+  empresaId: string;
+  moderno: boolean;
+  usarPrecoAncoraMarketplace?: boolean;
+}) {
+  const produtos = await getProdutosDestaque(empresaId);
+  return (
+    <LinhaProdutos
+      titulo="Destaques"
+      produtos={produtos}
+      slug={slug}
+      empresaId={empresaId}
+      moderno={moderno}
+      verMaisHref={`/loja/${slug}?destaque=1`}
       usarPrecoAncoraMarketplace={usarPrecoAncoraMarketplace}
     />
   );

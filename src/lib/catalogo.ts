@@ -240,6 +240,8 @@ export async function getProdutosCatalogo(
     ordenar?: Ordenacao;
     /** "Ver mais" de Promoções do dia — só produtos com desconto ativo agora, mesmo critério de `getPromocoesDoDia`. */
     promocao?: boolean;
+    /** "Ver mais" de Destaques — só produtos marcados `destaque=true`, mesmo critério de `getProdutosDestaque`. */
+    destaque?: boolean;
   },
 ): Promise<ProdutoCatalogo[]> {
   const supabase = await createClient();
@@ -314,6 +316,9 @@ export async function getProdutosCatalogo(
   if (filtros?.promocao) {
     query = query.not("preco_promocional", "is", null);
   }
+  if (filtros?.destaque) {
+    query = query.eq("destaque", true);
+  }
 
   switch (filtros?.ordenar) {
     case "menor_preco":
@@ -387,6 +392,27 @@ export async function getPromocoesDoDia(empresaId: string, limite = 12): Promise
     .filter((produto) => descontoPercentual(produto) > 0)
     .sort((a, b) => descontoPercentual(b) - descontoPercentual(a))
     .slice(0, limite);
+}
+
+/** Produtos marcados como destaque no cadastro (`produtos.destaque`,
+ * curadoria manual do lojista) — seção "Destaques" da home. Mesmo padrão
+ * simples de `getPromocoesDoDia` (filtro direto, sem ranking auxiliar). */
+export async function getProdutosDestaque(empresaId: string, limite = 12): Promise<ProdutoCatalogo[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_publico")
+    .select("*")
+    .eq("empresa_id", empresaId)
+    .is("produto_pai_id", null)
+    .eq("destaque", true)
+    .order("nome", { ascending: true })
+    .limit(limite);
+
+  if (error) {
+    console.error("Erro ao buscar produtos em destaque:", error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 /** Ranking de mais vendidos dos últimos 90 dias — seção "Mais vendidos" da

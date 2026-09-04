@@ -15,7 +15,7 @@ import {
   GradeSkeleton,
 } from "@/components/loja/grade-de-produtos";
 import { HeroBanner } from "@/components/loja/hero-banner";
-import { MaisVendidos, PromocoesDoDia } from "@/components/loja/linha-produtos-destaque";
+import { Destaques, MaisVendidos, PromocoesDoDia } from "@/components/loja/linha-produtos-destaque";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
 import { WhatsappRefBeacon } from "@/components/whatsapp/whatsapp-ref-beacon";
@@ -71,6 +71,7 @@ export default async function LojaPage({
     precoMax?: string;
     ordenar?: Ordenacao;
     promocao?: string;
+    destaque?: string;
   }>;
 }) {
   const { slug } = await params;
@@ -88,11 +89,13 @@ export default async function LojaPage({
     precoMax,
     ordenar,
     promocao,
+    destaque,
   } = await searchParams;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) notFound();
 
   const promocaoAtiva = promocao === "1";
+  const destaqueAtivo = destaque === "1";
   const filtroAtivo =
     !!q ||
     !!departamento ||
@@ -103,7 +106,8 @@ export default async function LojaPage({
     !!porte ||
     !!pesoMin ||
     !!precoMin ||
-    promocaoAtiva;
+    promocaoAtiva ||
+    destaqueAtivo;
   const moderno = empresa.catalogo_modelo === "moderno";
 
   // Linhas por categoria (CategoriasEmLinha) valem pra home solta, pra tela
@@ -122,7 +126,8 @@ export default async function LojaPage({
     !!pesoMin ||
     !!precoMin ||
     !!ordenar ||
-    promocaoAtiva;
+    promocaoAtiva ||
+    destaqueAtivo;
   const usaLinhasPorCategoria = !exigeGradeFinal;
 
   const [
@@ -147,6 +152,7 @@ export default async function LojaPage({
           precoMax: precoMax ? Number(precoMax) : undefined,
           ordenar,
           promocao: promocaoAtiva,
+          destaque: destaqueAtivo,
         }),
     usaLinhasPorCategoria
       ? getContagemProdutosCatalogo(empresa.id, { especie, departamento })
@@ -218,6 +224,17 @@ export default async function LojaPage({
 
       {!filtroAtivo && (
         <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
+          <Destaques
+            slug={slug}
+            empresaId={empresa.id}
+            moderno={moderno}
+            usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
+          />
+        </Suspense>
+      )}
+
+      {!filtroAtivo && (
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-[var(--radius-lg)] bg-black/5 dark:bg-white/5" />}>
           <MaisVendidos
             slug={slug}
             empresaId={empresa.id}
@@ -230,6 +247,18 @@ export default async function LojaPage({
       {promocaoAtiva && (
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Promoções do dia</h1>
+          <Link
+            href={`/loja/${slug}`}
+            className="shrink-0 text-sm font-medium text-[var(--brand-primary)] hover:underline"
+          >
+            ← Ver tudo
+          </Link>
+        </div>
+      )}
+
+      {destaqueAtivo && (
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Destaques</h1>
           <Link
             href={`/loja/${slug}`}
             className="shrink-0 text-sm font-medium text-[var(--brand-primary)] hover:underline"
