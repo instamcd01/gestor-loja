@@ -31,7 +31,19 @@ export async function updateSession(request: NextRequest, rewriteUrl?: URL) {
 
   // Necessário mesmo sem usar o resultado: refresca o token expirado e
   // reescreve o cookie na resposta antes que Server Components o leiam.
-  await supabase.auth.getUser();
+  // try/catch importante aqui: um cookie com refresh token inválido/
+  // revogado faz o SDK LANÇAR AuthApiError em vez de devolver `{ error }`
+  // (bug conhecido do @supabase/ssr, github.com/supabase/ssr/issues/68) —
+  // e como o middleware roda em TODA requisição (não só de quem está
+  // logado), uma exceção não tratada aqui derrubava o processo Node
+  // inteiro pra qualquer visitante concorrente até o container reiniciar
+  // (confirmado nos logs de produção: 503 intermitente + esse erro).
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Sessão irrecuperável — segue sem refrescar, os Server Components
+    // tratam usuário nulo normalmente (ver getUsuarioSeguro).
+  }
 
   return response;
 }

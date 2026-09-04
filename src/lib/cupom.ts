@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import type { ItemCarrinho } from "@/lib/types";
 
 export type ResultadoCupom =
@@ -22,9 +23,7 @@ export async function validarCupom(
   subtotal: number,
 ): Promise<ResultadoCupom> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return { valido: false, motivo: "Faça login pra usar um cupom." };
 
   const { data: cliente } = await supabase

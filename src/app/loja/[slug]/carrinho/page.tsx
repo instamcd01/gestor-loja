@@ -7,6 +7,7 @@ import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getCarrinho } from "@/lib/carrinho";
 import { getEnderecoCliente, getPedidoPendentePagamento } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import { formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +32,7 @@ export default async function CarrinhoPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
 
   const enderecoEmpresa = {
     endereco: empresa.endereco,

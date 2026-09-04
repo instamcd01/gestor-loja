@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getExtratoPetCash } from "@/lib/cliente";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import { formatarData, formatarPreco } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -35,9 +36,7 @@ export default async function PetCashPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) redirect(`/loja/${slug}/entrar`);
 
   // Autenticado sem linha em `clientes` = cadastro pendente (ver

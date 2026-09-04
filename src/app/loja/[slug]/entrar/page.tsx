@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { WhatsappRefBeacon } from "@/components/whatsapp/whatsapp-ref-beacon";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -81,9 +82,7 @@ export default async function EntrarPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (user) redirect(rotaPosLogin ? `/loja/${slug}/${rotaPosLogin}` : `/loja/${slug}`);
 
   return (

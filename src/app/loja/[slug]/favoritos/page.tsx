@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { getEmpresaPorSlug, getVariantesEmLote } from "@/lib/catalogo";
 import { getProdutosFavoritos } from "@/lib/favoritos";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,7 @@ export default async function FavoritosPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) redirect(`/loja/${slug}/entrar`);
 
   const produtos = await getProdutosFavoritos(empresa.id);

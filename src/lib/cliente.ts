@@ -1,13 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import type { EnderecoCliente } from "@/lib/types";
 
 export async function getEnderecoCliente(empresaId: string): Promise<EnderecoCliente | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return null;
 
   const { data } = await supabase
@@ -30,9 +29,7 @@ export async function getEnderecoCliente(empresaId: string): Promise<EnderecoCli
 /** Saldo/crédito de loja do cliente logado — mesmo campo que o atendente usa no app. */
 export async function getSaldoCliente(empresaId: string): Promise<number> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return 0;
 
   const { data } = await supabase
@@ -48,9 +45,7 @@ export async function getSaldoCliente(empresaId: string): Promise<number> {
 /** PetCash disponível do cliente logado — coluna denormalizada (clientes.saldo_petcash), mantida em sincronia pelas funções do banco (consumir_petcash/gerar_petcash_pedido/expirar_petcash_vencido), nunca escrita direto daqui. */
 export async function getSaldoPetCash(empresaId: string): Promise<number> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return 0;
 
   const { data } = await supabase
@@ -84,9 +79,7 @@ export interface CreditoPetCash {
  */
 export async function getExtratoPetCash(empresaId: string): Promise<CreditoPetCash[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return [];
 
   const { data } = await supabase.rpc("meu_extrato_petcash", { p_empresa_id: empresaId });
@@ -120,9 +113,7 @@ export async function getExtratoPetCash(empresaId: string): Promise<CreditoPetCa
 /** `null` = cliente ainda não tem Customer criado no Mercado Pago DESSA loja (nunca pagou online aqui, ou é a primeira vez). */
 export async function getMercadoPagoCustomerId(empresaId: string): Promise<string | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return null;
 
   const { data } = await supabase
@@ -151,9 +142,7 @@ export interface PedidoPendentePagamento {
  */
 export async function getPedidoPendentePagamento(empresaId: string): Promise<PedidoPendentePagamento | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return null;
 
   const { data } = await supabase

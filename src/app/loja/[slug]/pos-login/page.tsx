@@ -4,6 +4,7 @@ import { PosLoginCliente } from "@/components/auth/pos-login-cliente";
 import { Card } from "@/components/ui/card";
 import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +49,7 @@ export default async function PosLoginPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   // Sem sessão aqui significa que o OAuth não completou (cancelado, erro) —
   // volta pro login em vez de mostrar uma tela de "completar cadastro" pra
   // ninguém.

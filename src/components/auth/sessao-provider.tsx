@@ -21,7 +21,14 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setLogado(!!data.user));
+    // .catch: mesmo bug do server (AuthApiError lançado, não devolvido em
+    // `error`, quando o refresh token do cookie é inválido) — aqui só
+    // evita um unhandled rejection no console do navegador, sem risco de
+    // derrubar processo nenhum (client-side).
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setLogado(!!data.user))
+      .catch(() => setLogado(false));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setLogado(!!session?.user);
     });

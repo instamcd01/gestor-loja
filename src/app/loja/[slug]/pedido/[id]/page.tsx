@@ -11,6 +11,7 @@ import { getEmpresaPorSlug } from "@/lib/catalogo";
 import { getExtratoPetCash } from "@/lib/cliente";
 import { gerarPixCopiaECola } from "@/lib/pix";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import type { EmpresaCatalogo } from "@/lib/types";
 import { formatarHora, formatarPreco } from "@/lib/utils";
 
@@ -69,9 +70,7 @@ export default async function PedidoPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) redirect(`/loja/${slug}/entrar`);
 
   const { data: pedido } = await supabase

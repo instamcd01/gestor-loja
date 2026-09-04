@@ -1,13 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import type { ProdutoCatalogo } from "@/lib/types";
 
 async function getClienteId(empresaId: string): Promise<string | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return null;
 
   const { data } = await supabase

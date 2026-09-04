@@ -8,6 +8,7 @@ import { getCarrinho } from "@/lib/carrinho";
 import { getMercadoPagoCustomerId, getSaldoCliente, getSaldoPetCash } from "@/lib/cliente";
 import { listarCartoesSalvos } from "@/lib/mercadopago";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 
 // "Link de Pagamento" e "Outros" só fazem sentido com um atendente
@@ -48,9 +49,7 @@ export default async function CarrinhoPagamentoPage({
   if (!empresa) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
 
   // Sem login não existe etapa de pagamento própria (ver CarrinhoConvidado
   // em carrinho/page.tsx) — manda pro carrinho, que resolve login antes.

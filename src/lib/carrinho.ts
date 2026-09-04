@@ -3,15 +3,14 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 import type { Carrinho } from "@/lib/types";
 
 async function getClienteId(
   supabase: SupabaseClient,
   empresaId: string,
 ): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return null;
 
   const { data } = await supabase
@@ -93,9 +92,7 @@ export async function adicionarAoCarrinho(
 ): Promise<ResultadoCarrinho> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUsuarioSeguro(supabase);
   if (!user) return { ok: false, erro: "login_necessario" };
 
   // RPC atômica (adicionar_ao_carrinho_site) em vez de ler a quantidade
