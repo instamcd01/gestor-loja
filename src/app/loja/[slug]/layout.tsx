@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import type { ReactNode } from "react";
@@ -125,12 +126,19 @@ export default async function LojaLayout({
                         className="flex min-w-0 items-center justify-center justify-self-center"
                       >
                         {marca.site_header.url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={marca.site_header.url}
-                            alt={empresa.nome}
-                            className="h-10 max-w-[160px] shrink-0 object-contain"
-                          />
+                          // Tamanho fixo (não `max-w`) porque next/image com
+                          // `fill` precisa de um container com dimensões
+                          // definidas — mesmo efeito visual de antes.
+                          <div className="relative h-10 w-40 shrink-0">
+                            <Image
+                              src={marca.site_header.url}
+                              alt={empresa.nome}
+                              fill
+                              sizes="160px"
+                              priority
+                              className="object-contain"
+                            />
+                          </div>
                         ) : (
                           <span className="min-w-0 truncate text-sm font-semibold text-white sm:text-lg">
                             {empresa.nome}

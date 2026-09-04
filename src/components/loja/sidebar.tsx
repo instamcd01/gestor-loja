@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -81,12 +82,18 @@ function MarcaSidebar({
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={marca.url}
-      alt={nomeEmpresa}
-      className="h-16 max-w-[200px] shrink-0 object-contain"
-    />
+    // Tamanho fixo (não `max-w`) porque next/image com `fill` precisa de um
+    // container com dimensões definidas — mesmo efeito visual de antes
+    // (object-contain encolhe a imagem real dentro da caixa).
+    <div className="relative h-16 w-[200px] shrink-0">
+      <Image
+        src={marca.url}
+        alt={nomeEmpresa}
+        fill
+        sizes="200px"
+        className="object-contain"
+      />
+    </div>
   );
 }
 

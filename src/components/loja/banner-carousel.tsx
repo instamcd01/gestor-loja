@@ -26,6 +26,12 @@ const DELAY_IMAGEM_MS = 5000;
 export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: banners.length > 1 });
   const [selecionado, setSelecionado] = useState(0);
+  // Cada banner só baixa de verdade (Storage do Supabase, sem passar pelo
+  // cache do next/image) na primeira vez que é exibido — embla mantém todo
+  // slide montado no DOM pro swipe funcionar, então sem isso os 5 banners
+  // eram baixados de uma vez no carregamento da home, mesmo só 1 aparecendo.
+  // Índice 0 já nasce carregado (é o que aparece primeiro).
+  const [carregados, setCarregados] = useState<Set<number>>(() => new Set([0]));
   // Todo navegador bloqueia autoplay de vídeo COM som — só é permitido
   // mudo. Por isso todo carrossel/feed com vídeo autoplay (Instagram,
   // TikTok, YouTube) nasce mudo com um botão pra ativar o som; replicado
@@ -39,6 +45,9 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
     if (!emblaApi) return;
     const indice = emblaApi.selectedScrollSnap();
     setSelecionado(indice);
+    setCarregados((prev) =>
+      prev.has(indice) ? prev : new Set(prev).add(indice),
+    );
 
     videoRefs.current.forEach((video, i) => {
       if (!video) return;
@@ -94,6 +103,7 @@ export function BannerCarousel({ banners }: { banners: BannerCatalogo[] }) {
               <div key={banner.id} className="relative min-w-0 flex-[0_0_100%]">
                 <BannerSlide
                   banner={banner}
+                  carregado={carregados.has(i)}
                   videoRef={(el) => {
                     videoRefs.current[i] = el;
                   }}
@@ -200,10 +210,12 @@ function IconeSom({ mudo }: { mudo: boolean }) {
 
 function BannerSlide({
   banner,
+  carregado,
   videoRef,
   onVideoEnded,
 }: {
   banner: BannerCatalogo;
+  carregado: boolean;
   videoRef: (el: HTMLVideoElement | null) => void;
   onVideoEnded: () => void;
 }) {
@@ -218,7 +230,13 @@ function BannerSlide({
 
   const conteudo = (
     <div className="relative aspect-[16/9] w-full sm:aspect-[21/9]">
-      {banner.tipo === "video" ? (
+      {!carregado ? (
+        // Slide ainda não visto pelo visitante — nenhum <img>/<video> real
+        // é montado, então o arquivo nem é pedido ao Supabase Storage.
+        // Vira o conteúdo de verdade (carregado=true) assim que o embla
+        // seleciona esse índice pela primeira vez, ver onSelect no pai.
+        <div className="h-full w-full animate-pulse bg-black/10 dark:bg-white/10" />
+      ) : banner.tipo === "video" ? (
         // object-contain (não object-cover) de propósito: diferente da
         // foto, o vídeo não passa por recorte no app antes de subir (sem
         // ferramenta de edição de vídeo), então cortar pra preencher o
@@ -237,6 +255,7 @@ function BannerSlide({
             poster={banner.url_thumbnail ?? undefined}
             muted
             playsInline
+            autoPlay
             onEnded={onVideoEnded}
             className="relative z-10 h-full w-full object-contain"
           />
