@@ -76,7 +76,7 @@ export default async function PedidoPage({
   const { data: pedido } = await supabase
     .from("pedidos")
     .select(
-      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, gateway_pagamento, valor_produtos, valor_entrega, desconto, valor_total, observacoes, created_at, metadata, previsao_entrega_inicio, previsao_entrega_fim",
+      "id, numero_sequencial, status, tipo_pagamento, status_pagamento, gateway_pagamento, valor_produtos, valor_entrega, desconto, taxa_servico, valor_total, observacoes, created_at, metadata, previsao_entrega_inicio, previsao_entrega_fim",
     )
     .eq("id", id)
     .eq("empresa_id", empresa.id)
@@ -92,6 +92,8 @@ export default async function PedidoPage({
     modalidadeEntrega?: "expressa" | "economica";
     mercadoPagoPixQrCode?: string;
     mercadoPagoPixQrCodeBase64?: string;
+    parcelas?: number;
+    jurosParcelamento?: number;
   };
   // Só mostra a prévia enquanto o crédito ainda não existe de verdade
   // (concedido só quando o pedido é marcado como entregue, ver
@@ -223,6 +225,9 @@ export default async function PedidoPage({
             entregaLabel={temEntrega ? `Entrega (${metadata.entregaSelecionada})` : "Retirada na loja"}
             entregaValor={temEntrega ? (pedido.valor_entrega ?? 0) : null}
             descontoCupom={pedido.desconto ?? 0}
+            taxaServicoValor={pedido.taxa_servico}
+            parcelas={metadata.parcelas}
+            jurosParcelamento={metadata.jurosParcelamento}
             saldoAplicado={metadata.saldoAplicado}
             petcashAplicado={metadata.petcashAplicado}
             petcashPrevisto={petcashPrevisto}
@@ -239,6 +244,11 @@ export default async function PedidoPage({
         {troco != null && troco > 0 && (
           <p className="text-xs text-black/50 dark:text-white/50">
             Pagará com {formatarPreco(metadata.trocoPara!)} — troco de {formatarPreco(troco)}
+          </p>
+        )}
+        {!!metadata.parcelas && metadata.parcelas > 1 && (
+          <p className="text-xs text-black/50 dark:text-white/50">
+            Parcelado em {metadata.parcelas}x de {formatarPreco((pedido.valor_total ?? 0) / metadata.parcelas)}
           </p>
         )}
       </div>

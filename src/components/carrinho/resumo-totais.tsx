@@ -27,6 +27,8 @@ export function ResumoTotais({
   entregaValorOriginal,
   faltaParaFreteGratis,
   taxaServicoValor,
+  parcelas,
+  jurosParcelamento,
   descontoCupom,
   descontoProdutos,
   saldoAplicado,
@@ -53,6 +55,10 @@ export function ResumoTotais({
   faltaParaFreteGratis?: number | null;
   /** null/0 = loja não cobra taxa de serviço, linha não aparece. */
   taxaServicoValor?: number | null;
+  /** Número de parcelas escolhido no cartão de crédito — só usado junto de jurosParcelamento, pro rótulo "(Nx)". */
+  parcelas?: number | null;
+  /** Juros do parcelamento, já cobrado de verdade e somado no `total` (calculado no servidor, nunca confiado do preview do checkout) — null/0 = sem juros, linha não aparece. */
+  jurosParcelamento?: number | null;
   descontoCupom?: number;
   /** Soma de (preço de catálogo − preço promocional) × quantidade dos itens que estão em promoção. */
   descontoProdutos?: number;
@@ -125,6 +131,13 @@ export function ResumoTotais({
         <div className="flex justify-between">
           <span className="text-black/50 dark:text-white/50">Taxa de serviço</span>
           <span>{formatarPreco(taxaServicoValor)}</span>
+        </div>
+      )}
+
+      {!!jurosParcelamento && jurosParcelamento > 0 && !!parcelas && (
+        <div className="flex justify-between">
+          <span className="text-black/50 dark:text-white/50">Juros do parcelamento ({parcelas}x)</span>
+          <span>{formatarPreco(jurosParcelamento)}</span>
         </div>
       )}
 

@@ -605,7 +605,7 @@ export function PagamentoForm({
                   {opcao.parcelas}x de {formatarPreco(opcao.valorParcela)}
                 </span>
                 <span className="text-xs text-black/50 dark:text-white/50">
-                  {opcao.taxa > 0 ? `com juros (${opcao.taxa.toString().replace(".", ",")}%)` : "sem juros"}
+                  {opcao.taxa > 0 ? "com juros" : "sem juros"}
                 </span>
               </label>
             ))}
