@@ -280,6 +280,19 @@ export function PagamentoForm({
     .filter((opcao) => opcao.parcelas === 1 || opcao.valorParcela >= valorMinimoParcela)
     .sort((a, b) => a.parcelas - b.parcelas);
 
+  // valorFinal nunca inclui juros (não depende de opcoesParcelamento) — o
+  // servidor (_finalizar_pedido_core) recalcula e soma no valor_total de
+  // verdade, mas o checkout aqui ficava mostrando um total menor do que o
+  // que era realmente cobrado quando o cliente escolhia parcela com juros.
+  // ResumoTotais.total precisa vir com o juros somado (mesma regra do
+  // resumo de venda do app Gestor).
+  const opcaoParcelaEscolhida = opcoesParcelamento.find((opcao) => opcao.parcelas === parcelaEscolhida);
+  const jurosParcelamento =
+    tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 && opcaoParcelaEscolhida
+      ? opcaoParcelaEscolhida.valorParcela * opcaoParcelaEscolhida.parcelas - valorFinal
+      : 0;
+  const valorFinalComJuros = valorFinal + jurosParcelamento;
+
   async function confirmar() {
     if (!checkoutEstimado) return;
     setConfirmando(true);
@@ -750,12 +763,14 @@ export function PagamentoForm({
           entregaValor={checkoutEstimado.tipoEntrega === "entrega" ? valorEntrega : null}
           entregaValorOriginal={checkoutEstimado.valorEntregaOriginal}
           taxaServicoValor={taxaServico}
+          parcelas={parcelaEscolhida > 1 ? parcelaEscolhida : null}
+          jurosParcelamento={jurosParcelamento}
           descontoCupom={descontoCupom}
           descontoProdutos={descontoProdutos}
           saldoAplicado={saldoAplicado}
           petcashAplicado={petcashAplicado}
           petcashPrevisto={petcashPrevisto}
-          total={valorFinal}
+          total={valorFinalComJuros}
         />
       </Card>
 
@@ -781,7 +796,7 @@ export function PagamentoForm({
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-xs text-black/50 dark:text-white/50">Total</p>
-            <p className="truncate text-lg font-bold">{formatarPreco(valorFinal)}</p>
+            <p className="truncate text-lg font-bold">{formatarPreco(valorFinalComJuros)}</p>
           </div>
           {tipoPagamento === NOME_PAGAMENTO_ONLINE ? (
             <p className="flex-1 text-right text-xs text-black/40 dark:text-white/40">
