@@ -8,6 +8,7 @@ import {
   gerarOpcoesData,
   type JanelaHorarioAgendamento,
   type OpcaoDataAgendamento,
+  type StatusLoja,
 } from "@/lib/agendamento";
 
 function pill(ativo: boolean) {
@@ -33,18 +34,23 @@ function pillPequena(ativo: boolean) {
  */
 export function SeletorAgendamento({
   horarioFuncionamento,
+  statusLoja,
   janela,
   onMudarJanela,
   estimativa,
 }: {
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  /** Loja fechada agora trava só "Quero agora" — Agendar nunca exige atendimento imediato. */
+  statusLoja: StatusLoja;
   janela: JanelaHorarioAgendamento | null;
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
   /** Estimativa da zona de entrega (min–max em minutos) — null pra retirada, ou entrega sem frete resolvido ainda. Convertida em horário real de chegada e mostrada como legenda de "Quero agora" (some se "Agendar" estiver ativo). */
   estimativa?: { min: number; max: number } | null;
 }) {
   const opcoesData = useMemo(() => gerarOpcoesData(horarioFuncionamento), [horarioFuncionamento]);
-  const [agendando, setAgendando] = useState(false);
+  // Loja fechada agora já começa na aba "Agendar" — "Quero agora" fica
+  // desabilitado, não faz sentido abrir nele por padrão.
+  const [agendando, setAgendando] = useState(() => !statusLoja.aberto);
   const [dataEscolhida, setDataEscolhida] = useState<OpcaoDataAgendamento | null>(opcoesData[0] ?? null);
 
   const janelasHorario = useMemo(
@@ -67,17 +73,25 @@ export function SeletorAgendamento({
           <button
             type="button"
             onClick={() => {
+              if (!statusLoja.aberto) return;
               setAgendando(false);
               onMudarJanela(null);
             }}
-            className={pill(!agendando)}
+            disabled={!statusLoja.aberto}
+            className={`${pill(!agendando)} ${!statusLoja.aberto ? "cursor-not-allowed opacity-60" : ""}`}
           >
             Quero agora
           </button>
-          {chegadaEstimada && (
-            <p className="px-1 text-xs text-black/50 dark:text-white/50">
-              Chega entre {chegadaEstimada.inicio}–{chegadaEstimada.fim}
+          {!statusLoja.aberto ? (
+            <p className="px-1 text-xs text-[var(--color-warning)]">
+              Loja fechada{statusLoja.label ? ` • ${statusLoja.label}` : ""}
             </p>
+          ) : (
+            chegadaEstimada && (
+              <p className="px-1 text-xs text-black/50 dark:text-white/50">
+                Chega entre {chegadaEstimada.inicio}–{chegadaEstimada.fim}
+              </p>
+            )
           )}
         </div>
         <button type="button" onClick={() => setAgendando(true)} className={pill(agendando)}>

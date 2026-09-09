@@ -9,6 +9,7 @@ import {
   horarioFechamentoNoDia,
   type JanelaHorarioAgendamento,
   type OpcaoDataAgendamento,
+  type StatusLoja,
 } from "@/lib/agendamento";
 import type { EmpresaCatalogo } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function SeletorMetodoEntrega({
   economicoPrazoDias,
   gratis,
   horarioFuncionamento,
+  statusLoja,
   janela,
   onMudarJanela,
 }: {
@@ -54,6 +56,8 @@ export function SeletorMetodoEntrega({
   /** true quando o subtotal já desbloqueou o frete grátis da zona — vale pras 3 opções (agendada usa o mesmo preço da expressa). */
   gratis: boolean;
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  /** Loja fechada agora trava só a Expressa — Econômica/Agendada nunca exigem atendimento imediato. */
+  statusLoja: StatusLoja;
   janela: JanelaHorarioAgendamento | null;
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
 }) {
@@ -87,11 +91,20 @@ export function SeletorMetodoEntrega({
     <div className="flex flex-col gap-2">
       <p className="text-sm font-semibold">Quando você quer receber?</p>
       <div className="flex flex-col gap-2">
-        <button type="button" onClick={() => selecionar("expressa")} className={cartao(metodo === "expressa")}>
+        <button
+          type="button"
+          onClick={() => statusLoja.aberto && selecionar("expressa")}
+          disabled={!statusLoja.aberto}
+          className={`${cartao(metodo === "expressa")} ${!statusLoja.aberto ? "cursor-not-allowed opacity-60" : ""}`}
+        >
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium">Expressa</span>
             <span className="text-xs text-black/60 dark:text-white/60">
-              {estimativaExpressa ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min` : "A mais rápida"}
+              {!statusLoja.aberto
+                ? `Loja fechada${statusLoja.label ? ` • ${statusLoja.label}` : ""}`
+                : estimativaExpressa
+                  ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min`
+                  : "A mais rápida"}
             </span>
           </div>
           <span className={`text-sm font-semibold ${gratis ? "text-[var(--color-success)]" : ""}`}>

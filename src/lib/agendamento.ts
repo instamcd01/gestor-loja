@@ -30,6 +30,59 @@ function formatarHM(data: Date): string {
   return data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function paraHM(data: Date): string {
+  return `${String(data.getHours()).padStart(2, "0")}:${String(data.getMinutes()).padStart(2, "0")}`;
+}
+
+export interface StatusLoja {
+  aberto: boolean;
+  /** Só quando fechado — pronto pra UI, ex: "Abre às 08:00" / "Abre amanhã às 08:00" / "Abre seg às 08:00". */
+  label: string | null;
+}
+
+/**
+ * Loja aberta *agora* (dia + hora do relógio) — não confundir com
+ * `gerarOpcoesData` (que só pula dias marcados como fechados pra
+ * AGENDAR, sem olhar a hora atual). Usado pra travar pedido IMEDIATO
+ * (Expressa/"Quero agora") fora do horário de funcionamento — a mesma
+ * regra é reaplicada de verdade no servidor (`_finalizar_pedido_core`),
+ * isto aqui é só a UI. Sem `horario_funcionamento` configurado, assume
+ * sempre aberto (mesma regra já usada no resto deste arquivo).
+ */
+export function statusLojaAgora(horarioFuncionamento: HorarioFuncionamento | null | undefined): StatusLoja {
+  if (!horarioFuncionamento) return { aberto: true, label: null };
+
+  const agora = new Date();
+  const diaHoje = DIAS_SEMANA[agora.getDay()];
+  const configHoje = horarioFuncionamento[diaHoje];
+  const horaAtual = paraHM(agora);
+
+  if (configHoje?.aberto !== false) {
+    const abre = configHoje?.abre;
+    const fecha = configHoje?.fecha;
+    if (!abre || !fecha || (horaAtual >= abre && horaAtual < fecha)) {
+      return { aberto: true, label: null };
+    }
+    if (horaAtual < abre) {
+      return { aberto: false, label: `Abre às ${abre}` };
+    }
+  }
+
+  // Fechado por hoje (já passou do horário, ou o dia inteiro é fechado) —
+  // procura o próximo dia aberto, até 1 semana à frente.
+  for (let i = 1; i <= 7; i++) {
+    const data = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + i);
+    const diaSemana = DIAS_SEMANA[data.getDay()];
+    const config = horarioFuncionamento[diaSemana];
+    if (config?.aberto !== false) {
+      const abre = config?.abre ?? "08:00";
+      const rotuloDia = i === 1 ? "amanhã" : data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+      return { aberto: false, label: `Abre ${rotuloDia} às ${abre}` };
+    }
+  }
+  return { aberto: false, label: null };
+}
+
 /**
  * Horário real estimado de chegada a partir de agora — mesma faixa
  * usada em "Quero agora" (min–max em minutos, vindo da zona de entrega),

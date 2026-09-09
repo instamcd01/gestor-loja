@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
 import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
@@ -13,6 +13,7 @@ import {
   calcularDataUtilFutura,
   formatarDataPrevista,
   horarioFechamentoNoDia,
+  statusLojaAgora,
   type JanelaHorarioAgendamento,
 } from "@/lib/agendamento";
 import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
@@ -100,6 +101,14 @@ export function EntregaForm({
   // acima atualiza (troca feita aqui ou na barra).
   const endereco = enderecoEstimado?.endereco ?? enderecoSalvo ?? null;
 
+  // Loja fechada agora trava pedido IMEDIATO (Expressa/"Quero agora") —
+  // Econômica/Agendada continuam liberadas, nunca prometeram atendimento
+  // na hora. Reavaliado só quando `horarioFuncionamento` muda (não a
+  // cada render) — não precisa de relógio ao vivo pra esta tela, o
+  // servidor (`_finalizar_pedido_core`) é quem trava de verdade na hora
+  // de confirmar, não esta checagem no cliente.
+  const statusLoja = useMemo(() => statusLojaAgora(horarioFuncionamento), [horarioFuncionamento]);
+
   useEffect(() => {
     if (!escolhaManual.current && endereco && tipoEntrega === "retirada") {
       setTipoEntrega("entrega");
@@ -123,7 +132,9 @@ export function EntregaForm({
   // ambíguo: dava pra escolher "Econômica" e "Quero agora" ao mesmo
   // tempo, por exemplo). Agendada usa o mesmo preço da expressa —
   // agendar não é um desconto, só escolhe a hora de chegada.
-  const [metodoEntrega, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">("expressa");
+  const [metodoEntrega, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">(() =>
+    statusLoja.aberto ? "expressa" : "agendada",
+  );
   const modalidadeEntrega: "expressa" | "economica" = metodoEntrega === "economica" ? "economica" : "expressa";
 
   function mudarTipoEntrega(novo: TipoEntrega) {
@@ -281,6 +292,19 @@ export function EntregaForm({
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
+      {!statusLoja.aberto && (
+        <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3">
+          <span aria-hidden className="text-base leading-none">
+            🕐
+          </span>
+          <p className="text-sm text-[var(--color-warning)]">
+            <span className="font-semibold">Loja fechada agora</span>
+            {statusLoja.label ? ` • ${statusLoja.label}` : ""} — pedido imediato (Expressa/Retirar agora) não está
+            disponível. Você ainda pode agendar pra um horário aberto.
+          </p>
+        </div>
+      )}
+
       {aceitaRetirada && (
         <div>
           <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
@@ -358,6 +382,7 @@ export function EntregaForm({
           economicoPrazoDias={freteResolvido.economico_prazo_dias}
           gratis={entregaGratisAgora}
           horarioFuncionamento={horarioFuncionamento}
+          statusLoja={statusLoja}
           janela={janelaAgendamento}
           onMudarJanela={setJanelaAgendamento}
         />
@@ -369,6 +394,7 @@ export function EntregaForm({
       {tipoEntrega === "retirada" && (
         <SeletorAgendamento
           horarioFuncionamento={horarioFuncionamento}
+          statusLoja={statusLoja}
           janela={janelaAgendamento}
           onMudarJanela={setJanelaAgendamento}
           estimativa={null}
