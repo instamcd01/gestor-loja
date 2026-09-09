@@ -83,6 +83,44 @@ export function statusLojaAgora(horarioFuncionamento: HorarioFuncionamento | nul
   return { aberto: false, label: null };
 }
 
+export interface DisponibilidadeImediata {
+  disponivel: boolean;
+  /** Só quando indisponível — já pronto pra UI: "Loja em pausa • motivo • Volta às HH:MM" ou "Loja fechada • Abre às HH:MM". */
+  mensagem: string | null;
+}
+
+/**
+ * Combina pausa programada/imediata (pausas_loja) com o horário normal
+ * pra decidir se pedido IMEDIATO (Expressa/"Quero agora") pode ser
+ * oferecido agora — pausa tem precedência (é mais específica: tem
+ * motivo e hora de volta exatos) sobre "loja fechada" (rotina semanal).
+ * Agendada/Econômica nunca passam por aqui — nenhuma das duas promete
+ * atendimento na hora. A trava de verdade é no servidor
+ * (`_finalizar_pedido_core`), isto aqui é só a UI.
+ */
+export function disponibilidadeImediataAgora(
+  horarioFuncionamento: HorarioFuncionamento | null | undefined,
+  pausaAtiva: { motivo: string | null; fim: string } | null | undefined,
+): DisponibilidadeImediata {
+  if (pausaAtiva) {
+    const label = new Date(pausaAtiva.fim).toLocaleString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Sao_Paulo",
+    });
+    return {
+      disponivel: false,
+      mensagem: `Loja em pausa${pausaAtiva.motivo ? ` • ${pausaAtiva.motivo}` : ""} • Volta às ${label}`,
+    };
+  }
+
+  const status = statusLojaAgora(horarioFuncionamento);
+  if (!status.aberto) {
+    return { disponivel: false, mensagem: `Loja fechada${status.label ? ` • ${status.label}` : ""}` };
+  }
+  return { disponivel: true, mensagem: null };
+}
+
 /**
  * Horário real estimado de chegada a partir de agora — mesma faixa
  * usada em "Quero agora" (min–max em minutos, vindo da zona de entrega),
@@ -171,6 +209,8 @@ export function gerarJanelasHorario(
   dataISO: string,
   diaSemana: DiaSemana,
   horarioFuncionamento: HorarioFuncionamento | null | undefined,
+  /** Janelas de pausa (ativa ou já agendada) a excluir — mesma regra aplicada de verdade no servidor. */
+  pausasAgendamento?: { inicio: string; fim: string }[] | null,
 ): JanelaHorarioAgendamento[] {
   const config = horarioFuncionamento?.[diaSemana];
   if (config?.aberto === false) return [];
@@ -191,7 +231,11 @@ export function gerarJanelasHorario(
     const inicio = new Date(cursor);
     const fim = new Date(cursor.getTime() + DURACAO_JANELA_MIN * 60_000);
 
-    if (inicio >= antecedenciaMinima) {
+    const dentroDePausa = pausasAgendamento?.some(
+      (p) => inicio < new Date(p.fim) && fim > new Date(p.inicio),
+    );
+
+    if (inicio >= antecedenciaMinima && !dentroDePausa) {
       janelas.push({ inicio: inicio.toISOString(), fim: fim.toISOString(), label: `${formatarHM(inicio)}–${formatarHM(fim)}` });
     }
     cursor = fim;

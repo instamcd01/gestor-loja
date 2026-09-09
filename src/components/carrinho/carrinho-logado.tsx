@@ -28,6 +28,8 @@ export function CarrinhoLogado({
   retiradaPrazoMin,
   enderecoEmpresa,
   horarioFuncionamento,
+  pausaAtiva,
+  pausasAgendamento,
   enderecoSalvo,
   carrinhoInicial,
   usarPrecoAncoraMarketplace = false,
@@ -38,6 +40,8 @@ export function CarrinhoLogado({
   retiradaPrazoMin: number | null;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  pausaAtiva: EmpresaCatalogo["pausa_ativa"];
+  pausasAgendamento: EmpresaCatalogo["pausas_agendamento"];
   enderecoSalvo: EnderecoCliente | null;
   carrinhoInicial: Carrinho;
   usarPrecoAncoraMarketplace?: boolean;
@@ -158,6 +162,8 @@ export function CarrinhoLogado({
         retiradaPrazoMin={retiradaPrazoMin}
         enderecoEmpresa={enderecoEmpresa}
         horarioFuncionamento={horarioFuncionamento}
+        pausaAtiva={pausaAtiva}
+        pausasAgendamento={pausasAgendamento}
         subtotal={carrinho.valorTotal}
         itens={carrinho.itens}
         enderecoSalvo={enderecoSalvo}

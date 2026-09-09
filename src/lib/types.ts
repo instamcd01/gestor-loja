@@ -20,6 +20,10 @@ export interface EmpresaCatalogo {
   valor_minimo_pedido: number | null;
   metodos_pagamento_ativos: string[] | null;
   horario_funcionamento: Record<string, { abre?: string; fecha?: string; aberto?: boolean }> | null;
+  /** Pausa programada/imediata ATIVA agora, se houver — motivo opcional. */
+  pausa_ativa: { motivo: string | null; fim: string } | null;
+  /** Janelas de pausa (ativa ou já agendada) nos próximos ~7 dias — só início/fim, pra excluir do agendamento. */
+  pausas_agendamento: { inicio: string; fim: string }[] | null;
   aceita_pedidos_online: boolean;
   endereco: string | null;
   cidade: string | null;

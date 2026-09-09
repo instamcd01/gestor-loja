@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   calcularDataUtilFutura,
+  disponibilidadeImediataAgora,
   formatarDataPrevista,
   horarioFechamentoNoDia,
-  statusLojaAgora,
   type JanelaHorarioAgendamento,
 } from "@/lib/agendamento";
 import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
@@ -48,6 +48,8 @@ export function EntregaForm({
   retiradaPrazoMin,
   enderecoEmpresa,
   horarioFuncionamento,
+  pausaAtiva,
+  pausasAgendamento,
   subtotal,
   itens,
   enderecoSalvo,
@@ -61,6 +63,8 @@ export function EntregaForm({
   retiradaPrazoMin: number | null;
   enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null };
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
+  pausaAtiva: EmpresaCatalogo["pausa_ativa"];
+  pausasAgendamento: EmpresaCatalogo["pausas_agendamento"];
   subtotal: number;
   itens: ItemCarrinho[];
   enderecoSalvo: EnderecoCliente | null;
@@ -101,13 +105,17 @@ export function EntregaForm({
   // acima atualiza (troca feita aqui ou na barra).
   const endereco = enderecoEstimado?.endereco ?? enderecoSalvo ?? null;
 
-  // Loja fechada agora trava pedido IMEDIATO (Expressa/"Quero agora") —
-  // Econômica/Agendada continuam liberadas, nunca prometeram atendimento
-  // na hora. Reavaliado só quando `horarioFuncionamento` muda (não a
-  // cada render) — não precisa de relógio ao vivo pra esta tela, o
-  // servidor (`_finalizar_pedido_core`) é quem trava de verdade na hora
-  // de confirmar, não esta checagem no cliente.
-  const statusLoja = useMemo(() => statusLojaAgora(horarioFuncionamento), [horarioFuncionamento]);
+  // Pausa (programada/imediata) OU loja fechada trava pedido IMEDIATO
+  // (Expressa/"Quero agora") — Econômica/Agendada continuam liberadas,
+  // nunca prometeram atendimento na hora. Pausa tem precedência sobre
+  // "fechada" (mais específica: motivo + hora de volta exatos).
+  // Reavaliado só quando os dados mudam (não a cada render) — não
+  // precisa de relógio ao vivo aqui, o servidor
+  // (`_finalizar_pedido_core`) é quem trava de verdade na confirmação.
+  const disponibilidadeImediata = useMemo(
+    () => disponibilidadeImediataAgora(horarioFuncionamento, pausaAtiva),
+    [horarioFuncionamento, pausaAtiva],
+  );
 
   useEffect(() => {
     if (!escolhaManual.current && endereco && tipoEntrega === "retirada") {
@@ -133,7 +141,7 @@ export function EntregaForm({
   // tempo, por exemplo). Agendada usa o mesmo preço da expressa —
   // agendar não é um desconto, só escolhe a hora de chegada.
   const [metodoEntrega, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">(() =>
-    statusLoja.aberto ? "expressa" : "agendada",
+    disponibilidadeImediata.disponivel ? "expressa" : "agendada",
   );
   const modalidadeEntrega: "expressa" | "economica" = metodoEntrega === "economica" ? "economica" : "expressa";
 
@@ -292,15 +300,14 @@ export function EntregaForm({
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
-      {!statusLoja.aberto && (
+      {!disponibilidadeImediata.disponivel && (
         <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3">
           <span aria-hidden className="text-base leading-none">
             🕐
           </span>
           <p className="text-sm text-[var(--color-warning)]">
-            <span className="font-semibold">Loja fechada agora</span>
-            {statusLoja.label ? ` • ${statusLoja.label}` : ""} — pedido imediato (Expressa/Retirar agora) não está
-            disponível. Você ainda pode agendar pra um horário aberto.
+            <span className="font-semibold">{disponibilidadeImediata.mensagem}</span> — pedido imediato
+            (Expressa/Retirar agora) não está disponível. Você ainda pode agendar pra um horário disponível.
           </p>
         </div>
       )}
@@ -382,7 +389,8 @@ export function EntregaForm({
           economicoPrazoDias={freteResolvido.economico_prazo_dias}
           gratis={entregaGratisAgora}
           horarioFuncionamento={horarioFuncionamento}
-          statusLoja={statusLoja}
+          pausasAgendamento={pausasAgendamento}
+          disponibilidadeImediata={disponibilidadeImediata}
           janela={janelaAgendamento}
           onMudarJanela={setJanelaAgendamento}
         />
@@ -394,7 +402,8 @@ export function EntregaForm({
       {tipoEntrega === "retirada" && (
         <SeletorAgendamento
           horarioFuncionamento={horarioFuncionamento}
-          statusLoja={statusLoja}
+          pausasAgendamento={pausasAgendamento}
+          disponibilidadeImediata={disponibilidadeImediata}
           janela={janelaAgendamento}
           onMudarJanela={setJanelaAgendamento}
           estimativa={null}

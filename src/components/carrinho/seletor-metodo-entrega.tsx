@@ -7,9 +7,9 @@ import {
   gerarJanelasHorario,
   gerarOpcoesData,
   horarioFechamentoNoDia,
+  type DisponibilidadeImediata,
   type JanelaHorarioAgendamento,
   type OpcaoDataAgendamento,
-  type StatusLoja,
 } from "@/lib/agendamento";
 import type { EmpresaCatalogo } from "@/lib/types";
 import { formatarPreco } from "@/lib/utils";
@@ -43,7 +43,8 @@ export function SeletorMetodoEntrega({
   economicoPrazoDias,
   gratis,
   horarioFuncionamento,
-  statusLoja,
+  pausasAgendamento,
+  disponibilidadeImediata,
   janela,
   onMudarJanela,
 }: {
@@ -56,8 +57,10 @@ export function SeletorMetodoEntrega({
   /** true quando o subtotal já desbloqueou o frete grátis da zona — vale pras 3 opções (agendada usa o mesmo preço da expressa). */
   gratis: boolean;
   horarioFuncionamento: EmpresaCatalogo["horario_funcionamento"];
-  /** Loja fechada agora trava só a Expressa — Econômica/Agendada nunca exigem atendimento imediato. */
-  statusLoja: StatusLoja;
+  /** Janelas de pausa a excluir das opções de agendamento. */
+  pausasAgendamento: EmpresaCatalogo["pausas_agendamento"];
+  /** Pausa OU loja fechada agora trava só a Expressa — Econômica/Agendada nunca exigem atendimento imediato. */
+  disponibilidadeImediata: DisponibilidadeImediata;
   janela: JanelaHorarioAgendamento | null;
   onMudarJanela: (janela: JanelaHorarioAgendamento | null) => void;
 }) {
@@ -71,8 +74,10 @@ export function SeletorMetodoEntrega({
   const [dataEscolhida, setDataEscolhida] = useState<OpcaoDataAgendamento | null>(opcoesData[0] ?? null);
   const janelasHorario = useMemo(
     () =>
-      dataEscolhida ? gerarJanelasHorario(dataEscolhida.data, dataEscolhida.diaSemana, horarioFuncionamento) : [],
-    [dataEscolhida, horarioFuncionamento],
+      dataEscolhida
+        ? gerarJanelasHorario(dataEscolhida.data, dataEscolhida.diaSemana, horarioFuncionamento, pausasAgendamento)
+        : [],
+    [dataEscolhida, horarioFuncionamento, pausasAgendamento],
   );
 
   function selecionar(novo: Metodo) {
@@ -93,15 +98,15 @@ export function SeletorMetodoEntrega({
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => statusLoja.aberto && selecionar("expressa")}
-          disabled={!statusLoja.aberto}
-          className={`${cartao(metodo === "expressa")} ${!statusLoja.aberto ? "cursor-not-allowed opacity-60" : ""}`}
+          onClick={() => disponibilidadeImediata.disponivel && selecionar("expressa")}
+          disabled={!disponibilidadeImediata.disponivel}
+          className={`${cartao(metodo === "expressa")} ${!disponibilidadeImediata.disponivel ? "cursor-not-allowed opacity-60" : ""}`}
         >
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium">Expressa</span>
             <span className="text-xs text-black/60 dark:text-white/60">
-              {!statusLoja.aberto
-                ? `Loja fechada${statusLoja.label ? ` • ${statusLoja.label}` : ""}`
+              {!disponibilidadeImediata.disponivel
+                ? disponibilidadeImediata.mensagem
                 : estimativaExpressa
                   ? `Chega em ${estimativaExpressa.min}–${estimativaExpressa.max} min`
                   : "A mais rápida"}

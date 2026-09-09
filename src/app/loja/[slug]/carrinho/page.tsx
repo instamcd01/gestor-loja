@@ -97,6 +97,8 @@ export default async function CarrinhoPage({
       retiradaPrazoMin={empresa.retirada_prazo_min}
       enderecoEmpresa={enderecoEmpresa}
       horarioFuncionamento={empresa.horario_funcionamento}
+      pausaAtiva={empresa.pausa_ativa}
+      pausasAgendamento={empresa.pausas_agendamento}
       enderecoSalvo={enderecoSalvo}
       carrinhoInicial={carrinho}
       usarPrecoAncoraMarketplace={empresa.preco_ancora_marketplace_ativo}
