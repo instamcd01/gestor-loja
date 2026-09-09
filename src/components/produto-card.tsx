@@ -118,6 +118,7 @@ export function ProdutoCard({
             categoria={produto.categoria}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
+            updatedAt={produto.updated_at}
           />
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {produto.eh_kit && <Badge variant="neutral">Kit</Badge>}

@@ -8,11 +8,13 @@ export function GaleriaProduto({
   categoria,
   imagemPrincipal,
   imagemSecundaria,
+  updatedAt,
 }: {
   nome: string;
   categoria: string | null;
   imagemPrincipal: string | null;
   imagemSecundaria: string | null;
+  updatedAt?: string | null;
 }) {
   const imagens = [imagemPrincipal, imagemSecundaria].filter((src): src is string => !!src);
   const [ativa, setAtiva] = useState(0);
@@ -27,6 +29,7 @@ export function GaleriaProduto({
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover"
           priority
+          updatedAt={updatedAt}
         />
       </div>
 
@@ -41,7 +44,13 @@ export function GaleriaProduto({
                 ativa === i ? "border-[var(--brand-primary)]" : "border-transparent"
               }`}
             >
-              <ProdutoImagem src={src} alt={`${nome} — foto ${i + 1}`} categoria={categoria} className="object-cover" />
+              <ProdutoImagem
+                src={src}
+                alt={`${nome} — foto ${i + 1}`}
+                categoria={categoria}
+                className="object-cover"
+                updatedAt={updatedAt}
+              />
             </button>
           ))}
         </div>

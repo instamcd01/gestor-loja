@@ -109,6 +109,8 @@ export interface ProdutoCatalogo {
   preco_cheio_kit: number | null;
   /** Maior preço entre os marketplaces habilitados pra esse produto (produto_canal — iFood, 99Food...), null se não estiver em nenhum. Usado só como preço "de" comparativo quando `empresa.preco_ancora_marketplace_ativo`; nunca é o preço realmente cobrado no site. */
   preco_ancora_canais: number | null;
+  /** `produtos.updated_at` — usado só como cache-buster da imagem (ver `ProdutoImagem`), já que o path do arquivo no Storage é sempre o mesmo pro mesmo produto+posição. */
+  updated_at: string | null;
 }
 
 /** Um componente real dentro de um kit — pra página de detalhe listar "o que vem dentro". */

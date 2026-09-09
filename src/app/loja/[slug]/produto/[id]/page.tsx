@@ -133,6 +133,7 @@ export default async function ProdutoPage({
               categoria={produto.categoria}
               imagemPrincipal={produto.imagem_url}
               imagemSecundaria={produto.imagem_url_secundaria}
+              updatedAt={produto.updated_at}
             />
           </div>
 
