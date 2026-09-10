@@ -16,6 +16,7 @@ const ENDERECO_VAZIO: EnderecoCliente = {
   complemento: "",
   lat: null,
   lng: null,
+  precisao: null,
 };
 
 // Campos que identificam O LOCAL — editar qualquer um invalida as
@@ -75,7 +76,7 @@ export function CapturarEndereco({
       ...atual,
       [campo]: valor,
       ...(CAMPOS_LOCALIZACAO.includes(campo as (typeof CAMPOS_LOCALIZACAO)[number])
-        ? { lat: null, lng: null }
+        ? { lat: null, lng: null, precisao: null }
         : {}),
     }));
   }
@@ -92,6 +93,7 @@ export function CapturarEndereco({
       cep: c.cep ?? atual.cep,
       lat: c.lat,
       lng: c.lng,
+      precisao: c.precisao,
     }));
   }
 

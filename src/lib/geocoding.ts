@@ -10,7 +10,7 @@ interface AddressComponent {
 interface GeocodeResult {
   formatted_address: string;
   address_components: AddressComponent[];
-  geometry: { location: { lat: number; lng: number } };
+  geometry: { location: { lat: number; lng: number }; location_type?: string };
 }
 
 function extrairComponente(
@@ -36,6 +36,7 @@ function paraCandidato(resultado: GeocodeResult): CandidatoEndereco {
     cidade: extrairComponente(comp, ["administrative_area_level_2", "locality"]),
     estado: extrairComponente(comp, ["administrative_area_level_1"], true),
     cep: extrairComponente(comp, ["postal_code"]),
+    precisao: resultado.geometry.location_type ?? null,
   };
 }
 

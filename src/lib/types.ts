@@ -183,6 +183,8 @@ export interface EnderecoCliente {
   /** Coordenadas confirmadas (geocodificação ou geolocalização do navegador) — quando presentes, usadas no cálculo de distância em vez do texto do endereço, mais preciso pra ruas longas/numéricas. */
   lat: number | null;
   lng: number | null;
+  /** Confiança do Google nessas coordenadas (`location_type` do Geocoding API) — ROOFTOP é exata, os demais (RANGE_INTERPOLATED/GEOMETRIC_CENTER/APPROXIMATE) são estimativas e podem cair num ponto/prédio diferente do real, sobretudo em ruas longas ou bairros novos. Opcional só porque endereços salvos antes desse campo existir não têm valor. */
+  precisao?: string | null;
 }
 
 /** Um resultado possível ao geocodificar um endereço digitado — pode haver mais de um quando o nome se repete (ruas numéricas, bairros com nomes iguais em cidades diferentes etc). */
@@ -195,6 +197,8 @@ export interface CandidatoEndereco {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  /** `location_type` bruto do Google (ROOFTOP/RANGE_INTERPOLATED/GEOMETRIC_CENTER/APPROXIMATE) — ver `EnderecoCliente.precisao`. */
+  precisao: string | null;
 }
 
 export interface OpcaoFrete {

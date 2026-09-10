@@ -5,6 +5,7 @@ import { calcularFrete, type ResultadoFrete } from "@/lib/frete";
 import { geocodificarEndereco, geocodificarReverso } from "@/lib/geocoding";
 import { cobrarPagamentoOnline, type DadosPagamentoOnline } from "@/lib/mercadopago";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 import { registrarErroSistema } from "@/lib/erros";
@@ -220,6 +221,46 @@ export async function cancelarPagamentoPendente(slug: string, pedidoId: string):
 }
 
 /**
+ * Loga cada confirmação de endereço no checkout — cobre dois pontos hoje
+ * invisíveis: (1) frete indisponível (fora_de_area/erro_distancia), que
+ * antes só virava uma linha de texto na tela e sumia sem deixar rastro; e
+ * (2) a confiança do Google no geocoding (`endereco.precisao`, ver
+ * `types.ts`) — quando vem RANGE_INTERPOLATED/GEOMETRIC_CENTER/APPROXIMATE
+ * em vez de ROOFTOP, o pino pode ter caído num endereço vizinho, não no
+ * real, e hoje isso não aparece em lugar nenhum pro lojista. Best-effort:
+ * nunca deixa uma falha de log quebrar o cálculo de frete (já em
+ * andamento/já exibido pro cliente).
+ */
+async function registrarEventoEndereco(
+  supabaseUsuario: Awaited<ReturnType<typeof createClient>>,
+  empresaId: string,
+  endereco: EnderecoCliente,
+  resultado: ResultadoFrete,
+): Promise<void> {
+  try {
+    const cliente = await getClienteAtualResumo(supabaseUsuario);
+    const supabase = createServiceClient();
+    await supabase.from("eventos_sistema").insert({
+      tipo_evento: "site_endereco_confirmado",
+      tabela_origem: "clientes",
+      dados: {
+        empresaId,
+        clienteNome: cliente?.nome ?? null,
+        clienteTelefone: cliente?.telefone ?? null,
+        cep: endereco.cep,
+        bairro: endereco.bairro,
+        cidade: endereco.cidade,
+        precisao: endereco.precisao ?? null,
+        freteDisponivel: resultado.disponivel,
+        motivo: resultado.disponivel ? null : resultado.motivo,
+      },
+    });
+  } catch (e) {
+    console.error("Falha ao registrar evento de endereço:", e);
+  }
+}
+
+/**
  * Calcula o frete a partir de um endereço já resolvido (com lat/lng
  * confirmados via CapturarEndereco) — não lê mais o endereço salvo na
  * conta diretamente, quem chama decide a origem (conta, estimativa
@@ -234,7 +275,12 @@ export async function calcularFretePorEndereco(
   if (!endereco.endereco || !endereco.cep) {
     return { disponivel: false, motivo: "sem_endereco" };
   }
-  return calcularFrete(empresaId, enderecoEmpresa, endereco, subtotal);
+  const resultado = await calcularFrete(empresaId, enderecoEmpresa, endereco, subtotal);
+
+  const supabase = await createClient();
+  void registrarEventoEndereco(supabase, empresaId, endereco, resultado);
+
+  return resultado;
 }
 
 export async function buscarEnderecoCandidatos(query: string): Promise<CandidatoEndereco[]> {
