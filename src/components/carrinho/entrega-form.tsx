@@ -300,18 +300,6 @@ export function EntregaForm({
 
   return (
     <div className="flex flex-col gap-4 border-t border-black/10 pt-6 dark:border-white/10">
-      {!disponibilidadeImediata.disponivel && (
-        <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3">
-          <span aria-hidden className="text-base leading-none">
-            🕐
-          </span>
-          <p className="text-sm text-[var(--color-warning)]">
-            <span className="font-semibold">{disponibilidadeImediata.mensagem}</span> — pedido imediato
-            (Expressa/Retirar agora) não está disponível. Você ainda pode agendar pra um horário disponível.
-          </p>
-        </div>
-      )}
-
       {aceitaRetirada && (
         <div>
           <p className="mb-2 text-sm font-semibold">Retirada ou entrega</p>
