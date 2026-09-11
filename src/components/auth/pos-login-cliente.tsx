@@ -15,17 +15,24 @@ export function PosLoginCliente({
   slug,
   rotaPosLogin,
   precisaCompletarCadastro,
+  clienteId,
 }: {
   empresaId: string;
   slug: string;
   rotaPosLogin: string;
   precisaCompletarCadastro: boolean;
+  /** Já resolvido pelo Server Component (entrar_ou_criar_cliente) quando
+   * o cadastro já estava completo — null nesse caso significa que a RPC
+   * falhou/não achou nada, não que o cadastro está pendente (isso é
+   * `precisaCompletarCadastro`). Alimenta a notificação "Cliente entrou
+   * no site" no Gestor. */
+  clienteId: string | null;
 }) {
   const router = useRouter();
 
   useEffect(() => {
     if (!precisaCompletarCadastro) {
-      concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin });
+      concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin, clienteId, evento: "entrou no site" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [precisaCompletarCadastro]);
@@ -36,7 +43,15 @@ export function PosLoginCliente({
         empresaId={empresaId}
         slug={slug}
         pedirEmailSenha={false}
-        onCompleto={() => concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin })}
+        onCompleto={(clienteIdCriado) =>
+          concluirLoginEIrPara(router, {
+            slug,
+            empresaId,
+            rotaPosLogin,
+            clienteId: clienteIdCriado,
+            evento: "se cadastrou no site",
+          })
+        }
       />
     );
   }

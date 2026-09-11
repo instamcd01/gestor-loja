@@ -226,7 +226,7 @@ export function LoginForm({
       return;
     }
 
-    await concluirEIrPara();
+    await concluirEIrPara(clienteId as string, "entrou no site");
   }
 
   /** Merge do carrinho de visitante + navegação final — só roda quando o
@@ -235,8 +235,8 @@ export function LoginForm({
    * pelo retorno do login com Google (pos-login/page.tsx) — ver comentário
    * lá sobre por que esse fluxo não pode ficar só aqui dentro do state
    * deste formulário. */
-  function concluirEIrPara() {
-    return concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin });
+  function concluirEIrPara(clienteId: string, evento: string) {
+    return concluirLoginEIrPara(router, { slug, empresaId, rotaPosLogin, clienteId, evento });
   }
 
   /** Login com Google é um redirect de página inteira — ao contrário de
@@ -528,7 +528,7 @@ export function LoginForm({
         slug={slug}
         telefoneConhecido={telefoneVerificado ?? undefined}
         pedirEmailSenha={!!telefoneVerificado}
-        onCompleto={concluirEIrPara}
+        onCompleto={(clienteId) => concluirEIrPara(clienteId, "se cadastrou no site")}
       />
     );
   }

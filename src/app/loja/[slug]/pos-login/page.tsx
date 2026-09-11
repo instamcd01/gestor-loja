@@ -83,6 +83,7 @@ export default async function PosLoginPage({
           slug={slug}
           rotaPosLogin={rotaPosLogin}
           precisaCompletarCadastro={precisaCompletarCadastro}
+          clienteId={(clienteId as string | null) ?? null}
         />
       </Card>
     </div>

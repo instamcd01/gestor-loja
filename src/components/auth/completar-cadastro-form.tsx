@@ -39,7 +39,7 @@ export function CompletarCadastroForm({
   /** Pré-preenche com o nome já digitado no passo anterior (SMS), se houver
    * — evita pedir de novo. */
   nomeInicial?: string;
-  onCompleto: () => void;
+  onCompleto: (clienteId: string) => void;
 }) {
   const [nome, setNome] = useState(nomeInicial);
   const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("fisica");
@@ -55,6 +55,10 @@ export function CompletarCadastroForm({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [emailPendenteConfirmacao, setEmailPendenteConfirmacao] = useState<string | null>(null);
+  // Guardado pra passar pro onCompleto no botão "Continuar" da tela de
+  // email pendente abaixo — nesse ponto o cadastro (RPC) já rodou com
+  // sucesso, só falta a navegação final.
+  const [clienteIdCriado, setClienteIdCriado] = useState<string | null>(null);
 
   // Feedback ao vivo (assim que termina de digitar, sem esperar o submit) —
   // só acende depois que a quantidade certa de dígitos foi preenchida, pra
@@ -123,7 +127,7 @@ export function CompletarCadastroForm({
       }
     }
 
-    const { error } = await supabase.rpc("completar_cadastro_cliente", {
+    const { data: clienteId, error } = await supabase.rpc("completar_cadastro_cliente", {
       p_empresa_id: empresaId,
       p_nome: nome.trim(),
       p_tipo_pessoa: tipoPessoa,
@@ -149,6 +153,8 @@ export function CompletarCadastroForm({
       return;
     }
 
+    setClienteIdCriado(clienteId as string);
+
     // O email só passa a valer pra login DEPOIS que o cliente clicar no
     // link de confirmação que o Supabase acabou de mandar (updateUser não
     // ativa o email na hora, por segurança — ver a mesma regra na
@@ -160,7 +166,7 @@ export function CompletarCadastroForm({
       return;
     }
 
-    onCompleto();
+    onCompleto(clienteId as string);
   }
 
   if (emailPendenteConfirmacao) {
@@ -172,7 +178,11 @@ export function CompletarCadastroForm({
           Confirme pra poder entrar também com email e senha da próxima vez — até lá, continue entrando com seu
           telefone normalmente.
         </p>
-        <Button type="button" onClick={onCompleto} className="py-3 text-base">
+        <Button
+          type="button"
+          onClick={() => clienteIdCriado && onCompleto(clienteIdCriado)}
+          className="py-3 text-base"
+        >
           Continuar
         </Button>
       </div>
