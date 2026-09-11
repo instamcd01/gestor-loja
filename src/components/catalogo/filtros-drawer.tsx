@@ -5,6 +5,7 @@ import { FiltroEspecie } from "@/components/catalogo/filtro-especie";
 import { FiltroFase } from "@/components/catalogo/filtro-fase";
 import { FiltroMarca } from "@/components/catalogo/filtro-marca";
 import { FiltroPeso } from "@/components/catalogo/filtro-peso";
+import { FiltroPesoAnimal } from "@/components/catalogo/filtro-peso-animal";
 import { FiltroPorte } from "@/components/catalogo/filtro-porte";
 import { FiltroPreco } from "@/components/catalogo/filtro-preco";
 import type { FaixaPeso, FaixaPreco } from "@/lib/catalogo";
@@ -23,6 +24,8 @@ export function FiltrosDrawer({
   faixaAtiva,
   faixasPeso,
   faixaPesoAtiva,
+  pesoAnimalDisponivel = false,
+  pesoAnimalAtivo = null,
 }: {
   marcas: { marca: string; total: number }[];
   marcaAtiva: string | null;
@@ -36,6 +39,9 @@ export function FiltrosDrawer({
   faixaAtiva: { min?: number; max?: number } | null;
   faixasPeso: FaixaPeso[];
   faixaPesoAtiva: { min?: number; max?: number } | null;
+  /** Categoria atual é Antipulgas/Vermífugos (onde `dose` traz peso do animal) — ver `FiltroPesoAnimal`. */
+  pesoAnimalDisponivel?: boolean;
+  pesoAnimalAtivo?: number | null;
 }) {
   const [aberto, setAberto] = useState(false);
   const ativos =
@@ -44,7 +50,8 @@ export function FiltrosDrawer({
     (faseAtiva ? 1 : 0) +
     (porteAtiva ? 1 : 0) +
     (faixaAtiva ? 1 : 0) +
-    (faixaPesoAtiva ? 1 : 0);
+    (faixaPesoAtiva ? 1 : 0) +
+    (pesoAnimalAtivo != null ? 1 : 0);
   const painelRef = useDrawerA11y(aberto, () => setAberto(false));
 
   if (
@@ -53,7 +60,8 @@ export function FiltrosDrawer({
     fases.length <= 1 &&
     portes.length <= 1 &&
     faixasPreco.length <= 1 &&
-    faixasPeso.length <= 1
+    faixasPeso.length <= 1 &&
+    !pesoAnimalDisponivel
   )
     return null;
 
@@ -100,6 +108,7 @@ export function FiltrosDrawer({
               </button>
             </div>
 
+            {pesoAnimalDisponivel && <FiltroPesoAnimal valorAtivo={pesoAnimalAtivo} />}
             {especies.length > 1 && <FiltroEspecie especies={especies} especieAtiva={especieAtiva} />}
             {fases.length > 1 && <FiltroFase fases={fases} faseAtiva={faseAtiva} />}
             {portes.length > 1 && <FiltroPorte portes={portes} porteAtivo={porteAtiva} />}

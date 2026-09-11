@@ -67,6 +67,7 @@ export default async function LojaPage({
     porte?: string;
     pesoMin?: string;
     pesoMax?: string;
+    pesoAnimal?: string;
     precoMin?: string;
     precoMax?: string;
     ordenar?: Ordenacao;
@@ -85,6 +86,7 @@ export default async function LojaPage({
     porte,
     pesoMin,
     pesoMax,
+    pesoAnimal,
     precoMin,
     precoMax,
     ordenar,
@@ -105,10 +107,14 @@ export default async function LojaPage({
     !!fase ||
     !!porte ||
     !!pesoMin ||
+    !!pesoAnimal ||
     !!precoMin ||
     promocaoAtiva ||
     destaqueAtivo;
   const moderno = empresa.catalogo_modelo === "moderno";
+  // Só Antipulgas/Vermífugos tem `dose` no formato "X a Ykg" — nas demais
+  // categorias o campo não teria pra que filtrar, ver `FiltroPesoAnimal`.
+  const pesoAnimalDisponivel = categoria === "Antipulgas Cães" || categoria === "Antipulgas Gatos";
 
   // Linhas por categoria (CategoriasEmLinha) valem pra home solta, pra tela
   // de espécie (Cães/Gatos/Pássaros/Outros) E pra "Tudo em {departamento}"
@@ -124,6 +130,7 @@ export default async function LojaPage({
     !!fase ||
     !!porte ||
     !!pesoMin ||
+    !!pesoAnimal ||
     !!precoMin ||
     !!ordenar ||
     promocaoAtiva ||
@@ -148,6 +155,7 @@ export default async function LojaPage({
           porte,
           pesoMin: pesoMin ? Number(pesoMin) : undefined,
           pesoMax: pesoMax ? Number(pesoMax) : undefined,
+          pesoAnimal: pesoAnimal ? Number(pesoAnimal) : undefined,
           precoMin: precoMin ? Number(precoMin) : undefined,
           precoMax: precoMax ? Number(precoMax) : undefined,
           ordenar,
@@ -282,6 +290,8 @@ export default async function LojaPage({
           faixaAtiva={faixaAtiva}
           faixasPeso={faixasPeso}
           faixaPesoAtiva={faixaPesoAtiva}
+          pesoAnimalDisponivel={pesoAnimalDisponivel}
+          pesoAnimalAtivo={pesoAnimal ? Number(pesoAnimal) : null}
         />
         <OrdenarPor ordenacaoAtiva={ordenar ?? "relevancia"} />
       </div>

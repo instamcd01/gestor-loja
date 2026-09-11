@@ -115,6 +115,8 @@ export interface ProdutoCatalogo {
   preco_ancora_canais: number | null;
   /** `produtos.updated_at` — usado só como cache-buster da imagem (ver `ProdutoImagem`), já que o path do arquivo no Storage é sempre o mesmo pro mesmo produto+posição. */
   updated_at: string | null;
+  /** Texto livre ("10 a 20kg", "até 10kg", "Acima de 40kg") — em Antipulgas/Vermífugos é a faixa de peso do animal a que o produto se aplica; ver `parseFaixaPesoAnimalDose` em `lib/catalogo.ts`. */
+  dose: string | null;
 }
 
 /** Um componente real dentro de um kit — pra página de detalhe listar "o que vem dentro". */

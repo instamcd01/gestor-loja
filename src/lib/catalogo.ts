@@ -223,6 +223,31 @@ export async function getProdutosHomeAgrupados(
   return data ?? [];
 }
 
+/**
+ * Extrai a faixa de peso do ANIMAL a partir do texto livre de `dose` —
+ * usado só em Antipulgas/Vermífugos, onde o rótulo do fabricante já traz
+ * isso ("10 a 20kg", "até 10kg", "Acima de 40kg"). Conferido contra as ~90
+ * doses reais do catálogo: só esses 3 formatos aparecem; o resto (spray,
+ * null) não tem restrição de peso, por isso retorna null (tratado como
+ * "serve pra qualquer peso" em vez de excluído do resultado).
+ */
+export function parseFaixaPesoAnimalDose(dose: string | null | undefined): { min: number; max?: number } | null {
+  if (!dose) return null;
+  const texto = dose.trim().toLowerCase();
+  const numero = (s: string) => Number(s.replace(",", "."));
+
+  let m = texto.match(/^(\d+(?:,\d+)?)\s*a\s*(\d+(?:,\d+)?)\s*kg$/);
+  if (m) return { min: numero(m[1]), max: numero(m[2]) };
+
+  m = texto.match(/^at[ée]\s*(\d+(?:,\d+)?)\s*kg$/);
+  if (m) return { min: 0, max: numero(m[1]) };
+
+  m = texto.match(/^acima de\s*(\d+(?:,\d+)?)\s*kg$/);
+  if (m) return { min: numero(m[1]) };
+
+  return null;
+}
+
 export async function getProdutosCatalogo(
   empresaId: string,
   filtros?: {
@@ -235,6 +260,8 @@ export async function getProdutosCatalogo(
     porte?: string;
     pesoMin?: number;
     pesoMax?: number;
+    /** Peso do animal em kg (não da embalagem) — filtra pela faixa em `dose`, ver `parseFaixaPesoAnimalDose`. Só relevante em Antipulgas/Vermífugos. */
+    pesoAnimal?: number;
     precoMin?: number;
     precoMax?: number;
     ordenar?: Ordenacao;
@@ -347,6 +374,19 @@ export async function getProdutosCatalogo(
   }
 
   let resultado = data ?? [];
+
+  if (filtros?.pesoAnimal != null) {
+    // `dose` é texto livre, não dá pra filtrar isso no Postgres via
+    // PostgREST — filtra em memória (categoria já é pequena, ~90 produtos).
+    // Produto sem faixa parseável (spray, null) não tem restrição de peso,
+    // então continua aparecendo pra qualquer peso digitado.
+    const peso = filtros.pesoAnimal;
+    resultado = resultado.filter((produto) => {
+      const faixa = parseFaixaPesoAnimalDose(produto.dose);
+      if (!faixa) return true;
+      return peso >= faixa.min && (faixa.max == null || peso <= faixa.max);
+    });
+  }
 
   if (filtros?.promocao) {
     // `.not("preco_promocional", "is", null)` já filtrou no banco, mas um
