@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { ehChunkLoadError } from "@/lib/chunk-error";
 import { reportarErroCliente } from "@/lib/erros-cliente";
+
+const CHAVE_ULTIMO_RELOAD = "gestor-loja:chunk-reload-em";
 
 /**
  * error.tsx é sempre client component (exigência do App Router). Loga
@@ -10,6 +13,11 @@ import { reportarErroCliente } from "@/lib/erros-cliente";
  * (registrarErroSistema, ver src/lib/erros.ts) via Server Action —
  * é assim que um erro capturado aqui (renderização) chega a virar
  * alerta de WhatsApp.
+ *
+ * Exceção: `ChunkLoadError` (ver lib/chunk-error.ts) recarrega a página
+ * sozinho em vez de mostrar a tela de erro/alertar — só cai no fluxo normal
+ * se acontecer de novo dentro de 10s do último reload (sinal de que não era
+ * só um deploy no meio do caminho).
  */
 export default function ErroGlobal({
   error,
@@ -20,6 +28,14 @@ export default function ErroGlobal({
 }) {
   useEffect(() => {
     console.error(error);
+    if (ehChunkLoadError(error)) {
+      const ultimoReload = Number(sessionStorage.getItem(CHAVE_ULTIMO_RELOAD) ?? 0);
+      if (Date.now() - ultimoReload > 10_000) {
+        sessionStorage.setItem(CHAVE_ULTIMO_RELOAD, String(Date.now()));
+        window.location.reload();
+        return;
+      }
+    }
     reportarErroCliente(error.message, window.location.pathname, error.stack);
   }, [error]);
 

@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
+import { ehChunkLoadError } from "@/lib/chunk-error";
 import { reportarErroCliente } from "@/lib/erros-cliente";
+
+const CHAVE_ULTIMO_RELOAD = "gestor-loja:chunk-reload-em";
 
 /**
  * Só dispara quando o erro acontece no PRÓPRIO root layout (fora do
  * alcance de error.tsx normal) — precisa renderizar <html>/<body> porque
  * substitui o root layout inteiro enquanto ativo. Caso raro, mas sem isso
  * um erro aí não gera nem tela de erro nem alerta nenhum.
+ *
+ * Mesma exceção de error.tsx pra `ChunkLoadError` — ver lib/chunk-error.ts.
  */
 export default function ErroGlobalRaiz({
   error,
@@ -16,6 +21,14 @@ export default function ErroGlobalRaiz({
 }) {
   useEffect(() => {
     console.error(error);
+    if (ehChunkLoadError(error)) {
+      const ultimoReload = Number(sessionStorage.getItem(CHAVE_ULTIMO_RELOAD) ?? 0);
+      if (Date.now() - ultimoReload > 10_000) {
+        sessionStorage.setItem(CHAVE_ULTIMO_RELOAD, String(Date.now()));
+        window.location.reload();
+        return;
+      }
+    }
     reportarErroCliente(error.message, window.location.pathname, error.stack);
   }, [error]);
 
