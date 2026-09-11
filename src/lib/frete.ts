@@ -25,15 +25,24 @@ function montarEndereco(partes: {
  * chave já usadas no app Flutter (`DistanciaService.calcularRota`).
  * Chamada só do servidor: GOOGLE_MAPS_API_KEY não tem prefixo
  * NEXT_PUBLIC_, nunca chega no bundle do browser.
+ *
+ * Usa a Directions API com alternatives=true e fica com a rota de MENOR
+ * distância, não a Distance Matrix (que devolve só uma rota, a que o
+ * Google prioriza por critério próprio — nem sempre a mais curta). Achado
+ * real 12/09 no app Flutter: Distance Matrix dava 6,1km numa rota que o
+ * próprio Google, pedindo alternativas, também oferecia em 4,4km (mesmo
+ * tempo) — cobrar pela mais longa penalizava o cliente sem motivo. Mesmo
+ * bug existia aqui, idêntico.
  */
 async function calcularDistanciaKm(origem: string, destino: string): Promise<number | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return null;
 
-  const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-  url.searchParams.set("origins", origem);
-  url.searchParams.set("destinations", destino);
+  const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
+  url.searchParams.set("origin", origem);
+  url.searchParams.set("destination", destino);
   url.searchParams.set("mode", "driving");
+  url.searchParams.set("alternatives", "true");
   url.searchParams.set("units", "metric");
   url.searchParams.set("key", apiKey);
 
@@ -42,10 +51,13 @@ async function calcularDistanciaKm(origem: string, destino: string): Promise<num
     const json = await resposta.json();
 
     if (json.status !== "OK") return null;
-    const elemento = json.rows?.[0]?.elements?.[0];
-    if (!elemento || elemento.status !== "OK") return null;
+    const rotas: Array<{ legs?: Array<{ distance?: { value: number } }> }> = json.routes ?? [];
+    const distanciasM = rotas
+      .map((rota) => rota.legs?.[0]?.distance?.value)
+      .filter((valor): valor is number => typeof valor === "number");
+    if (distanciasM.length === 0) return null;
 
-    return elemento.distance.value / 1000;
+    return Math.min(...distanciasM) / 1000;
   } catch {
     return null;
   }
