@@ -264,3 +264,74 @@ export async function mesclarCarrinhoConvidado(
     await adicionarAoCarrinho(slug, empresaId, item.produtoId, item.quantidade);
   }
 }
+
+export type ItemRepetido = {
+  produtoId: string;
+  nome: string;
+  ok: boolean;
+  motivo?: "sem_estoque" | "produto_invalido" | "limitado";
+};
+
+export type ResultadoRepetirPedido =
+  | { ok: true; itens: ItemRepetido[]; carrinho: Carrinho }
+  | { ok: false; erro: "login_necessario" | "pedido_invalido" };
+
+/**
+ * "Comprar novamente": soma os itens de um pedido anterior ao carrinho
+ * ativo (reusa adicionarAoCarrinho item a item, mesmo padrão de
+ * mesclarCarrinhoConvidado acima — preço sempre o atual do catálogo,
+ * nunca o congelado do pedido antigo). Item sem estoque/descontinuado não
+ * trava o resto, só volta marcado em `itens` pra avisar o cliente.
+ */
+export async function repetirPedido(
+  slug: string,
+  empresaId: string,
+  pedidoId: string,
+): Promise<ResultadoRepetirPedido> {
+  const supabase = await createClient();
+  const clienteId = await getClienteId(supabase, empresaId);
+  if (!clienteId) return { ok: false, erro: "login_necessario" };
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("id, cliente_id")
+    .eq("id", pedidoId)
+    .eq("empresa_id", empresaId)
+    .maybeSingle();
+  if (!pedido || pedido.cliente_id !== clienteId) {
+    return { ok: false, erro: "pedido_invalido" };
+  }
+
+  const { data: itensPedido } = await supabase
+    .from("itens_pedido")
+    .select("produto_id, quantidade")
+    .eq("pedido_id", pedidoId)
+    .not("produto_id", "is", null);
+
+  const idsUnicos = Array.from(new Set((itensPedido ?? []).map((i) => i.produto_id as string)));
+  const { data: produtos } =
+    idsUnicos.length > 0
+      ? await supabase.from("catalogo_produtos_publico").select("id, nome").in("id", idsUnicos)
+      : { data: [] };
+  const nomesPorId = new Map((produtos ?? []).map((p) => [p.id, p.nome]));
+
+  const resultados: ItemRepetido[] = [];
+  let carrinhoFinal: Carrinho = { id: null, itens: [], valorTotal: 0 };
+
+  for (const item of itensPedido ?? []) {
+    const produtoId = item.produto_id as string;
+    const nome = nomesPorId.get(produtoId) ?? "Produto";
+    const resultado = await adicionarAoCarrinho(slug, empresaId, produtoId, item.quantidade);
+    if (resultado.ok) {
+      carrinhoFinal = resultado.carrinho;
+      resultados.push({ produtoId, nome, ok: true, motivo: resultado.limitado ? "limitado" : undefined });
+    } else if (resultado.erro === "sem_estoque") {
+      carrinhoFinal = resultado.carrinho;
+      resultados.push({ produtoId, nome, ok: false, motivo: "sem_estoque" });
+    } else {
+      resultados.push({ produtoId, nome, ok: false, motivo: "produto_invalido" });
+    }
+  }
+
+  return { ok: true, itens: resultados, carrinho: carrinhoFinal };
+}
