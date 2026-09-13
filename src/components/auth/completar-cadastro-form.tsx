@@ -59,6 +59,12 @@ export function CompletarCadastroForm({
   // email pendente abaixo — nesse ponto o cadastro (RPC) já rodou com
   // sucesso, só falta a navegação final.
   const [clienteIdCriado, setClienteIdCriado] = useState<string | null>(null);
+  // Trava o botão "Continuar" da tela de email pendente após o 1º clique —
+  // sem isso, cada clique repetido (ex: navegação demorando um instante pra
+  // sair da tela) chama onCompleto() de novo e dispara outra notificação
+  // "cliente entrou no site" pro lojista (bug real reportado 13/09: mesmo
+  // cliente gerou 4 notificações idênticas em 3,5s).
+  const [continuando, setContinuando] = useState(false);
 
   // Feedback ao vivo (assim que termina de digitar, sem esperar o submit) —
   // só acende depois que a quantidade certa de dígitos foi preenchida, pra
@@ -180,7 +186,12 @@ export function CompletarCadastroForm({
         </p>
         <Button
           type="button"
-          onClick={() => clienteIdCriado && onCompleto(clienteIdCriado)}
+          disabled={continuando}
+          onClick={() => {
+            if (!clienteIdCriado || continuando) return;
+            setContinuando(true);
+            onCompleto(clienteIdCriado);
+          }}
           className="py-3 text-base"
         >
           Continuar
