@@ -157,7 +157,7 @@ export async function getContagemProdutosCatalogo(
     .from("catalogo_produtos_publico")
     .select("id", { count: "exact", head: true })
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null);
+    .eq("e_representante_familia", true);
 
   if (filtros?.especie) {
     query = query.ilike("especie", `%${filtros.especie}%`);
@@ -278,9 +278,13 @@ export async function getProdutosCatalogo(
     // Em busca, mostra cada variante que bater como card próprio — se a
     // pessoa está procurando/vendo por foto, agrupar dentro de "a partir de"
     // esconderia justamente a opção que ela procurou. Fora de busca, mantém
-    // só pai/avulso na grade (variantes viram pills dentro do card).
+    // só o representante de cada família na grade (variantes viram pills
+    // dentro do card) — `e_representante_familia` é o pai literal quando
+    // visível, senão o filho visível mais leve/barato promovido pela view
+    // (não usar mais `produto_pai_id IS NULL` puro: um pai sem estoque
+    // deixava a família inteira sumir do catálogo mesmo com filho disponível).
   } else {
-    query = query.is("produto_pai_id", null);
+    query = query.eq("e_representante_familia", true);
   }
 
   if (filtros?.departamento) {
@@ -420,7 +424,7 @@ export async function getPromocoesDoDia(empresaId: string, limite = 12): Promise
     .from("catalogo_produtos_publico")
     .select("*")
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
+    .eq("e_representante_familia", true)
     .not("preco_promocional", "is", null);
 
   if (error) {
@@ -443,7 +447,7 @@ export async function getProdutosDestaque(empresaId: string, limite = 12): Promi
     .from("catalogo_produtos_publico")
     .select("*")
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
+    .eq("e_representante_familia", true)
     .eq("destaque", true)
     .order("nome", { ascending: true })
     .limit(limite);
@@ -710,7 +714,7 @@ export async function getFiltrosCatalogo(empresaId: string): Promise<FiltrosCata
     .from("catalogo_produtos_publico")
     .select("preco, fabricante, especie, fase, porte, peso")
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null);
+    .eq("e_representante_familia", true);
 
   if (error) {
     console.error("Erro ao buscar filtros do catálogo:", error.message);

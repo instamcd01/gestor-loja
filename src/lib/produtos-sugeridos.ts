@@ -203,7 +203,7 @@ export async function buscarProdutosComplementares(
     .from("catalogo_produtos_publico")
     .select("*")
     .eq("empresa_id", empresaId)
-    .is("produto_pai_id", null)
+    .eq("e_representante_familia", true)
     .gt("estoque_disponivel", 0)
     .in("categoria", categoriasAlvo);
   if (idsNoCarrinho.length > 0) query = query.not("id", "in", `(${idsNoCarrinho.join(",")})`);
