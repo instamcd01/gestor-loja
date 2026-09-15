@@ -92,26 +92,33 @@ export function EstimarFreteGratis({
     setCalculando(true);
     setErro(false);
 
-    const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, endereco, 0);
-    setCalculando(false);
+    try {
+      const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, endereco, 0);
+      if (!resultado.disponivel) {
+        setErro(true);
+        return;
+      }
 
-    if (!resultado.disponivel) {
+      const novo: EnderecoEstimado = {
+        endereco,
+        zonaId: resultado.opcao.zona_id,
+        zonaNome: resultado.opcao.zona_nome,
+        valor: resultado.opcao.valor,
+        valorCheio: resultado.opcao.valor_cheio,
+        freteGratis: resultado.opcao.frete_gratis,
+        valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
+        estimativaMinMin: resultado.opcao.estimativa_min_min,
+        estimativaMinMax: resultado.opcao.estimativa_min_max,
+      };
+      salvarEnderecoEstimado(empresaId, novo);
+    } catch {
+      // Mesmo achado das outras etapas do checkout (ver entrega-form.tsx/
+      // pagamento-form.tsx/capturar-endereco.tsx, 15/09): sem isso,
+      // "Calculando..." ficava preso pra sempre quando a chamada falhava.
       setErro(true);
-      return;
+    } finally {
+      setCalculando(false);
     }
-
-    const novo: EnderecoEstimado = {
-      endereco,
-      zonaId: resultado.opcao.zona_id,
-      zonaNome: resultado.opcao.zona_nome,
-      valor: resultado.opcao.valor,
-      valorCheio: resultado.opcao.valor_cheio,
-      freteGratis: resultado.opcao.frete_gratis,
-      valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
-      estimativaMinMin: resultado.opcao.estimativa_min_min,
-      estimativaMinMax: resultado.opcao.estimativa_min_max,
-    };
-    salvarEnderecoEstimado(empresaId, novo);
   }
 
   if (estimado) {

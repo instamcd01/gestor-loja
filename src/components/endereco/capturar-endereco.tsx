@@ -97,6 +97,16 @@ export function CapturarEndereco({
     }));
   }
 
+  // Mensagem específica pra quando a Server Action falha porque a aba
+  // ficou aberta desde antes de um deploy novo (ver entrega-form.tsx/
+  // pagamento-form.tsx — mesmo achado, 15/09) — só saída real é recarregar,
+  // tentar de novo falha do mesmo jeito.
+  function mensagemDeErro(e: unknown, generica: string): string {
+    return e instanceof Error && /Server Action/i.test(e.message)
+      ? "A página ficou aberta desde antes de uma atualização do site — recarregue a página e tente de novo."
+      : generica;
+  }
+
   async function buscarEndereco() {
     const query = montarQuery(campos);
     if (!query) {
@@ -105,18 +115,24 @@ export function CapturarEndereco({
     }
     setBuscando(true);
     setErro(null);
-    const resultados = await buscarEnderecoCandidatos(query);
-    setBuscando(false);
-
-    if (resultados.length === 0) {
-      setErro("Não encontramos esse endereço. Confira os dados e tente de novo.");
-      return;
+    try {
+      const resultados = await buscarEnderecoCandidatos(query);
+      if (resultados.length === 0) {
+        setErro("Não encontramos esse endereço. Confira os dados e tente de novo.");
+        return;
+      }
+      if (resultados.length === 1) {
+        aplicarCandidato(resultados[0]);
+        return;
+      }
+      setCandidatos(resultados);
+    } catch (e) {
+      // Sem isso, uma falha aqui (ex: Server Action desatualizada) deixava
+      // o botão preso em "Buscando..." pra sempre, sem nenhuma mensagem.
+      setErro(mensagemDeErro(e, "Não foi possível buscar esse endereço agora. Tente de novo em instantes."));
+    } finally {
+      setBuscando(false);
     }
-    if (resultados.length === 1) {
-      aplicarCandidato(resultados[0]);
-      return;
-    }
-    setCandidatos(resultados);
   }
 
   function usarLocalizacao() {
@@ -129,16 +145,26 @@ export function CapturarEndereco({
     setCandidatos(null);
     navigator.geolocation.getCurrentPosition(
       async (posicao) => {
-        const candidato = await buscarEnderecoPorLocalizacao(
-          posicao.coords.latitude,
-          posicao.coords.longitude,
-        );
-        setLocalizando(false);
-        if (!candidato) {
-          setErro("Não conseguimos identificar seu endereço pela localização. Digite manualmente.");
-          return;
+        try {
+          const candidato = await buscarEnderecoPorLocalizacao(
+            posicao.coords.latitude,
+            posicao.coords.longitude,
+          );
+          if (!candidato) {
+            setErro("Não conseguimos identificar seu endereço pela localização. Digite manualmente.");
+            return;
+          }
+          aplicarCandidato(candidato);
+        } catch (e) {
+          // Mesmo achado de sempre: sem isso, "Localizando..." ficava preso
+          // pra sempre quando a chamada falhava (achado real 15/09 — foi
+          // isso que o usuário via como "usar minha localização não
+          // funciona", causa era a Server Action desatualizada depois de
+          // um redeploy, não a geolocalização em si).
+          setErro(mensagemDeErro(e, "Não conseguimos identificar seu endereço pela localização. Digite manualmente."));
+        } finally {
+          setLocalizando(false);
         }
-        aplicarCandidato(candidato);
       },
       () => {
         setLocalizando(false);
