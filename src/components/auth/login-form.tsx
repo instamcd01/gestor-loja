@@ -302,6 +302,12 @@ export function LoginForm({
     if (segundosParaReenviar > 0) return;
     setErro(null);
     setMensagemInfo(null);
+
+    if (!telefoneValido(telefone)) {
+      setErro("Telefone inválido — toque em \"Trocar número\" e digite de novo.");
+      return;
+    }
+
     setCodigo("");
     setCarregando(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: paraE164(telefone) });
