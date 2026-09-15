@@ -20,6 +20,7 @@ export function ComprarNovamenteButton({
 }) {
   const [processando, setProcessando] = useState(false);
   const [resultado, setResultado] = useState<Awaited<ReturnType<typeof repetirPedido>> | null>(null);
+  const [erroInesperado, setErroInesperado] = useState(false);
 
   if (resultado) {
     if (!resultado.ok) {
@@ -54,14 +55,25 @@ export function ComprarNovamenteButton({
     );
   }
 
+  if (erroInesperado) {
+    return <p className="text-sm text-[var(--color-danger)]">Não foi possível repetir esse pedido. Tente de novo.</p>;
+  }
+
   return (
     <button
       type="button"
       disabled={processando}
       onClick={async () => {
         setProcessando(true);
-        setResultado(await repetirPedido(slug, empresaId, pedidoId));
-        setProcessando(false);
+        try {
+          setResultado(await repetirPedido(slug, empresaId, pedidoId));
+        } catch {
+          // Mesmo achado de sempre (ver entrega-form.tsx, 15/09) — sem
+          // isso, o botão ficava preso em "..." pra sempre numa falha.
+          setErroInesperado(true);
+        } finally {
+          setProcessando(false);
+        }
       }}
       className="rounded-full border border-[var(--brand-primary)] px-3.5 py-1.5 font-medium text-[var(--brand-primary)] disabled:opacity-50"
     >

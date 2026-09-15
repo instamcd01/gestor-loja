@@ -56,16 +56,22 @@ export function SugestaoCompletaFrete({
 
   async function carregarMais() {
     setCarregandoMais(true);
-    const resultado = await buscarProdutosComplementares(
-      empresaId,
-      categorias,
-      idsNoCarrinho,
-      produtos.length,
-      TAMANHO_PAGINA,
-    );
-    setProdutos((atual) => [...atual, ...resultado.produtos]);
-    setTemMais(resultado.temMais);
-    setCarregandoMais(false);
+    try {
+      const resultado = await buscarProdutosComplementares(
+        empresaId,
+        categorias,
+        idsNoCarrinho,
+        produtos.length,
+        TAMANHO_PAGINA,
+      );
+      setProdutos((atual) => [...atual, ...resultado.produtos]);
+      setTemMais(resultado.temMais);
+    } catch {
+      // Mesmo achado de sempre (ver entrega-form.tsx, 15/09) — sem isso,
+      // "Ver mais" ficava preso em "..." pra sempre numa falha.
+    } finally {
+      setCarregandoMais(false);
+    }
   }
 
   // Não reseta `adicionadosIds` de propósito: uma vez aceita, uma sugestão
@@ -75,9 +81,16 @@ export function SugestaoCompletaFrete({
 
   async function adicionar(produto: ProdutoCatalogo) {
     setAdicionandoId(produto.id);
-    await onAdicionar(produto);
-    setAdicionandoId(null);
-    setAdicionadosIds((atual) => new Set(atual).add(produto.id));
+    try {
+      await onAdicionar(produto);
+      setAdicionadosIds((atual) => new Set(atual).add(produto.id));
+    } catch {
+      // Defesa extra — mesmo achado de sempre (ver entrega-form.tsx,
+      // 15/09), caso o `onAdicionar` de alguma tela não trate por conta
+      // própria.
+    } finally {
+      setAdicionandoId(null);
+    }
   }
 
   return (

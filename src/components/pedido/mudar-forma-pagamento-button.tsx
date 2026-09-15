@@ -28,10 +28,16 @@ export function MudarFormaPagamentoButton({ slug, pedidoId }: { slug: string; pe
             onClick={async () => {
               setProcessando(true);
               setErro(null);
-              const resultado = await cancelarPagamentoPendente(slug, pedidoId);
-              // se chegou aqui, deu erro — sucesso já redireciona e não retorna
-              setProcessando(false);
-              setErro(resultado.erro);
+              try {
+                const resultado = await cancelarPagamentoPendente(slug, pedidoId);
+                // se chegou aqui, deu erro — sucesso já redireciona e não retorna
+                setErro(resultado.erro);
+              } catch {
+                // Mesmo achado de sempre (ver entrega-form.tsx, 15/09).
+                setErro("Não foi possível cancelar esse pagamento agora. Tente de novo.");
+              } finally {
+                setProcessando(false);
+              }
             }}
             className="rounded-full bg-[var(--color-danger)] px-3.5 py-1.5 font-medium text-white disabled:opacity-50"
           >

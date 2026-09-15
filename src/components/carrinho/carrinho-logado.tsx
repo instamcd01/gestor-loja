@@ -75,10 +75,17 @@ export function CarrinhoLogado({
 
     agendarSync(itemId, async () => {
       const minhaRequisicao = ++ultimaRequisicao.current;
-      const carrinhoAtualizado = await atualizarQuantidade(slug, carrinhoId, itemId, novaQuantidade);
-      if (minhaRequisicao !== ultimaRequisicao.current) return;
-      setCarrinho(carrinhoAtualizado);
-      notificarCarrinhoAtualizado();
+      try {
+        const carrinhoAtualizado = await atualizarQuantidade(slug, carrinhoId, itemId, novaQuantidade);
+        if (minhaRequisicao !== ultimaRequisicao.current) return;
+        setCarrinho(carrinhoAtualizado);
+        notificarCarrinhoAtualizado();
+      } catch {
+        // Mesmo achado de sempre (ver entrega-form.tsx, 15/09) — a UI já
+        // mudou otimista antes desta chamada; sem isso, uma falha aqui
+        // deixava o servidor com a quantidade ANTIGA enquanto a tela
+        // mostrava a nova, silenciosamente.
+      }
     });
   }
 
@@ -100,7 +107,13 @@ export function CarrinhoLogado({
     const carrinhoId = carrinho.id;
     setCarrinho({ ...carrinho, itens: [], valorTotal: 0 });
     notificarCarrinhoAtualizado();
-    await limparCarrinho(slug, carrinhoId);
+    try {
+      await limparCarrinho(slug, carrinhoId);
+    } catch {
+      // UI já mudou otimista — sem isso, uma falha aqui deixava o
+      // servidor com os itens antigos enquanto a tela mostrava vazio,
+      // silenciosamente (mesmo achado de sempre, ver entrega-form.tsx).
+    }
   }
 
   if (carrinho.itens.length === 0) {

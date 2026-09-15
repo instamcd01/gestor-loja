@@ -224,55 +224,64 @@ export function useCarrinhoRapido(slug: string, empresaId: string, usarPrecoAnco
       return;
     }
 
-    const resultado = await adicionarAoCarrinho(
-      slug,
-      empresaId,
-      produtoId,
-      quantidade,
-    );
-    setCarregando(false);
-
-    if (!resultado.ok && resultado.erro !== "sem_estoque") {
-      setErro("Não foi possível adicionar. Tente de novo.");
-      return;
-    }
-
-    if (!resultado.ok) {
-      // Carrinho já tinha o máximo do estoque — nada foi adicionado, mas
-      // a gaveta abre igual mostrando o que já está lá (era exatamente o
-      // bug relatado: clicar "adicionar" nesse caso não abria nada, só
-      // aparecia a mensagem e parava).
-      setErro(`Só temos ${resultado.disponivel} em estoque.`);
-    } else if (resultado.limitado) {
-      setErro(
-        `Só tinha ${resultado.disponivel} em estoque — ajustamos a quantidade.`,
+    try {
+      const resultado = await adicionarAoCarrinho(
+        slug,
+        empresaId,
+        produtoId,
+        quantidade,
       );
-    } else {
-      notificarCarrinhoAtualizado();
-    }
 
-    // adicionarAoCarrinho já devolve o carrinho inteiro (não só o item
-    // que acabou de entrar), pra gaveta mostrar tudo que já está lá sem
-    // precisar de uma segunda ida ao servidor só pra buscar de novo.
-    const carrinho = resultado.carrinho;
-    carrinhoJaRevelado.current = true;
-    setMinimizado(false);
-    setDrawer({
-      carrinhoId: carrinho.id,
-      itens: carrinho.itens.map((item) => ({
-        id: item.id,
-        nome: item.produto?.nome ?? "Produto",
-        imagemUrl: item.produto?.imagem_url ?? null,
-        categoria: item.produto?.categoria ?? null,
-        preco: item.preco_unitario,
-        precoOriginal: precoOriginalDoItem(item, usarPrecoAncoraMarketplace),
-        quantidade: item.quantidade,
-        estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
-      })),
-      valorTotal: carrinho.valorTotal,
-      idRecemAdicionado:
-        carrinho.itens.find((item) => item.produto_id === produtoId)?.id ?? "",
-    });
+      if (!resultado.ok && resultado.erro !== "sem_estoque") {
+        setErro("Não foi possível adicionar. Tente de novo.");
+        return;
+      }
+
+      if (!resultado.ok) {
+        // Carrinho já tinha o máximo do estoque — nada foi adicionado, mas
+        // a gaveta abre igual mostrando o que já está lá (era exatamente o
+        // bug relatado: clicar "adicionar" nesse caso não abria nada, só
+        // aparecia a mensagem e parava).
+        setErro(`Só temos ${resultado.disponivel} em estoque.`);
+      } else if (resultado.limitado) {
+        setErro(
+          `Só tinha ${resultado.disponivel} em estoque — ajustamos a quantidade.`,
+        );
+      } else {
+        notificarCarrinhoAtualizado();
+      }
+
+      // adicionarAoCarrinho já devolve o carrinho inteiro (não só o item
+      // que acabou de entrar), pra gaveta mostrar tudo que já está lá sem
+      // precisar de uma segunda ida ao servidor só pra buscar de novo.
+      const carrinho = resultado.carrinho;
+      carrinhoJaRevelado.current = true;
+      setMinimizado(false);
+      setDrawer({
+        carrinhoId: carrinho.id,
+        itens: carrinho.itens.map((item) => ({
+          id: item.id,
+          nome: item.produto?.nome ?? "Produto",
+          imagemUrl: item.produto?.imagem_url ?? null,
+          categoria: item.produto?.categoria ?? null,
+          preco: item.preco_unitario,
+          precoOriginal: precoOriginalDoItem(item, usarPrecoAncoraMarketplace),
+          quantidade: item.quantidade,
+          estoqueDisponivel: item.produto?.estoque_disponivel ?? item.quantidade,
+        })),
+        valorTotal: carrinho.valorTotal,
+        idRecemAdicionado:
+          carrinho.itens.find((item) => item.produto_id === produtoId)?.id ?? "",
+      });
+    } catch {
+      // Mesmo achado de sempre (ver entrega-form.tsx/pagamento-form.tsx/
+      // capturar-endereco.tsx, 15/09) — sem isso, "adicionar ao carrinho"
+      // ficava travado (carregando=true pra sempre) numa falha, no botão
+      // mais usado do site inteiro.
+      setErro("Não foi possível adicionar ao carrinho agora. Tente de novo.");
+    } finally {
+      setCarregando(false);
+    }
   }
 
   // Editar quantidade (ou remover, quando novaQuantidade <= 0) direto na
@@ -347,12 +356,25 @@ export function useCarrinhoRapido(slug: string, empresaId: string, usarPrecoAnco
 
     agendarSync(itemId, async () => {
       const minhaRequisicao = ++ultimaRequisicao.current;
-      const carrinho = await atualizarQuantidade(
-        slug,
-        carrinhoId,
-        itemId,
-        novaQuantidade,
-      );
+      let carrinho;
+      try {
+        carrinho = await atualizarQuantidade(
+          slug,
+          carrinhoId,
+          itemId,
+          novaQuantidade,
+        );
+      } catch {
+        // A UI já mudou otimista antes desta chamada — sem isso, uma
+        // falha aqui (mesmo achado de sempre) deixava o servidor com a
+        // quantidade ANTIGA enquanto a tela mostrava a nova, silenciosamente
+        // (nenhum indicador de carregamento preso, mas o pedido podia sair
+        // errado). Melhor avisar do que deixar divergir sem dizer nada.
+        if (minhaRequisicao === ultimaRequisicao.current) {
+          setErro("Não foi possível salvar a alteração de quantidade. Recarregue a página.");
+        }
+        return;
+      }
       if (minhaRequisicao !== ultimaRequisicao.current) return;
       notificarCarrinhoAtualizado();
       setDrawer((atual) => {

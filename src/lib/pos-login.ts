@@ -40,12 +40,22 @@ export async function concluirLoginEIrPara(
 
   const itensConvidado = lerCarrinhoConvidado(empresaId);
   if (itensConvidado.length > 0) {
-    await mesclarCarrinhoConvidado(
-      slug,
-      empresaId,
-      itensConvidado.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
-    );
-    limparCarrinhoConvidado(empresaId);
+    try {
+      await mesclarCarrinhoConvidado(
+        slug,
+        empresaId,
+        itensConvidado.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade })),
+      );
+      limparCarrinhoConvidado(empresaId);
+    } catch {
+      // Mesmo achado de sempre (ver entrega-form.tsx, 15/09) — sem isso,
+      // uma falha aqui (ex: Server Action desatualizada) travava o login
+      // inteiro: nem o merge do carrinho acontecia, nem a navegação
+      // abaixo rodava, sem nenhum aviso — a pessoa via a tela de login
+      // simplesmente não fazer nada depois de "entrar". Carrinho de
+      // convidado fica intacto (não limpa) pra não perder os itens; só
+      // segue pra navegação em vez de travar ali.
+    }
   }
   router.push(rotaPosLogin ? `/loja/${slug}/${rotaPosLogin}` : `/loja/${slug}`);
   router.refresh();

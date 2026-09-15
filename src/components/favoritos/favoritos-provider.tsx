@@ -53,21 +53,32 @@ export function FavoritosProvider({
         return proximo;
       });
 
-      toggleFavorito(empresaId, produtoId).then((resultado) => {
-        if (!resultado.ok) {
-          // Reverte pro estado de antes do clique — inclui o caso
-          // "not_logged", onde o toggle nem chegou a rodar no servidor.
-          setIds((atual) => {
-            const proximo = new Set(atual);
-            if (eraFavorito) proximo.add(produtoId);
-            else proximo.delete(produtoId);
-            return proximo;
-          });
-          if (resultado.erro === "not_logged") {
-            router.push(`/loja/${slug}/entrar`);
+      function reverter() {
+        setIds((atual) => {
+          const proximo = new Set(atual);
+          if (eraFavorito) proximo.add(produtoId);
+          else proximo.delete(produtoId);
+          return proximo;
+        });
+      }
+
+      toggleFavorito(empresaId, produtoId)
+        .then((resultado) => {
+          if (!resultado.ok) {
+            // Reverte pro estado de antes do clique — inclui o caso
+            // "not_logged", onde o toggle nem chegou a rodar no servidor.
+            reverter();
+            if (resultado.erro === "not_logged") {
+              router.push(`/loja/${slug}/entrar`);
+            }
           }
-        }
-      });
+        })
+        .catch(() => {
+          // Mesmo achado de sempre (ver entrega-form.tsx, 15/09) — sem
+          // isso, uma falha aqui deixava o coração "favoritado" na tela
+          // pra sempre, mesmo o servidor nunca tendo salvo de verdade.
+          reverter();
+        });
     },
     [ids, empresaId, slug, router],
   );
