@@ -162,35 +162,52 @@ export function EntregaForm({
     setCalculando(true);
     setErro(null);
 
-    const salvo = await salvarEndereco(empresaId, novoEndereco);
-    if (!salvo.ok) {
+    try {
+      const salvo = await salvarEndereco(empresaId, novoEndereco);
+      if (!salvo.ok) {
+        setErro(salvo.erro);
+        return;
+      }
+
+      const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, novoEndereco, subtotal);
+      setFrete(resultado);
+
+      // Escreve no MESMO cache compartilhado que a barra "frete grátis" lê
+      // (ver endereco-estimado.ts) — é a única fonte de verdade, então
+      // confirmar o endereço aqui já atualiza a barra sozinha, sem precisar
+      // de nenhuma lógica de conciliação entre os dois.
+      if (resultado.disponivel) {
+        setEditandoEndereco(false);
+        const novoEstimado: EnderecoEstimado = {
+          endereco: novoEndereco,
+          zonaId: resultado.opcao.zona_id,
+          zonaNome: resultado.opcao.zona_nome,
+          valor: resultado.opcao.valor,
+          valorCheio: resultado.opcao.valor_cheio,
+          freteGratis: resultado.opcao.frete_gratis,
+          valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
+          estimativaMinMin: resultado.opcao.estimativa_min_min,
+          estimativaMinMax: resultado.opcao.estimativa_min_max,
+        };
+        salvarEnderecoEstimado(empresaId, novoEstimado);
+      }
+    } catch (e) {
+      // Sem isso, qualquer exceção aqui (ex: "Failed to find Server
+      // Action" — acontece quando a aba ficou aberta de antes de um
+      // deploy novo, achado real 15/09) deixava `calculando` travado em
+      // true pra sempre, com "Calculando frete..." preso na tela sem
+      // nenhum jeito de sair. Mensagem específica pro caso do deploy
+      // porque a única saída real ali é recarregar a página — tentar de
+      // novo sem isso ia falhar do mesmo jeito.
+      const mensagemAcaoDesatualizada = e instanceof Error && /Server Action/i.test(e.message);
+      setErro(
+        mensagemAcaoDesatualizada
+          ? "A página ficou aberta desde antes de uma atualização do site — recarregue a página e tente de novo."
+          : "Não foi possível calcular o frete agora. Tente de novo em instantes.",
+      );
+      ultimoEnderecoCalculado.current = null;
+    } finally {
       setCalculando(false);
-      setErro(salvo.erro);
-      return;
-    }
-
-    const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, novoEndereco, subtotal);
-    setCalculando(false);
-    setFrete(resultado);
-
-    // Escreve no MESMO cache compartilhado que a barra "frete grátis" lê
-    // (ver endereco-estimado.ts) — é a única fonte de verdade, então
-    // confirmar o endereço aqui já atualiza a barra sozinha, sem precisar
-    // de nenhuma lógica de conciliação entre os dois.
-    if (resultado.disponivel) {
-      setEditandoEndereco(false);
-      const novoEstimado: EnderecoEstimado = {
-        endereco: novoEndereco,
-        zonaId: resultado.opcao.zona_id,
-        zonaNome: resultado.opcao.zona_nome,
-        valor: resultado.opcao.valor,
-        valorCheio: resultado.opcao.valor_cheio,
-        freteGratis: resultado.opcao.frete_gratis,
-        valorMinimoFreteGratis: resultado.opcao.valor_minimo_frete_gratis,
-        estimativaMinMin: resultado.opcao.estimativa_min_min,
-        estimativaMinMax: resultado.opcao.estimativa_min_max,
-      };
-      salvarEnderecoEstimado(empresaId, novoEstimado);
     }
   }
 

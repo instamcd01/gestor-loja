@@ -298,25 +298,40 @@ export function PagamentoForm({
     setConfirmando(true);
     setErro(null);
 
-    const resultado = await finalizarPedido(
-      slug,
-      empresaId,
-      tipoPagamento,
-      checkoutEstimado.tipoEntrega,
-      checkoutEstimado.zonaId,
-      observacoes,
-      saldoAplicado,
-      tipoPagamento === "Dinheiro" && trocoValido ? trocoPara : null,
-      cupomAplicado?.codigo ?? null,
-      checkoutEstimado.janelaAgendamento,
-      tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 ? parcelaEscolhida : null,
-      checkoutEstimado.modalidadeEntrega,
-      petcashAplicado,
-    );
+    try {
+      const resultado = await finalizarPedido(
+        slug,
+        empresaId,
+        tipoPagamento,
+        checkoutEstimado.tipoEntrega,
+        checkoutEstimado.zonaId,
+        observacoes,
+        saldoAplicado,
+        tipoPagamento === "Dinheiro" && trocoValido ? trocoPara : null,
+        cupomAplicado?.codigo ?? null,
+        checkoutEstimado.janelaAgendamento,
+        tipoPagamento === "Cartão de Crédito" && parcelaEscolhida > 1 ? parcelaEscolhida : null,
+        checkoutEstimado.modalidadeEntrega,
+        petcashAplicado,
+      );
 
-    // se chegou aqui, deu erro — sucesso já redireciona e não retorna
-    setConfirmando(false);
-    setErro(resultado.erro);
+      // se chegou aqui, deu erro — sucesso já redireciona e não retorna
+      setErro(resultado.erro);
+    } catch (e) {
+      // Sem isso, qualquer exceção aqui (ex: "Failed to find Server
+      // Action" — acontece quando a aba ficou aberta de antes de um
+      // deploy novo, achado real 15/09, mesma causa do botão "Confirmar
+      // pedido" ficar preso em "Confirmando..." pra sempre) deixava
+      // `confirmando` travado em true sem nenhum jeito de sair.
+      const mensagemAcaoDesatualizada = e instanceof Error && /Server Action/i.test(e.message);
+      setErro(
+        mensagemAcaoDesatualizada
+          ? "A página ficou aberta desde antes de uma atualização do site — recarregue a página e tente de novo."
+          : "Não foi possível confirmar o pedido agora. Tente de novo em instantes.",
+      );
+    } finally {
+      setConfirmando(false);
+    }
   }
 
   /**
@@ -351,24 +366,37 @@ export function PagamentoForm({
       payer: formData.payer,
     };
 
-    const resultado = await finalizarPedidoOnline(
-      slug,
-      empresaId,
-      checkoutEstimado.tipoEntrega,
-      checkoutEstimado.zonaId,
-      observacoes,
-      saldoAplicado,
-      cupomAplicado?.codigo ?? null,
-      checkoutEstimado.janelaAgendamento,
-      checkoutEstimado.modalidadeEntrega,
-      dados,
-      petcashAplicado,
-    );
+    try {
+      const resultado = await finalizarPedidoOnline(
+        slug,
+        empresaId,
+        checkoutEstimado.tipoEntrega,
+        checkoutEstimado.zonaId,
+        observacoes,
+        saldoAplicado,
+        cupomAplicado?.codigo ?? null,
+        checkoutEstimado.janelaAgendamento,
+        checkoutEstimado.modalidadeEntrega,
+        dados,
+        petcashAplicado,
+      );
 
-    // se chegou aqui, deu erro — sucesso já redireciona e não retorna
-    setConfirmando(false);
-    setErro(resultado.erro);
-    throw new Error(resultado.erro);
+      // se chegou aqui, deu erro — sucesso já redireciona e não retorna
+      setErro(resultado.erro);
+      throw new Error(resultado.erro);
+    } catch (e) {
+      // Mesma causa do achado em `confirmar()` (ver comentário lá) — aqui
+      // precisa continuar relançando o erro (o Brick depende da Promise
+      // rejeitada pra mostrar o próprio estado de erro), só garante que
+      // `confirmando` nunca fica travado antes de propagar.
+      const mensagemAcaoDesatualizada = e instanceof Error && /Server Action/i.test(e.message);
+      if (mensagemAcaoDesatualizada) {
+        setErro("A página ficou aberta desde antes de uma atualização do site — recarregue a página e tente de novo.");
+      }
+      throw e;
+    } finally {
+      setConfirmando(false);
+    }
   }
 
   // Dinheiro sem valor informado (ou insuficiente) não confirma — mesma
