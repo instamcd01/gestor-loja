@@ -272,7 +272,15 @@ export async function calcularFretePorEndereco(
   endereco: EnderecoCliente,
   subtotal: number,
 ): Promise<ResultadoFrete> {
-  if (!endereco.endereco || !endereco.cep) {
+  // CEP nunca é usado no cálculo real (rota/zona usam lat/lng, já
+  // confirmados nesse ponto por CapturarEndereco) — exigi-lo aqui além do
+  // que a própria captura de endereço já exige bloqueava endereços
+  // legítimos e geocodificados com precisão máxima (ROOFTOP) sempre que o
+  // Google não devolve postal_code pra aquela rua (achado real 18/09: "Rua
+  // Paulo de Lima, 16" resolve certinho, mas sem CEP no resultado do
+  // Google — endereço ficava preso mostrando "fora da área de entrega",
+  // mensagem errada pra esse motivo, ver estimar-frete-gratis.tsx).
+  if (!endereco.endereco || (endereco.lat == null && endereco.lng == null)) {
     return { disponivel: false, motivo: "sem_endereco" };
   }
   const resultado = await calcularFrete(empresaId, enderecoEmpresa, endereco, subtotal);

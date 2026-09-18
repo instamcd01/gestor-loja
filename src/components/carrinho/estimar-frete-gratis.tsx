@@ -62,7 +62,7 @@ export function EstimarFreteGratis({
     obterSnapshotServidorEnderecoEstimado,
   );
   const [calculando, setCalculando] = useState(false);
-  const [erro, setErro] = useState(false);
+  const [motivoErro, setMotivoErro] = useState<"fora_de_area" | "outro" | null>(null);
 
   // Semente inicial: só roda se esse cache ainda não existir de jeito
   // nenhum (primeira vez que esse navegador vê esse carrinho) — nunca
@@ -90,12 +90,18 @@ export function EstimarFreteGratis({
 
   async function resolverEndereco(endereco: EnderecoCliente) {
     setCalculando(true);
-    setErro(false);
+    setMotivoErro(null);
 
     try {
       const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, endereco, 0);
       if (!resultado.disponivel) {
-        setErro(true);
+        // "fora_de_area" é a única mensagem específica que faz sentido
+        // mostrar pro cliente (endereço real, mas fora do alcance de
+        // entrega) — os outros motivos (endereço incompleto, falha na API)
+        // não são "fora de área" e dizer isso engana o cliente (achado
+        // real 18/09: endereço sem CEP no retorno do Google mostrava essa
+        // mensagem, quando o endereço era perfeitamente entregável).
+        setMotivoErro(resultado.motivo === "fora_de_area" ? "fora_de_area" : "outro");
         return;
       }
 
@@ -115,7 +121,7 @@ export function EstimarFreteGratis({
       // Mesmo achado das outras etapas do checkout (ver entrega-form.tsx/
       // pagamento-form.tsx/capturar-endereco.tsx, 15/09): sem isso,
       // "Calculando..." ficava preso pra sempre quando a chamada falhava.
-      setErro(true);
+      setMotivoErro("outro");
     } finally {
       setCalculando(false);
     }
@@ -163,9 +169,11 @@ export function EstimarFreteGratis({
       <p className="text-xs font-medium">Informe seu endereço pra ver se sua região tem frete grátis</p>
       <CapturarEndereco onResolvido={resolverEndereco} />
       {calculando && <p className="text-xs text-black/50 dark:text-white/50">Calculando...</p>}
-      {erro && (
+      {motivoErro && (
         <p className="text-xs text-[var(--color-danger)]">
-          Esse endereço está fora da nossa área de entrega.
+          {motivoErro === "fora_de_area"
+            ? "Esse endereço está fora da nossa área de entrega."
+            : "Não foi possível calcular o frete para esse endereço."}
         </p>
       )}
     </div>
