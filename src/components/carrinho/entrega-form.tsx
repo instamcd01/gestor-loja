@@ -289,7 +289,14 @@ export function EntregaForm({
     return null;
   }
 
-  const podeAvancar = tipoEntrega === "retirada" || (frete?.disponivel ?? false);
+  // Achado real 18/09: nada aqui checava se o modo "Agendada" realmente
+  // tinha uma janela de horário escolhida — dava pra ir pro pagamento com
+  // loja fechada e metodoEntrega="agendada" mas janelaAgendamento=null
+  // (ex: sem horário disponível ainda hoje, cliente nunca chegou a
+  // selecionar um). O pedido ficaria sem nenhuma janela de entrega real.
+  const podeAvancar =
+    (tipoEntrega === "retirada" || (frete?.disponivel ?? false)) &&
+    (tipoEntrega !== "entrega" || metodoEntrega !== "agendada" || janelaAgendamento != null);
 
   async function irParaPagamento() {
     setAvancando(true);
