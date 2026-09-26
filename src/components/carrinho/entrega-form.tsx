@@ -155,10 +155,16 @@ export function EntregaForm({
   // Guarda o endereço já usado no último cálculo — evita recalcular em
   // loop quando a própria confirmação (manual ou automática) já deixa
   // `endereco` apontando pro mesmo objeto de novo.
-  const ultimoEnderecoCalculado = useRef<EnderecoCliente | null>(null);
+  //
+  // Compara pelo CONTEÚDO (JSON), nunca pela referência do objeto: o cache
+  // (endereco-estimado.ts) devolve o objeto que ele mesmo desserializou,
+  // não o que foi gravado — comparando referência, confirmar o endereço
+  // disparava o recálculo de novo em loop infinito ("Calculando frete..."
+  // eterno, dezenas de cotações por minuto — achado real 26/09).
+  const ultimoEnderecoCalculado = useRef<string | null>(null);
 
   async function confirmarEnderecoECalcularFrete(novoEndereco: EnderecoCliente) {
-    ultimoEnderecoCalculado.current = novoEndereco;
+    ultimoEnderecoCalculado.current = JSON.stringify(novoEndereco);
     setCalculando(true);
     setErro(null);
 
@@ -179,7 +185,7 @@ export function EntregaForm({
       // versão que vale daqui pra frente. Marca como já calculada ANTES de
       // gravar no cache, senão o efeito abaixo recalcularia em loop.
       const enderecoValidado = confirmado.endereco;
-      ultimoEnderecoCalculado.current = enderecoValidado;
+      ultimoEnderecoCalculado.current = JSON.stringify(enderecoValidado);
       setFrete(resultado);
 
       // Escreve no MESMO cache compartilhado que a barra "frete grátis" lê
@@ -241,7 +247,7 @@ export function EntregaForm({
   // reavalia assim que a chamada anterior termina e pega a versão mais
   // atual de `endereco` nesse momento.
   useEffect(() => {
-    if (!endereco || calculando || endereco === ultimoEnderecoCalculado.current) return;
+    if (!endereco || calculando || JSON.stringify(endereco) === ultimoEnderecoCalculado.current) return;
     confirmarEnderecoECalcularFrete(endereco);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endereco, calculando]);
