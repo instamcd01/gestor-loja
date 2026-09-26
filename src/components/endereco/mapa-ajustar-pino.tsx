@@ -5,30 +5,34 @@ import type { Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 /**
- * Mapa pra conferir/ajustar o ponto de entrega — o pino fica fixo no centro
- * e o cliente arrasta o MAPA até a casa dele (mesmo padrão do iFood, mais
- * fácil no celular que arrastar um marcador pequeno). Existe porque o
- * geocoding erra em ruas de nome repetido ("Rua Um", "Rua 2"...) e antes o
- * cliente não tinha como corrigir se não estivesse em casa pra usar a
- * localização do aparelho (achado real 26/09: ponto caiu longe, pedido
- * virou retirada).
+ * Mapa com pino fixo no centro. Dois modos:
+ *
+ * - `interativo={false}` (padrão, prévia no meio do formulário): mapa
+ *   TRAVADO — nenhum toque/rolagem mexe nele, e com `pointer-events-none`
+ *   o dedo que rola a página passando por cima continua rolando a página.
+ *   Achado real 26/09: com o mapa solto no meio da página, rolar a tela
+ *   arrastava o mapa sem querer e o pino ia parar a km do endereço digitado
+ *   (frete cobrado errado).
+ * - `interativo` (só na tela cheia de "Ajustar local no mapa"): o cliente
+ *   arrasta o MAPA até a casa (padrão do iFood, mais fácil no celular que
+ *   arrastar um marcador pequeno) e cada parada chama `onMover`.
  *
  * Tiles do OpenStreetMap (sem chave de API — a chave do Google do projeto
  * é só de servidor). Leaflet é carregado só no navegador (`import()` dentro
  * do efeito), nunca no SSR.
- *
- * `lat`/`lng` de fora só recentralizam o mapa quando mudam por outro
- * motivo (nova busca, "centralizar no bairro") — o próprio arraste chama
- * `onMover` e não "briga" com o usuário.
  */
 export function MapaAjustarPino({
   lat,
   lng,
   onMover,
+  interativo = false,
+  className = "h-48",
 }: {
   lat: number;
   lng: number;
-  onMover: (lat: number, lng: number) => void;
+  onMover?: (lat: number, lng: number) => void;
+  interativo?: boolean;
+  className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<LeafletMap | null>(null);
@@ -47,10 +51,16 @@ export function MapaAjustarPino({
     (async () => {
       const L = await import("leaflet");
       if (cancelado || !containerRef.current) return;
-      mapa = L.map(containerRef.current, { zoomControl: true, attributionControl: true }).setView(
-        [lat, lng],
-        17,
-      );
+      mapa = L.map(containerRef.current, {
+        zoomControl: interativo,
+        attributionControl: true,
+        dragging: interativo,
+        touchZoom: interativo,
+        scrollWheelZoom: interativo,
+        doubleClickZoom: interativo,
+        boxZoom: interativo,
+        keyboard: interativo,
+      }).setView([lat, lng], 17);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap",
@@ -60,7 +70,7 @@ export function MapaAjustarPino({
         const alvo = alvoProgramaticoRef.current;
         if (Math.abs(alvo.lat - c.lat) < 1e-7 && Math.abs(alvo.lng - c.lng) < 1e-7) return;
         ultimoEmitidoRef.current = { lat: c.lat, lng: c.lng };
-        onMoverRef.current(c.lat, c.lng);
+        onMoverRef.current?.(c.lat, c.lng);
       });
       mapaRef.current = mapa;
     })();
@@ -83,8 +93,10 @@ export function MapaAjustarPino({
   }, [lat, lng]);
 
   return (
-    <div className="relative isolate h-56 w-full overflow-hidden rounded-[var(--radius-md)] border border-black/10 dark:border-white/10">
-      <div ref={containerRef} className="absolute inset-0 z-0" />
+    <div
+      className={`relative isolate w-full overflow-hidden rounded-[var(--radius-md)] border border-black/10 dark:border-white/10 ${className}`}
+    >
+      <div ref={containerRef} className={`absolute inset-0 z-0 ${interativo ? "" : "pointer-events-none"}`} />
       {/* Pino fixo no centro — a ponta fica exatamente no centro do mapa. */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-full">
         <svg width="32" height="40" viewBox="0 0 32 40" aria-hidden="true">

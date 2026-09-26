@@ -17,9 +17,9 @@ import {
   type JanelaHorarioAgendamento,
 } from "@/lib/agendamento";
 import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
-import { calcularFretePorEndereco } from "@/lib/checkout";
+import { confirmarEnderecoEntrega } from "@/lib/checkout";
+import type { ResultadoFrete } from "@/lib/frete";
 import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-estimado";
-import { salvarEndereco } from "@/lib/cliente";
 import {
   assinarEnderecoEstimado,
   obterSnapshotEnderecoEstimado,
@@ -123,7 +123,7 @@ export function EntregaForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endereco]);
-  const [frete, setFrete] = useState<Awaited<ReturnType<typeof calcularFretePorEndereco>> | null>(null);
+  const [frete, setFrete] = useState<ResultadoFrete | null>(null);
   const [calculando, setCalculando] = useState(false);
   const [avancando, setAvancando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -163,13 +163,23 @@ export function EntregaForm({
     setErro(null);
 
     try {
-      const salvo = await salvarEndereco(empresaId, novoEndereco);
-      if (!salvo.ok) {
-        setErro(salvo.erro);
+      // Servidor valida texto x ponto, salva, calcula a rota e grava a
+      // cotação que o pedido vai usar — ver confirmarEnderecoEntrega.
+      const confirmado = await confirmarEnderecoEntrega(empresaId, enderecoEmpresa, novoEndereco, subtotal);
+      if (!confirmado.ok) {
+        setFrete(null);
+        setErro(confirmado.erro);
+        // Endereço não conferiu (ex: salvo antes com o pino longe do texto)
+        // — abre o formulário pra buscar/ajustar de novo em vez de travar.
+        if (confirmado.motivo !== "erro") setEditandoEndereco(true);
         return;
       }
-
-      const resultado = await calcularFretePorEndereco(empresaId, enderecoEmpresa, novoEndereco, subtotal);
+      const resultado = confirmado.frete;
+      // O servidor pode ter corrigido rua/bairro (modo "pino") — é essa
+      // versão que vale daqui pra frente. Marca como já calculada ANTES de
+      // gravar no cache, senão o efeito abaixo recalcularia em loop.
+      const enderecoValidado = confirmado.endereco;
+      ultimoEnderecoCalculado.current = enderecoValidado;
       setFrete(resultado);
 
       // Escreve no MESMO cache compartilhado que a barra "frete grátis" lê
@@ -179,7 +189,7 @@ export function EntregaForm({
       if (resultado.disponivel) {
         setEditandoEndereco(false);
         const novoEstimado: EnderecoEstimado = {
-          endereco: novoEndereco,
+          endereco: enderecoValidado,
           zonaId: resultado.opcao.zona_id,
           zonaNome: resultado.opcao.zona_nome,
           valor: resultado.opcao.valor,

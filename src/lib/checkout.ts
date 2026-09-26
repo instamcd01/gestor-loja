@@ -9,6 +9,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
 import { NOME_PAGAMENTO_ONLINE } from "@/lib/utils";
 import { registrarErroSistema } from "@/lib/erros";
+import { validarEnderecoEntrega } from "@/lib/validar-endereco";
+import { getUsuarioSeguro } from "@/lib/supabase/auth";
 
 export type ResultadoCheckout = { ok: false; erro: string };
 
@@ -289,6 +291,94 @@ export async function calcularFretePorEndereco(
   void registrarEventoEndereco(supabase, empresaId, endereco, resultado);
 
   return resultado;
+}
+
+export type ResultadoConfirmacaoEndereco =
+  | { ok: true; endereco: EnderecoCliente; frete: ResultadoFrete }
+  | { ok: false; motivo: "endereco_nao_confere" | "sem_rua_no_ponto" | "erro"; erro: string };
+
+/**
+ * Único caminho do checkout logado pra salvar o endereço de entrega e cotar
+ * o frete — tudo decidido AQUI no servidor, nunca pelo navegador:
+ *
+ * 1. Valida que texto e ponto batem (ver `EnderecoCliente.modoPonto`):
+ *    "pino" → rua/bairro/cidade/UF/CEP vêm da geocodificação reversa do
+ *    ponto (só número/complemento continuam do cliente); "texto" → o texto
+ *    é geocodificado de novo e o ponto tem que estar a até 400 m dele.
+ * 2. Salva o endereço já validado.
+ * 3. Calcula a rota/zona e grava a cotação (service role) em
+ *    `cotacoes_frete_site` — é ela que `finalizar_pedido_site` usa pra
+ *    decidir a zona. Antes o navegador mandava a zona e qualquer zona ativa
+ *    era aceita (brecha achada 26/09).
+ */
+export async function confirmarEnderecoEntrega(
+  empresaId: string,
+  enderecoEmpresa: { endereco: string | null; cidade: string | null; estado: string | null; cep: string | null },
+  endereco: EnderecoCliente,
+  subtotal: number,
+): Promise<ResultadoConfirmacaoEndereco> {
+  const supabase = await createClient();
+  const user = await getUsuarioSeguro(supabase);
+  if (!user) return { ok: false, motivo: "erro", erro: "Entre na sua conta pra continuar." };
+
+  const lat = Number(endereco.lat);
+  const lng = Number(endereco.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return { ok: false, motivo: "endereco_nao_confere", erro: "Confirme o endereço de novo." };
+  }
+
+  const validacao = await validarEnderecoEntrega({ ...endereco, lat, lng });
+  if (!validacao.ok) return validacao;
+  const validado = validacao.endereco;
+
+  const limitar = (v: string | null | undefined, max: number) => v?.trim().slice(0, max) || null;
+  const { error: erroSalvar } = await supabase.rpc("atualizar_endereco_cliente", {
+    p_empresa_id: empresaId,
+    p_endereco: limitar(validado.endereco, 200),
+    p_numero: limitar(validado.numero, 20),
+    p_bairro: limitar(validado.bairro, 100),
+    p_cidade: limitar(validado.cidade, 100),
+    p_estado: limitar(validado.estado, 2),
+    p_cep: limitar(validado.cep, 9),
+    p_complemento: limitar(validado.complemento, 100),
+    p_latitude: lat,
+    p_longitude: lng,
+  });
+  if (erroSalvar) return { ok: false, motivo: "erro", erro: erroSalvar.message };
+
+  const frete = await calcularFrete(empresaId, enderecoEmpresa, validado, subtotal);
+  void registrarEventoEndereco(supabase, empresaId, validado, frete);
+
+  if (frete.disponivel) {
+    const { data: cliente } = await supabase
+      .from("clientes")
+      .select("id")
+      .eq("empresa_id", empresaId)
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    if (!cliente?.id) return { ok: false, motivo: "erro", erro: "Cliente não encontrado." };
+
+    const { error: erroCotacao } = await createServiceClient().from("cotacoes_frete_site").insert({
+      empresa_id: empresaId,
+      cliente_id: cliente.id,
+      zona_id: frete.opcao.zona_id,
+      distancia_km: Math.round(frete.distanciaKm * 1000) / 1000,
+      latitude: lat,
+      longitude: lng,
+      endereco: limitar(validado.endereco, 200),
+      numero: limitar(validado.numero, 20),
+      modo_ponto: validado.modoPonto ?? "texto",
+    });
+    if (erroCotacao) {
+      await registrarErroSistema({
+        mensagem: `Falha ao gravar cotação de frete: ${erroCotacao.message}`,
+        rota: "/loja/carrinho (confirmarEnderecoEntrega)",
+      });
+      return { ok: false, motivo: "erro", erro: "Não foi possível calcular o frete agora. Tente de novo em instantes." };
+    }
+  }
+
+  return { ok: true, endereco: validado, frete };
 }
 
 export async function buscarEnderecoCandidatos(query: string): Promise<CandidatoEndereco[]> {

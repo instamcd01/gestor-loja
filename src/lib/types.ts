@@ -189,6 +189,18 @@ export interface EnderecoCliente {
   lng: number | null;
   /** Confiança do Google nessas coordenadas (`location_type` do Geocoding API) — ROOFTOP é exata, os demais (RANGE_INTERPOLATED/GEOMETRIC_CENTER/APPROXIMATE) são estimativas e podem cair num ponto/prédio diferente do real, sobretudo em ruas longas ou bairros novos. Opcional só porque endereços salvos antes desse campo existir não têm valor. */
   precisao?: string | null;
+  /**
+   * De onde vieram as coordenadas — decide como o SERVIDOR valida o endereço
+   * antes de cotar o frete (`confirmarEnderecoEntrega`):
+   * - "texto": achadas pela busca do endereço digitado → o servidor
+   *   regeocodifica o texto e exige que o ponto esteja perto dele.
+   * - "pino": marcadas no mapa ou pela localização do aparelho → o servidor
+   *   faz o caminho inverso e o texto (rua/bairro/cidade) passa a vir do
+   *   ponto. Assim texto e ponto nunca divergem: quem mover o pino pra
+   *   perto da loja recebe a entrega LÁ (achado 26/09, frete burlável).
+   * Ausente (cache antigo/endereço salvo antes disso) = tratado como "texto".
+   */
+  modoPonto?: "texto" | "pino" | null;
 }
 
 /** Um resultado possível ao geocodificar um endereço digitado — pode haver mais de um quando o nome se repete (ruas numéricas, bairros com nomes iguais em cidades diferentes etc). */
