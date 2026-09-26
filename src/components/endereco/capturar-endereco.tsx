@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buscarEnderecoCandidatos, buscarEnderecoPorLocalizacao } from "@/lib/checkout";
 import type { CandidatoEndereco, EnderecoCliente } from "@/lib/types";
+import { MapaAjustarPino } from "./mapa-ajustar-pino";
 
 const ENDERECO_VAZIO: EnderecoCliente = {
   endereco: "",
@@ -66,11 +67,14 @@ export function CapturarEndereco({
   const [buscando, setBuscando] = useState(false);
   const [localizando, setLocalizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [centralizando, setCentralizando] = useState(false);
 
   const resolvido = campos.lat != null && campos.lng != null;
 
   function atualizarCampo(campo: keyof EnderecoCliente, valor: string) {
     setErro(null);
+    setAviso(null);
     setCandidatos(null);
     setCampos((atual) => ({
       ...atual,
@@ -84,6 +88,7 @@ export function CapturarEndereco({
   function aplicarCandidato(c: CandidatoEndereco) {
     setCandidatos(null);
     setErro(null);
+    setAviso(null);
     setCampos((atual) => ({
       ...atual,
       endereco: c.endereco ?? atual.endereco,
@@ -118,6 +123,15 @@ export function CapturarEndereco({
     try {
       const resultados = await buscarEnderecoCandidatos(query);
       if (resultados.length === 0) {
+        // Rua não encontrada — em vez de travar, abre o mapa no bairro pro
+        // cliente marcar a casa (texto digitado continua valendo pra
+        // entrega, só o ponto vem do mapa).
+        const bairro = await buscarPontoDoBairro();
+        if (bairro) {
+          setCampos((atual) => ({ ...atual, lat: bairro.lat, lng: bairro.lng, precisao: "APPROXIMATE" }));
+          setAviso("Não achamos a rua exata — arraste o mapa até colocar o pino na sua casa.");
+          return;
+        }
         setErro("Não encontramos esse endereço. Confira os dados e tente de novo.");
         return;
       }
@@ -133,6 +147,42 @@ export function CapturarEndereco({
     } finally {
       setBuscando(false);
     }
+  }
+
+  /** Ponto aproximado do bairro/cidade digitados — ponto de partida pro cliente ajustar no mapa. */
+  async function buscarPontoDoBairro(): Promise<CandidatoEndereco | null> {
+    const query = [campos.bairro, campos.cidade, campos.estado].filter(Boolean).join(", ");
+    if (!query) return null;
+    const resultados = await buscarEnderecoCandidatos(query);
+    return resultados[0] ?? null;
+  }
+
+  // Geocoding às vezes acha uma rua de mesmo nome em outro lugar (achado
+  // real 26/09, "Rua Um") — arrastar o mapa por km é inviável, então
+  // recentraliza no bairro digitado pro ajuste fino.
+  async function centralizarNoBairro() {
+    setCentralizando(true);
+    setErro(null);
+    try {
+      const bairro = await buscarPontoDoBairro();
+      if (!bairro) {
+        setErro("Preencha bairro e cidade pra centralizar o mapa.");
+        return;
+      }
+      setCampos((atual) => ({ ...atual, lat: bairro.lat, lng: bairro.lng, precisao: "APPROXIMATE" }));
+      setAviso("Mapa no seu bairro — arraste até colocar o pino na sua casa.");
+    } catch (e) {
+      setErro(mensagemDeErro(e, "Não foi possível centralizar o mapa agora. Tente de novo em instantes."));
+    } finally {
+      setCentralizando(false);
+    }
+  }
+
+  function moverPino(lat: number, lng: number) {
+    setAviso(null);
+    // "MANUAL" vai pro log de endereço (site_endereco_confirmado) — mostra
+    // pro lojista que o ponto foi posto pelo próprio cliente.
+    setCampos((atual) => ({ ...atual, lat, lng, precisao: "MANUAL" }));
   }
 
   function usarLocalizacao() {
@@ -271,8 +321,26 @@ export function CapturarEndereco({
       )}
 
       {resolvido && (
-        <p className="text-xs font-medium text-[var(--color-success)]">Endereço localizado ✓</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-[var(--color-success)]">
+            Endereço localizado ✓{" "}
+            <span className="font-normal text-black/60 dark:text-white/60">
+              Confira se o pino está na sua casa — se não estiver, arraste o mapa.
+            </span>
+          </p>
+          <MapaAjustarPino lat={campos.lat!} lng={campos.lng!} onMover={moverPino} />
+          <button
+            type="button"
+            onClick={centralizarNoBairro}
+            disabled={centralizando}
+            className="self-start text-xs text-[var(--brand-primary)] underline underline-offset-2 disabled:opacity-50"
+          >
+            {centralizando ? "Centralizando..." : "O pino está muito longe? Centralizar no meu bairro"}
+          </button>
+        </div>
       )}
+
+      {aviso && <p className="text-xs text-black/70 dark:text-white/70">{aviso}</p>}
 
       {erro && <p className="text-xs text-[var(--color-danger)]">{erro}</p>}
 
