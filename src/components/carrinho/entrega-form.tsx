@@ -140,10 +140,9 @@ export function EntregaForm({
   // ambíguo: dava pra escolher "Econômica" e "Quero agora" ao mesmo
   // tempo, por exemplo). Agendada usa o mesmo preço da expressa —
   // agendar não é um desconto, só escolhe a hora de chegada.
-  const [metodoEntrega, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">(() =>
+  const [metodoEscolhido, setMetodoEntrega] = useState<"expressa" | "economica" | "agendada">(() =>
     disponibilidadeImediata.disponivel ? "expressa" : "agendada",
   );
-  const modalidadeEntrega: "expressa" | "economica" = metodoEntrega === "economica" ? "economica" : "expressa";
 
   function mudarTipoEntrega(novo: TipoEntrega) {
     escolhaManual.current = true;
@@ -253,6 +252,17 @@ export function EntregaForm({
   }, [endereco, calculando]);
 
   const freteResolvido = tipoEntrega === "entrega" && frete?.disponivel ? frete.opcao : null;
+  // Econômica é por bairro (só nos bairros cadastrados) — se o cliente tinha
+  // escolhido e o endereço mudou pra um bairro sem ela, o card some; sem
+  // isso a escolha "econômica" ficava presa por baixo e o pedido falhava
+  // ao finalizar ("Frete econômico não está disponível para esse bairro").
+  const metodoEntrega: "expressa" | "economica" | "agendada" =
+    metodoEscolhido === "economica" && freteResolvido?.economico_valor == null
+      ? disponibilidadeImediata.disponivel
+        ? "expressa"
+        : "agendada"
+      : metodoEscolhido;
+  const modalidadeEntrega: "expressa" | "economica" = metodoEntrega === "economica" ? "economica" : "expressa";
   // frete_gratis veio do subtotal de quando o endereço foi confirmado —
   // se o cliente mudou quantidade depois (item-carrinho-row, acima nesta
   // mesma página), reavalia contra o subtotal atual em vez de confiar no
