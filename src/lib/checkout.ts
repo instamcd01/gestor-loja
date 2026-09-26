@@ -343,6 +343,9 @@ export async function confirmarEnderecoEntrega(
     p_complemento: limitar(validado.complemento, 100),
     p_latitude: lat,
     p_longitude: lng,
+    // Indicador pro cadastro/entregador: ponto marcado pelo próprio cliente
+    // na tela "Ajustar local no mapa" (precisao MANUAL) — o pino é a referência.
+    p_ponto_ajustado_cliente: validado.modoPonto === "pino" && validado.precisao === "MANUAL",
   });
   if (erroSalvar) return { ok: false, motivo: "erro", erro: erroSalvar.message };
 

@@ -95,6 +95,9 @@ export async function calcularFrete(
       p_empresa_id: empresaId,
       p_distancia_km: distanciaKm,
       p_subtotal: subtotal,
+      // Valor da entrega econômica é por bairro (frete_economico_bairros,
+      // regra em valor_frete_economico) — sem bairro cai no valor padrão.
+      p_bairro: enderecoCliente.bairro ?? null,
     })
     .maybeSingle();
 
