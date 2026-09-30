@@ -37,6 +37,10 @@ function normalizarRua(v: string | null | undefined): string {
 // Número/complemento não mudam a rua/bairro, então não invalidam.
 const CAMPOS_LOCALIZACAO = ["endereco", "bairro", "cidade", "estado", "cep"] as const;
 
+// Obrigatórios pra buscar — número incluso: buscar sem ele geocodifica o
+// meio da rua, não a casa.
+const CAMPOS_OBRIGATORIOS = ["endereco", "numero", "bairro", "cidade"] as const;
+
 function montarQuery(c: EnderecoCliente): string {
   const partes = [
     c.numero ? `${c.endereco ?? ""}, ${c.numero}` : c.endereco,
@@ -146,11 +150,13 @@ export function CapturarEndereco({
   }
 
   async function buscarEndereco() {
-    const query = montarQuery(campos);
-    if (!query) {
-      setErro("Preencha ao menos rua e cidade pra buscar.");
+    const vazio = campoObrigatorioVazio();
+    if (vazio) {
+      const rotulos = { endereco: "a rua", numero: "o número", bairro: "o bairro", cidade: "a cidade" };
+      setErro(`Informe ${rotulos[vazio]} pra buscar o endereço.`);
       return;
     }
+    const query = montarQuery(campos);
     setBuscando(true);
     setErro(null);
     try {
@@ -256,12 +262,31 @@ export function CapturarEndereco({
     );
   }
 
-  // Enter em qualquer campo busca o endereço (teclado do celular mostra
-  // "Ir"/"Enter" — sem isso o cliente não tinha como avançar pelo teclado).
+  // Primeiro campo obrigatório ainda vazio (ordem da tela) — null = todos
+  // preenchidos, pode buscar.
+  function campoObrigatorioVazio(): (typeof CAMPOS_OBRIGATORIOS)[number] | null {
+    return CAMPOS_OBRIGATORIOS.find((campo) => !campos[campo]?.trim()) ?? null;
+  }
+
+  // Tecla de ação do teclado ("Próximo"/"Ir"): leva ao próximo campo
+  // obrigatório vazio e só busca quando está tudo preenchido. Buscar direto
+  // no Enter (1ª versão, 30/09) disparava a busca ao sair da Rua pro
+  // Número — pino no meio da rua e o formulário pulava pro Confirmar sem
+  // o número.
   function aoTeclar(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    if (!resolvido && !buscando) buscarEndereco();
+    if (resolvido || buscando) return;
+    const vazio = campoObrigatorioVazio();
+    if (vazio) {
+      focarCampo(e.currentTarget, vazio);
+      return;
+    }
+    buscarEndereco();
+  }
+
+  function focarCampo(origem: HTMLElement, campo: string) {
+    origem.closest("[data-capturar-endereco]")?.querySelector<HTMLInputElement>(`input[name="${campo}"]`)?.focus();
   }
 
   function confirmar() {
@@ -277,7 +302,7 @@ export function CapturarEndereco({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" data-capturar-endereco>
       <Button
         type="button"
         variant="secondary"
@@ -298,6 +323,8 @@ export function CapturarEndereco({
         <Input
           placeholder="Rua"
           value={campos.endereco ?? ""}
+          name="endereco"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("endereco", e.target.value)}
           className="col-span-2"
@@ -305,6 +332,8 @@ export function CapturarEndereco({
         <Input
           placeholder="Número"
           value={campos.numero ?? ""}
+          name="numero"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("numero", e.target.value)}
         />
@@ -313,12 +342,16 @@ export function CapturarEndereco({
         <Input
           placeholder="Bairro"
           value={campos.bairro ?? ""}
+          name="bairro"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("bairro", e.target.value)}
         />
         <Input
           placeholder="Complemento (opcional)"
           value={campos.complemento ?? ""}
+          name="complemento"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("complemento", e.target.value)}
         />
@@ -327,6 +360,8 @@ export function CapturarEndereco({
         <Input
           placeholder="Cidade"
           value={campos.cidade ?? ""}
+          name="cidade"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("cidade", e.target.value)}
         />
@@ -334,12 +369,16 @@ export function CapturarEndereco({
           placeholder="UF"
           maxLength={2}
           value={campos.estado ?? ""}
+          name="estado"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("estado", e.target.value.toUpperCase())}
         />
         <Input
           placeholder="CEP"
           value={campos.cep ?? ""}
+          name="cep"
+          enterKeyHint={campoObrigatorioVazio() ? "next" : "search"}
           onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("cep", e.target.value)}
         />
