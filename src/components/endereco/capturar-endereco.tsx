@@ -321,10 +321,9 @@ export function CapturarEndereco({
         variant="secondary"
         onClick={usarLocalizacao}
         disabled={localizando}
-        className="w-full flex-col gap-0.5 border-2 bg-[var(--brand-primary)]/10 py-3.5"
+        className="w-full border-2 bg-[var(--brand-primary)]/10 py-3.5 text-base font-semibold"
       >
-        <span className="text-base font-semibold">{localizando ? "Localizando..." : "📍 Usar minha localização"}</span>
-        {!localizando && <span className="text-xs font-normal opacity-80">Mais rápido: achamos sua casa pelo celular</span>}
+        {localizando ? "Localizando..." : "📍 Usar minha localização"}
       </Button>
 
       <div className="flex items-center gap-2 text-xs text-black/40 dark:text-white/40">
