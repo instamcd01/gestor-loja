@@ -61,9 +61,12 @@ function montarQuery(c: EnderecoCliente): string {
  * `lat`/`lng` confirmados, nunca só o texto digitado.
  */
 export function CapturarEndereco({
+  estadoLoja,
   valorInicial,
   onResolvido,
 }: {
+  /** Sigla do estado da loja (cadastro) — sem cidade/UF digitados, a busca fica nele. */
+  estadoLoja?: string | null;
   valorInicial?: EnderecoCliente | null;
   onResolvido: (endereco: EnderecoCliente) => void;
 }) {
@@ -150,6 +153,12 @@ export function CapturarEndereco({
       : generica;
   }
 
+  // Cliente que não digitou cidade nem UF é local: busca só no estado da
+  // loja. Digitou → Brasil todo (cliente de outro estado).
+  function estadoParaBusca(): string | null {
+    return !campos.cidade?.trim() && !campos.estado?.trim() ? (estadoLoja ?? null) : null;
+  }
+
   async function buscarEndereco() {
     const vazio = campoObrigatorioVazio();
     if (vazio) {
@@ -161,7 +170,7 @@ export function CapturarEndereco({
     setBuscando(true);
     setErro(null);
     try {
-      const resultados = await buscarEnderecoCandidatos(query);
+      const resultados = await buscarEnderecoCandidatos(query, estadoParaBusca());
       if (resultados.length === 0) {
         // Rua não encontrada por escrito — oferece marcar no mapa (tela
         // cheia) em vez de travar. É pra esse caso que o mapa existe.
@@ -187,7 +196,7 @@ export function CapturarEndereco({
   async function buscarPontoDoBairro(): Promise<CandidatoEndereco | null> {
     const query = [campos.bairro, campos.cidade, campos.estado].filter(Boolean).join(", ");
     if (!query) return null;
-    const resultados = await buscarEnderecoCandidatos(query);
+    const resultados = await buscarEnderecoCandidatos(query, estadoParaBusca());
     return resultados[0] ?? null;
   }
 

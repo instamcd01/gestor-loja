@@ -384,10 +384,25 @@ export async function confirmarEnderecoEntrega(
   return { ok: true, endereco: validado, frete };
 }
 
-export async function buscarEnderecoCandidatos(query: string): Promise<CandidatoEndereco[]> {
+/**
+ * Cliente que não informou cidade nem UF busca só no estado da loja (quem
+ * digita só rua + número é cliente local — sem isso ruas de mesmo nome em
+ * outros estados apareciam, ou eram aplicadas sozinhas). Informou cidade/
+ * UF, ou nada foi achado no estado: busca no Brasil todo — continua
+ * funcionando quando a loja passar a enviar pra outros estados.
+ * [estadoLoja] = sigla do cadastro da loja (`empresas.estado`); o
+ * componente só manda quando o cliente não preencheu cidade/UF.
+ */
+export async function buscarEnderecoCandidatos(query: string, estadoLoja?: string | null): Promise<CandidatoEndereco[]> {
   // Vai pra API paga do Google (Geocoding) — trunca antes, uma string
   // gigante numa chamada direta à Server Action não vira custo maior.
-  return geocodificarEndereco(query.trim().slice(0, 300));
+  const texto = query.trim().slice(0, 300);
+  const estado = estadoLoja?.trim().toUpperCase();
+  if (estado && /^[A-Z]{2}$/.test(estado)) {
+    const noEstado = await geocodificarEndereco(texto, estado);
+    if (noEstado.length > 0) return noEstado;
+  }
+  return geocodificarEndereco(texto);
 }
 
 export async function buscarEnderecoPorLocalizacao(lat: number, lng: number): Promise<CandidatoEndereco | null> {

@@ -167,7 +167,7 @@ export function EstimarFreteGratis({
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] p-4 dark:border-white/10">
       <p className="text-xs font-medium">Informe seu endereço pra ver se sua região tem frete grátis</p>
-      <CapturarEndereco onResolvido={resolverEndereco} />
+      <CapturarEndereco estadoLoja={enderecoEmpresa.estado} onResolvido={resolverEndereco} />
       {calculando && <p className="text-xs text-black/50 dark:text-white/50">Calculando...</p>}
       {motivoErro && (
         <p className="text-xs text-[var(--color-danger)]">

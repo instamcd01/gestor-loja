@@ -392,7 +392,7 @@ export function EntregaForm({
               </button>
             </div>
           ) : (
-            <CapturarEndereco valorInicial={endereco} onResolvido={confirmarEnderecoECalcularFrete} />
+            <CapturarEndereco estadoLoja={enderecoEmpresa.estado} valorInicial={endereco} onResolvido={confirmarEnderecoECalcularFrete} />
           )}
 
           {calculando && (

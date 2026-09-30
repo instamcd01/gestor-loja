@@ -47,13 +47,19 @@ function paraCandidato(resultado: GeocodeResult): CandidatoEndereco {
  * mais de um resultado plausível; quem chama decide se pede confirmação
  * ao usuário quando isso acontece.
  */
-export async function geocodificarEndereco(query: string): Promise<CandidatoEndereco[]> {
+/**
+ * [estado] (sigla, ex: "RJ") restringe os resultados a esse estado — filtro
+ * `components` do Google, não só preferência: "Rua Beija Flor, 100" sem
+ * estado devolvia São Paulo/Bahia em vez da rua da loja (achado 30/09).
+ */
+export async function geocodificarEndereco(query: string, estado?: string | null): Promise<CandidatoEndereco[]> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey || !query.trim()) return [];
 
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
   url.searchParams.set("address", query);
   url.searchParams.set("region", "br");
+  if (estado) url.searchParams.set("components", `country:BR|administrative_area:${estado}`);
   url.searchParams.set("key", apiKey);
 
   try {
