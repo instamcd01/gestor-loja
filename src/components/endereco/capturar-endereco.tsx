@@ -37,9 +37,10 @@ function normalizarRua(v: string | null | undefined): string {
 // Número/complemento não mudam a rua/bairro, então não invalidam.
 const CAMPOS_LOCALIZACAO = ["endereco", "bairro", "cidade", "estado", "cep"] as const;
 
-// Obrigatórios pra buscar — número incluso: buscar sem ele geocodifica o
-// meio da rua, não a casa.
-const CAMPOS_OBRIGATORIOS = ["endereco", "numero", "bairro", "cidade"] as const;
+// Obrigatórios pra buscar: rua e número bastam, o Google completa bairro/
+// cidade/UF (decisão do usuário 30/09). Número é obrigatório: buscar sem
+// ele geocodifica o meio da rua, não a casa.
+const CAMPOS_OBRIGATORIOS = ["endereco", "numero"] as const;
 
 function montarQuery(c: EnderecoCliente): string {
   const partes = [
@@ -152,7 +153,7 @@ export function CapturarEndereco({
   async function buscarEndereco() {
     const vazio = campoObrigatorioVazio();
     if (vazio) {
-      const rotulos = { endereco: "a rua", numero: "o número", bairro: "o bairro", cidade: "a cidade" };
+      const rotulos = { endereco: "a rua", numero: "o número" };
       setErro(`Informe ${rotulos[vazio]} pra buscar o endereço.`);
       return;
     }
