@@ -313,14 +313,18 @@ export function CapturarEndereco({
 
   return (
     <div className="flex flex-col gap-3" data-capturar-endereco>
+      {/* Caminho mais rápido e preciso (pino na porta da casa pelo GPS) —
+          destaque de tamanho/fundo, mas sem virar botão preenchido: o
+          único preenchido da etapa continua sendo "Buscar endereço". */}
       <Button
         type="button"
         variant="secondary"
         onClick={usarLocalizacao}
         disabled={localizando}
-        className="w-full text-sm"
+        className="w-full flex-col gap-0.5 border-2 bg-[var(--brand-primary)]/10 py-3.5"
       >
-        {localizando ? "Localizando..." : "📍 Usar minha localização"}
+        <span className="text-base font-semibold">{localizando ? "Localizando..." : "📍 Usar minha localização"}</span>
+        {!localizando && <span className="text-xs font-normal opacity-80">Mais rápido: achamos sua casa pelo celular</span>}
       </Button>
 
       <div className="flex items-center gap-2 text-xs text-black/40 dark:text-white/40">
