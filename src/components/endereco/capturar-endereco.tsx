@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buscarEnderecoCandidatos, buscarEnderecoPorLocalizacao } from "@/lib/checkout";
@@ -256,9 +256,17 @@ export function CapturarEndereco({
     );
   }
 
+  // Enter em qualquer campo busca o endereço (teclado do celular mostra
+  // "Ir"/"Enter" — sem isso o cliente não tinha como avançar pelo teclado).
+  function aoTeclar(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!resolvido && !buscando) buscarEndereco();
+  }
+
   function confirmar() {
     if (!resolvido) {
-      setErro("Busque o endereço ou use sua localização antes de confirmar.");
+      setErro("Toque em \"Buscar endereço\" ou use sua localização antes de confirmar.");
       return;
     }
     if (!campos.numero?.trim()) {
@@ -290,12 +298,14 @@ export function CapturarEndereco({
         <Input
           placeholder="Rua"
           value={campos.endereco ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("endereco", e.target.value)}
           className="col-span-2"
         />
         <Input
           placeholder="Número"
           value={campos.numero ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("numero", e.target.value)}
         />
       </div>
@@ -303,11 +313,13 @@ export function CapturarEndereco({
         <Input
           placeholder="Bairro"
           value={campos.bairro ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("bairro", e.target.value)}
         />
         <Input
           placeholder="Complemento (opcional)"
           value={campos.complemento ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("complemento", e.target.value)}
         />
       </div>
@@ -315,17 +327,20 @@ export function CapturarEndereco({
         <Input
           placeholder="Cidade"
           value={campos.cidade ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("cidade", e.target.value)}
         />
         <Input
           placeholder="UF"
           maxLength={2}
           value={campos.estado ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("estado", e.target.value.toUpperCase())}
         />
         <Input
           placeholder="CEP"
           value={campos.cep ?? ""}
+          onKeyDown={aoTeclar}
           onChange={(e) => atualizarCampo("cep", e.target.value)}
         />
       </div>
@@ -347,7 +362,7 @@ export function CapturarEndereco({
       )}
 
       {!resolvido && !candidatos && (
-        <Button type="button" variant="secondary" onClick={buscarEndereco} disabled={buscando} className="text-sm">
+        <Button type="button" onClick={buscarEndereco} disabled={buscando} className="text-sm">
           {buscando ? "Buscando..." : "Buscar endereço"}
         </Button>
       )}
@@ -378,9 +393,15 @@ export function CapturarEndereco({
 
       {erro && <p className="text-xs text-[var(--color-danger)]">{erro}</p>}
 
-      <Button type="button" onClick={confirmar} className="text-sm">
-        Confirmar endereço
-      </Button>
+      {/* Um botão principal por etapa: antes de localizar só existe
+          "Buscar endereço"; "Confirmar" só aparece com o pino no mapa pra
+          conferir (achado real 30/09 — com os dois visíveis, clientes iam
+          direto no Confirmar sem buscar e viam só um erro pequeno). */}
+      {resolvido && (
+        <Button type="button" onClick={confirmar} className="text-sm">
+          Confirmar endereço
+        </Button>
+      )}
 
       {ajuste && (
         <AjustarLocalTelaCheia
