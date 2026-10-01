@@ -11,8 +11,12 @@ const CSS_VAR = "--altura-barra-fixa-carrinho";
 const GAP_ACIMA_DA_BARRA = "1.25rem";
 const ALTURA_BOTAO_WHATSAPP = "3.5rem";
 
-/** Onde o WhatsappSuporteButton deve ficar (`bottom`) nas telas de checkout. */
-export const CALC_BOTTOM_BOTAO_WHATSAPP = `calc(var(${CSS_VAR}, 11rem) + ${GAP_ACIMA_DA_BARRA})`;
+/** Onde o WhatsappSuporteButton deve ficar (`bottom`) nas telas de checkout.
+ * Sem barra medida (carrinho vazio — a barra nem existe), fallback 0: o
+ * botão desce pro canto (= `bottom-5`, igual às outras páginas). O
+ * fallback antigo de 11rem deixava o botão flutuando no meio da tela com
+ * o carrinho vazio (achado real 30/09). */
+export const CALC_BOTTOM_BOTAO_WHATSAPP = `calc(var(${CSS_VAR}, 0px) + ${GAP_ACIMA_DA_BARRA})`;
 
 /** Espaço a reservar no fim do conteúdo rolável pra nem a barra fixa nem
  * o botão do WhatsApp por cima dela cobrirem a última linha (ex: o total). */
