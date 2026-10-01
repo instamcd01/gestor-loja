@@ -37,6 +37,7 @@ export function ResumoTotais({
   petcashRecebido,
   petcashValidadeEm,
   total,
+  ocultarTotal = false,
 }: {
   subtotal: number;
   /** Soma das quantidades dos itens — só exibida quando informada. */
@@ -72,6 +73,8 @@ export function ResumoTotais({
   /** Data de expiração do crédito acima (ISO) — só faz sentido junto de petcashRecebido. */
   petcashValidadeEm?: string | null;
   total: number;
+  /** Esconde a linha "Total" — a gaveta do carrinho mostra o total no rodapé fixo, junto do botão, e o resto rola. */
+  ocultarTotal?: boolean;
 }) {
   const freteGratisComoDesconto = entregaValor === 0 && !!entregaValorOriginal && entregaValorOriginal > 0;
   // Saldo aplicado é crédito do próprio cliente sendo usado como
@@ -185,10 +188,12 @@ export function ResumoTotais({
         </div>
       )}
 
-      <div className="mt-1 flex justify-between border-t border-black/10 pt-2 text-base font-semibold dark:border-white/10">
-        <span>Total</span>
-        <span>{formatarPreco(total)}</span>
-      </div>
+      {!ocultarTotal && (
+        <div className="mt-1 flex justify-between border-t border-black/10 pt-2 text-base font-semibold dark:border-white/10">
+          <span>Total</span>
+          <span>{formatarPreco(total)}</span>
+        </div>
+      )}
 
       {!!petcashRecebido && petcashRecebido > 0 ? (
         <p className="mt-0.5 text-xs font-medium text-[var(--color-success)]">

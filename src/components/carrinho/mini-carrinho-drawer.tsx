@@ -116,6 +116,7 @@ export function MiniCarrinhoDrawer({
         : soma,
     0,
   );
+  const total = valorTotal + (entregaValor ?? 0);
 
   return (
     // No mobile é gaveta inferior (mais fácil de alcançar com o polegar,
@@ -251,21 +252,28 @@ export function MiniCarrinhoDrawer({
               </div>
             ))}
           </div>
+
+          <div className="border-t border-black/5 pt-3 dark:border-white/10">
+            <ResumoTotais
+              subtotal={valorTotal}
+              entregaLabel="Entrega"
+              entregaValor={entregaValor}
+              entregaValorOriginal={estimado?.valorCheio ?? estimado?.valor}
+              faltaParaFreteGratis={faltaParaFreteGratis}
+              descontoProdutos={descontoProdutos}
+              total={total}
+              ocultarTotal
+            />
+          </div>
         </div>
 
-        <div className="border-t border-black/5 pt-3 dark:border-white/10">
-          <ResumoTotais
-            subtotal={valorTotal}
-            entregaLabel="Entrega"
-            entregaValor={entregaValor}
-            entregaValorOriginal={estimado?.valorCheio ?? estimado?.valor}
-            faltaParaFreteGratis={faltaParaFreteGratis}
-            descontoProdutos={descontoProdutos}
-            total={valorTotal + (entregaValor ?? 0)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
+        {/* Rodapé fixo enxuto: só o total e as ações — subtotal/entrega/
+            descontos ficam no fim da área que rola, pra sobrar espaço. */}
+        <div className="flex flex-col gap-2 border-t border-black/10 pt-3 dark:border-white/10">
+          <div className="flex justify-between text-base font-semibold">
+            <span>Total</span>
+            <span>{formatarPreco(total)}</span>
+          </div>
           <Button
             onClick={irParaCarrinho}
             disabled={indoParaCarrinho}
