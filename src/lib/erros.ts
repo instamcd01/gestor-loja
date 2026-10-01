@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "crypto";
 import { createServiceClient } from "@/lib/supabase/service";
+import { TIPO_CHUNK_APOS_RELOAD } from "@/lib/chunk-error";
 
 /**
  * Rastreamento de erro caseiro (sem Sentry): agrupa ocorrências pelo hash de
@@ -42,6 +43,11 @@ export async function registrarErroSistema(params: {
 
   const linha = data?.[0] as { deve_alertar: boolean; contagem: number } | undefined;
   if (!linha?.deve_alertar) return;
+
+  // Chunk que falhou mesmo depois do reload = conexão do visitante ou robô
+  // (ver lib/chunk-error.ts). Fica só no rastreamento, sem notificação: o
+  // lojista não tem o que fazer com isso.
+  if (params.contexto?.tipo === TIPO_CHUNK_APOS_RELOAD) return;
 
   // O site é multi-tenant (`/loja/{slug}/...`) — a notificação precisa saber
   // de qual empresa pra `notificacoes.empresa_id` (RLS/push são por
