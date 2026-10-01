@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsappBotaoBarra } from "@/components/loja/contato-loja";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { CapturarEndereco } from "@/components/endereco/capturar-endereco";
@@ -467,11 +468,9 @@ export function EntregaForm({
       {/* Barra fixa: total parcial + "Ir para pagamento" sempre visíveis
           rolando a tela — mesmo padrão da barra da etapa de pagamento
           (ver pagamento-form.tsx), com o indicador de progresso de frete
-          grátis empilhado por cima. z-30 fica acima do botão do WhatsApp
-          (z-20, que sobe mais alto nesta página — ver
-          whatsapp-suporte-button.tsx). Altura varia com o indicador: se
-          mudar padding/conteúdo aqui, ajustar o `pb-*` reservado em
-          carrinho-logado.tsx e o `bottom-*` do WhatsApp nesta página. */}
+          grátis empilhado por cima. O WhatsApp fica dentro dela, ao lado do
+          botão (WhatsappBotaoBarra — o flutuante some). Altura é medida
+          sozinha (ver altura-barra-fixa-carrinho.ts). */}
       <div
         ref={barraFixaRef}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10"
@@ -488,6 +487,7 @@ export function EntregaForm({
             <Button onClick={irParaPagamento} disabled={!podeAvancar || avancando} className="flex-1 py-3 text-base">
               {avancando ? "Continuando..." : "Ir para pagamento"}
             </Button>
+            <WhatsappBotaoBarra />
           </div>
         </div>
       </div>

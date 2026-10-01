@@ -18,6 +18,7 @@ import {
   SidebarProvider,
   SidebarToggleButton,
 } from "@/components/loja/sidebar";
+import { ContatoLojaProvider } from "@/components/loja/contato-loja";
 import { WhatsappSuporteButton } from "@/components/loja/whatsapp-suporte-button";
 import {
   getDepartamentosComContagem,
@@ -157,7 +158,9 @@ export default async function LojaLayout({
                 </header>
 
                 <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-                  {children}
+                  <ContatoLojaProvider nomeEmpresa={empresa.nome} whatsapp={empresa.whatsapp_catalogo}>
+                    {children}
+                  </ContatoLojaProvider>
                 </main>
 
                 <RodapeVisivel slug={slug}>

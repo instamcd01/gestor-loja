@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsappBotaoBarra } from "@/components/loja/contato-loja";
 import { useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
@@ -249,8 +250,8 @@ export function CarrinhoConvidado({
       {/* Barra fixa: total + "Finalizar pedido" sempre visíveis rolando a
           tela — mesmo padrão visual do carrinho de quem já entrou (ver
           entrega-form.tsx), com o indicador de progresso de frete grátis
-          empilhado por cima quando dá pra calcular. z-30 fica abaixo do
-          botão do WhatsApp (z-40 — ver whatsapp-suporte-button.tsx). */}
+          empilhado por cima quando dá pra calcular. O WhatsApp fica dentro
+          dela, ao lado do botão (WhatsappBotaoBarra — o flutuante some). */}
       <div
         ref={barraFixaRef}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-[var(--surface)] px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:border-white/10"
@@ -267,6 +268,7 @@ export function CarrinhoConvidado({
             <ButtonLink href={`/loja/${slug}/entrar?redirect=carrinho`} className="flex-1 py-3 text-base">
               Finalizar pedido
             </ButtonLink>
+            <WhatsappBotaoBarra />
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsappBotaoBarra } from "@/components/loja/contato-loja";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
@@ -812,8 +813,8 @@ export function PagamentoForm({
       {/* Barra fixa: total final + único botão "Confirmar pedido" — sem
           duplicar em fluxo (pedido do usuário: só o da barra fixa). Mesmo
           padrão visual da barra da etapa de entrega (ver entrega-form.tsx).
-          z-30 fica acima do botão do WhatsApp (z-20 — ver
-          whatsapp-suporte-button.tsx). Some pro método "Pagamento Online":
+          WhatsApp dentro dela, ao lado (WhatsappBotaoBarra — o flutuante
+          some). O botão some pro método "Pagamento Online":
           o Payment Brick (acima, no fluxo normal) já tem o próprio botão
           de envio — dois botões fariam parecer que são ações diferentes. */}
       <div
@@ -834,6 +835,7 @@ export function PagamentoForm({
               {confirmando ? "Confirmando..." : "Confirmar pedido"}
             </Button>
           )}
+          <WhatsappBotaoBarra />
         </div>
       </div>
     </div>

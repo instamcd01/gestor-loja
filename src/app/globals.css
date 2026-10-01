@@ -135,3 +135,9 @@ label:has(:focus-visible) {
     --benefit-orange-fg-secondary: #e8975a;
   }
 }
+
+/* WhatsApp flutuante some enquanto existe a barra fixa do checkout — o
+   botão do WhatsApp fica dentro dela (ver altura-barra-fixa-carrinho.ts). */
+html[data-barra-checkout] .wa-flutuante {
+  display: none;
+}

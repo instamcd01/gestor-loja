@@ -4,23 +4,10 @@ import { useCallback, useRef } from "react";
 
 const CSS_VAR = "--altura-barra-fixa-carrinho";
 
-// Mesmos números usados no tamanho/posição do WhatsappSuporteButton
-// (h-14 = 3.5rem, gap acima da barra = 1.25rem) — centralizados aqui em
-// vez de repetidos em cada lugar que precisa reservar espaço pra ele, pra
-// não desalinhar de novo se algum dia mudar só num lugar.
-const GAP_ACIMA_DA_BARRA = "1.25rem";
-const ALTURA_BOTAO_WHATSAPP = "3.5rem";
-
-/** Onde o WhatsappSuporteButton deve ficar (`bottom`) nas telas de checkout.
- * Sem barra medida (carrinho vazio — a barra nem existe), fallback 0: o
- * botão desce pro canto (= `bottom-5`, igual às outras páginas). O
- * fallback antigo de 11rem deixava o botão flutuando no meio da tela com
- * o carrinho vazio (achado real 30/09). */
-export const CALC_BOTTOM_BOTAO_WHATSAPP = `calc(var(${CSS_VAR}, 0px) + ${GAP_ACIMA_DA_BARRA})`;
-
-/** Espaço a reservar no fim do conteúdo rolável pra nem a barra fixa nem
- * o botão do WhatsApp por cima dela cobrirem a última linha (ex: o total). */
-export const CALC_PADDING_RESERVADO_CHECKOUT = `calc(var(${CSS_VAR}, 11rem) + ${GAP_ACIMA_DA_BARRA} + ${ALTURA_BOTAO_WHATSAPP} + 1rem)`;
+/** Espaço a reservar no fim do conteúdo rolável pra barra fixa não cobrir
+ * a última linha (ex: o total). O WhatsApp agora fica dentro da barra
+ * (WhatsappBotaoBarra), não precisa mais de espaço próprio acima dela. */
+export const CALC_PADDING_RESERVADO_CHECKOUT = `calc(var(${CSS_VAR}, 11rem) + 1rem)`;
 
 /**
  * Reporta a altura real da barra fixa de total/confirmar (varia com o
@@ -42,8 +29,12 @@ export function useRefBarraFixaCarrinho() {
     observerRef.current = null;
     if (!elemento) {
       document.documentElement.style.removeProperty(CSS_VAR);
+      delete document.documentElement.dataset.barraCheckout;
       return;
     }
+    // Esconde o WhatsApp flutuante enquanto a barra existe — o da barra
+    // (WhatsappBotaoBarra) toma o lugar dele (regra em globals.css).
+    document.documentElement.dataset.barraCheckout = "1";
     const atualizar = () => document.documentElement.style.setProperty(CSS_VAR, `${elemento.offsetHeight}px`);
     atualizar();
     const observer = new ResizeObserver(atualizar);
