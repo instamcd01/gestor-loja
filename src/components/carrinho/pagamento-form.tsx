@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { IconePagamento } from "@/components/carrinho/icone-pagamento";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
+import { useRefBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import {
   assinarCheckoutEstimado,
   obterSnapshotCheckoutEstimado,
@@ -102,8 +102,7 @@ export function PagamentoForm({
   usarPrecoAncoraMarketplace?: boolean;
 }) {
   const router = useRouter();
-  const barraFixaRef = useRef<HTMLDivElement>(null);
-  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
+  const barraFixaRef = useRefBarraFixaCarrinho();
 
   useEffect(() => {
     if (mpPublicKey) initMercadoPago(mpPublicKey, { locale: "pt-BR" });

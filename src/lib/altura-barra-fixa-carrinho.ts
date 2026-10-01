@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, type RefObject } from "react";
+import { useCallback, useRef } from "react";
 
 const CSS_VAR = "--altura-barra-fixa-carrinho";
 
@@ -26,25 +26,28 @@ export const CALC_PADDING_RESERVADO_CHECKOUT = `calc(var(${CSS_VAR}, 11rem) + ${
  * Reporta a altura real da barra fixa de total/confirmar (varia com o
  * indicador de frete grátis, texto que quebra linha em telas estreitas,
  * qual etapa do checkout) numa CSS var global, pra WhatsappSuporteButton
- * se posicionar sempre colado nela em vez de um valor fixo chutado —
- * `bottom-44` já ficou curto de novo (ver comentário em
- * whatsapp-suporte-button.tsx sobre essa mesma classe de bug).
+ * se posicionar sempre colado nela em vez de um valor fixo chutado.
+ *
+ * Callback ref (usar em `ref={...}` da barra), não `useLayoutEffect` com
+ * RefObject: a versão antiga media uma vez só, na montagem — no carrinho
+ * sem login os itens chegam do navegador DEPOIS, a barra aparece depois, e
+ * nunca era medida (o fallback de 11rem escondia isso; achado real 30/09,
+ * botão do WhatsApp ficou em cima do "Finalizar pedido"). O callback roda
+ * sempre que a barra entra/sai da tela.
  */
-export function useReportarAlturaBarraFixaCarrinho(ref: RefObject<HTMLElement | null>) {
-  useLayoutEffect(() => {
-    const elemento = ref.current;
-    if (!elemento) return;
-
-    function atualizar() {
-      document.documentElement.style.setProperty(CSS_VAR, `${elemento!.offsetHeight}px`);
+export function useRefBarraFixaCarrinho() {
+  const observerRef = useRef<ResizeObserver | null>(null);
+  return useCallback((elemento: HTMLElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!elemento) {
+      document.documentElement.style.removeProperty(CSS_VAR);
+      return;
     }
-
+    const atualizar = () => document.documentElement.style.setProperty(CSS_VAR, `${elemento.offsetHeight}px`);
     atualizar();
     const observer = new ResizeObserver(atualizar);
     observer.observe(elemento);
-    return () => {
-      observer.disconnect();
-      document.documentElement.style.removeProperty(CSS_VAR);
-    };
-  }, [ref]);
+    observerRef.current = observer;
+  }, []);
 }

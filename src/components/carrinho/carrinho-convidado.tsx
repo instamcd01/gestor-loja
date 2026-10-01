@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { EstimarFreteGratis } from "@/components/carrinho/estimar-frete-gratis";
 import { FreteGratisProgresso } from "@/components/carrinho/frete-gratis-progresso";
 import { LimparCarrinhoButton } from "@/components/carrinho/limpar-carrinho-button";
@@ -9,7 +9,7 @@ import { IconeLixeira } from "@/components/icone-lixeira";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CALC_PADDING_RESERVADO_CHECKOUT, useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
+import { CALC_PADDING_RESERVADO_CHECKOUT, useRefBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import {
   adicionarItemConvidado,
   assinarCarrinhoConvidado,
@@ -60,8 +60,7 @@ export function CarrinhoConvidado({
   );
 
   const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
-  const barraFixaRef = useRef<HTMLDivElement>(null);
-  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
+  const barraFixaRef = useRefBarraFixaCarrinho();
 
   function mudarQuantidade(produtoId: string, quantidade: number) {
     atualizarItemConvidado(empresaId, produtoId, quantidade);

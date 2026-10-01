@@ -16,7 +16,7 @@ import {
   horarioFechamentoNoDia,
   type JanelaHorarioAgendamento,
 } from "@/lib/agendamento";
-import { useReportarAlturaBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
+import { useRefBarraFixaCarrinho } from "@/lib/altura-barra-fixa-carrinho";
 import { confirmarEnderecoEntrega } from "@/lib/checkout";
 import type { ResultadoFrete } from "@/lib/frete";
 import { salvarCheckoutEstimado, type CheckoutEstimado } from "@/lib/checkout-estimado";
@@ -93,8 +93,7 @@ export function EntregaForm({
   // abaixo (endereço resolvido tarde, ex: estimativa pré-carrinho só
   // chega depois da hidratação) para de tentar mudar a seleção sozinho.
   const escolhaManual = useRef(false);
-  const barraFixaRef = useRef<HTMLDivElement>(null);
-  useReportarAlturaBarraFixaCarrinho(barraFixaRef);
+  const barraFixaRef = useRefBarraFixaCarrinho();
   // Endereço ativo pra esse carrinho: SEMPRE o cache compartilhado
   // (enderecoEstimado, ver endereco-estimado.ts) — mesmo lugar que a
   // barra "frete grátis" acima lê e escreve, então os dois nunca
