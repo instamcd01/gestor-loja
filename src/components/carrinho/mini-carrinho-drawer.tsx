@@ -150,100 +150,107 @@ export function MiniCarrinhoDrawer({
           </button>
         </div>
 
-        <EstimarFreteGratis
-          empresaId={empresaId}
-          enderecoEmpresa={enderecoEmpresa}
-          subtotal={valorTotal}
-        />
+        {/* Só o meio rola (frete + itens): cabeçalho e rodapé com o botão
+            ficam sempre visíveis. Antes só a lista rolava — com o formulário
+            de endereço aberto ela era espremida até sumir e o "Ir para o
+            carrinho" vazava pra fora da tela em celular menor (01/10).
+            `min-h-0` é o que deixa este bloco encolher dentro do max-h. */}
+        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1">
+          <EstimarFreteGratis
+            empresaId={empresaId}
+            enderecoEmpresa={enderecoEmpresa}
+            subtotal={valorTotal}
+          />
 
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {itens.map((item) => (
-            <div
-              key={item.id}
-              className={`flex items-center gap-3 rounded-[var(--radius-md)] border p-3 ${
-                item.id === idRecemAdicionado
-                  ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/5"
-                  : "border-black/5 dark:border-white/10"
-              }`}
-            >
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
-                <ProdutoImagem
-                  src={item.imagemUrl}
-                  alt={item.nome}
-                  categoria={item.categoria}
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <p className="line-clamp-2 text-sm font-medium">{item.nome}</p>
-                <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
-                  {formatarPreco(item.preco)}
-                  {item.precoOriginal != null && (
-                    <span className="text-black/40 line-through dark:text-white/40">
-                      {formatarPreco(item.precoOriginal)}
+          <div className="flex flex-col gap-2">
+            {itens.map((item) => (
+              <div
+                key={item.id}
+                className={`flex items-center gap-3 rounded-[var(--radius-md)] border p-3 ${
+                  item.id === idRecemAdicionado
+                    ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/5"
+                    : "border-black/5 dark:border-white/10"
+                }`}
+              >
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-black/5 dark:bg-white/5">
+                  <ProdutoImagem
+                    src={item.imagemUrl}
+                    alt={item.nome}
+                    categoria={item.categoria}
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="line-clamp-2 text-sm font-medium">{item.nome}</p>
+                  <p className="flex items-baseline gap-1.5 text-xs text-black/50 dark:text-white/50">
+                    {formatarPreco(item.preco)}
+                    {item.precoOriginal != null && (
+                      <span className="text-black/40 line-through dark:text-white/40">
+                        {formatarPreco(item.precoOriginal)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {confirmandoRemocaoId === item.id ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-black/60 dark:text-white/60">
+                      Remover?
                     </span>
-                  )}
-                </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmandoRemocaoId(null);
+                        onAlterarQuantidade(item.id, 0);
+                      }}
+                      className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
+                    >
+                      Sim
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmandoRemocaoId(null)}
+                      className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
+                    >
+                      Não
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        item.quantidade === 1
+                          ? setConfirmandoRemocaoId(item.id)
+                          : onAlterarQuantidade(item.id, item.quantidade - 1)
+                      }
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 leading-none dark:border-white/10"
+                      aria-label={
+                        item.quantidade === 1
+                          ? "Remover item"
+                          : "Diminuir quantidade"
+                      }
+                    >
+                      {item.quantidade === 1 ? <IconeLixeira /> : "−"}
+                    </button>
+                    <span className="w-5 text-center text-sm">
+                      {item.quantidade}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={item.quantidade >= item.estoqueDisponivel}
+                      onClick={() =>
+                        onAlterarQuantidade(item.id, item.quantidade + 1)
+                      }
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
+                      aria-label="Aumentar quantidade"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
-              {confirmandoRemocaoId === item.id ? (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-black/60 dark:text-white/60">
-                    Remover?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmandoRemocaoId(null);
-                      onAlterarQuantidade(item.id, 0);
-                    }}
-                    className="rounded-full bg-[var(--color-danger)] px-2.5 py-1 font-medium text-white"
-                  >
-                    Sim
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmandoRemocaoId(null)}
-                    className="rounded-full border border-black/10 px-2.5 py-1 font-medium dark:border-white/10"
-                  >
-                    Não
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      item.quantidade === 1
-                        ? setConfirmandoRemocaoId(item.id)
-                        : onAlterarQuantidade(item.id, item.quantidade - 1)
-                    }
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 leading-none dark:border-white/10"
-                    aria-label={
-                      item.quantidade === 1
-                        ? "Remover item"
-                        : "Diminuir quantidade"
-                    }
-                  >
-                    {item.quantidade === 1 ? <IconeLixeira /> : "−"}
-                  </button>
-                  <span className="w-5 text-center text-sm">
-                    {item.quantidade}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={item.quantidade >= item.estoqueDisponivel}
-                    onClick={() =>
-                      onAlterarQuantidade(item.id, item.quantidade + 1)
-                    }
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 text-sm leading-none disabled:opacity-50 dark:border-white/10"
-                    aria-label="Aumentar quantidade"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         <div className="border-t border-black/5 pt-3 dark:border-white/10">
