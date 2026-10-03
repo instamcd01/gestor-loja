@@ -90,9 +90,10 @@ function telefoneInternacional(telefone: string | null) {
 
 /**
  * PetStore (subtipo de LocalBusiness) — nome, telefone, horário e região.
- * Endereço de rua fica de fora de propósito: o do cadastro hoje diverge do
- * Perfil da Empresa no Google, e dado conflitante entre site e perfil
- * atrapalha a busca local mais do que ajuda. CEP/cidade/UF batem nos dois.
+ * Sem rua nem CEP de propósito: a loja é só delivery (sem ponto físico) e
+ * o endereço do cadastro é residencial — publicar aqui exporia a casa do
+ * dono e ainda conflitaria com o Perfil da Empresa no Google. A região
+ * atendida (`seo_regiao`) é o que importa pra busca local nesse caso.
  */
 export function jsonLdLoja(empresa: EmpresaCatalogo, origem: string) {
   const horarios = Object.entries(empresa.horario_funcionamento ?? {})
@@ -104,7 +105,6 @@ export function jsonLdLoja(empresa: EmpresaCatalogo, origem: string) {
       closes: h.fecha,
     }));
 
-  const cep = empresa.cep?.replace(/\D/g, "");
   return {
     "@context": "https://schema.org",
     "@type": "PetStore",
@@ -122,7 +122,6 @@ export function jsonLdLoja(empresa: EmpresaCatalogo, origem: string) {
             "@type": "PostalAddress",
             addressRegion: empresa.estado,
             addressCountry: "BR",
-            ...(cep && cep.length === 8 ? { postalCode: `${cep.slice(0, 5)}-${cep.slice(5)}` } : {}),
           },
         }
       : {}),
