@@ -15,6 +15,7 @@ import {
   getEmpresaPorSlug,
   getKitComponentesCatalogo,
   getProdutoCatalogo,
+  getProdutoEsgotado,
   getProdutosCatalogo,
   getVariantesDoProduto,
 } from "@/lib/catalogo";
@@ -35,8 +36,12 @@ export const revalidate = 60;
 async function carregar(slug: string, id: string) {
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) return null;
-  const produto = await getProdutoCatalogo(empresa.id, id);
+  const emEstoque = await getProdutoCatalogo(empresa.id, id);
+  // Sem estoque agora: página continua no ar como "indisponível" (ver
+  // getProdutoEsgotado) em vez de 404.
+  const produto = emEstoque ?? (await getProdutoEsgotado(empresa.id, id));
   if (!produto) return null;
+  const esgotado = !emEstoque;
   const [variantes, relacionados, kitComponentes] = await Promise.all([
     getVariantesDoProduto(empresa.id, produto),
     produto.categoria
@@ -47,6 +52,7 @@ async function carregar(slug: string, id: string) {
   return {
     empresa,
     produto,
+    esgotado,
     variantes,
     relacionados: relacionados.filter((p) => p.id !== produto.id).slice(0, 8),
     kitComponentes,
@@ -94,7 +100,7 @@ export default async function ProdutoPage({
   const { slug, id } = await params;
   const dados = await carregar(slug, id);
   if (!dados) notFound();
-  const { produto, variantes, relacionados, empresa, kitComponentes } = dados;
+  const { produto, esgotado, variantes, relacionados, empresa, kitComponentes } = dados;
 
   const temPromocao =
     produto.preco_promocional != null &&
@@ -115,7 +121,9 @@ export default async function ProdutoPage({
     : 0;
 
   const mensagemWhatsapp = encodeURIComponent(
-    `Olá! Tenho interesse em: ${produto.nome}`,
+    esgotado
+      ? `Olá! Me avisa quando chegar: ${produto.nome}`
+      : `Olá! Tenho interesse em: ${produto.nome}`,
   );
   const moderno = empresa.catalogo_modelo === "moderno";
   const origem = await origemPublicaPorSlug(slug);
@@ -223,7 +231,7 @@ export default async function ProdutoPage({
                 slug={slug}
                 variantes={variantes}
                 idAtual={produto.id}
-                rotulo={rotuloSeletorVariante(produto.tipo_variacao)}
+                rotulo={esgotado ? "Disponível nestas opções" : rotuloSeletorVariante(produto.tipo_variacao)}
               />
             )}
 
@@ -233,6 +241,26 @@ export default async function ProdutoPage({
               </p>
             )}
 
+            {esgotado ? (
+              <Card className="flex flex-col gap-3 p-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold">Indisponível no momento</span>
+                  <span className="text-sm text-black/60 dark:text-white/60">
+                    Esse produto acabou, mas costuma voltar. Veja opções parecidas logo abaixo.
+                  </span>
+                </div>
+                {empresa.whatsapp_catalogo && (
+                  <ButtonLink
+                    href={`https://wa.me/${empresa.whatsapp_catalogo.replace(/\D/g, "")}?text=${mensagemWhatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                  >
+                    Me avise quando chegar
+                  </ButtonLink>
+                )}
+              </Card>
+            ) : (
             <Card className="flex flex-col gap-3 p-4">
               <AdicionarCarrinhoButton
                 produtoId={produto.id}
@@ -262,8 +290,11 @@ export default async function ProdutoPage({
                 </a>
               )}
             </Card>
+            )}
 
-            <ClubeEmBreve nome={empresa.nome} moderno={moderno} petcashAtivo={empresa.petcash_ativo} />
+            {!esgotado && (
+              <ClubeEmBreve nome={empresa.nome} moderno={moderno} petcashAtivo={empresa.petcash_ativo} />
+            )}
 
             <ButtonLink
               href={`/loja/${slug}`}

@@ -896,6 +896,31 @@ export async function getProdutoCatalogo(
   return data;
 }
 
+/**
+ * Produto do catálogo temporariamente sem estoque. A página continua
+ * existindo ("indisponível") em vez de 404: o Google desindexava a URL a
+ * cada ruptura e levava semanas pra voltar quando o estoque era reposto.
+ * Fica fora de grades/buscas — só a página do produto usa.
+ */
+export async function getProdutoEsgotado(
+  empresaId: string,
+  produtoId: string,
+): Promise<ProdutoCatalogo | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("catalogo_produtos_esgotados_publico")
+    .select("*")
+    .eq("empresa_id", empresaId)
+    .eq("id", produtoId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao buscar produto esgotado:", error.message);
+    return null;
+  }
+  return data;
+}
+
 /** Componentes reais de um kit — pra página de detalhe listar "o que vem dentro". */
 export async function getKitComponentesCatalogo(kitId: string): Promise<KitComponenteCatalogo[]> {
   const supabase = await createClient();
@@ -972,6 +997,23 @@ export async function getUrlsSitemapCatalogo(
     }
     todos.push(...(data ?? []));
     if (!data || data.length < PAGINA) break;
+  }
+
+  // Esgotados só entram se têm chance real de voltar (vendeu nos últimos 12
+  // meses) e página minimamente rica (com foto) — o resto continua acessível
+  // por link, mas não pedimos pro Google indexar.
+  const umAnoAtras = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: esgotados, error: erroEsgotados } = await supabase
+    .from("catalogo_produtos_esgotados_publico")
+    .select("id, categoria, updated_at")
+    .eq("empresa_id", empresaId)
+    .not("imagem_url", "is", null)
+    .gte("ultima_venda_em", umAnoAtras)
+    .limit(PAGINA);
+  if (erroEsgotados) {
+    console.error("Erro ao listar esgotados pro sitemap:", erroEsgotados.message);
+  } else {
+    todos.push(...(esgotados ?? []));
   }
   return todos;
 }
