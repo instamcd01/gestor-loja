@@ -34,6 +34,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Pasta do cache de imagens otimizadas (next/image) já existindo com dono
+# nextjs: um volume do Docker montado aqui herda essa permissão na 1ª
+# montagem. Sem volume, cada deploy zera o cache e o servidor rebaixa todas
+# as fotos originais do Supabase Storage (egress) — ver memória do projeto.
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
