@@ -1,5 +1,6 @@
 "use client";
 
+import { getImageProps } from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -267,15 +268,14 @@ function BannerSlide({
         // DUAS), baixando o dobro do necessário em toda visita. Com
         // <picture>, o navegador escolhe e baixa só UMA versão, nativamente,
         // sem depender de CSS pra "esconder" a outra.
-        <picture>
-          {banner.url_mobile && <source media="(max-width: 639px)" srcSet={banner.url_mobile} />}
-          <img
-            src={banner.url}
-            alt={banner.titulo ?? "Banner promocional"}
-            fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </picture>
+        //
+        // srcSet vem do otimizador do Next (getImageProps), não do arquivo
+        // original: antes cada visitante baixava o JPG cheio (~360KB, tamanho
+        // de desktop) direto do Supabase Storage — era o elemento que travava
+        // o carregamento no celular (LCP 7,4s) e egress do Supabase por
+        // visita. Agora o servidor busca o original uma vez por tamanho e
+        // serve WebP redimensionado a partir do próprio cache.
+        <BannerImagem banner={banner} />
       )}
       {banner.titulo && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 pt-10 sm:p-6 sm:pt-16">
@@ -353,5 +353,37 @@ function FundoDesfocado({ videoRef }: { videoRef: React.RefObject<HTMLVideoEleme
       aria-hidden
       className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover object-center blur-2xl brightness-[0.55] saturate-125"
     />
+  );
+}
+
+const SIZES_BANNER = "100vw";
+
+function BannerImagem({ banner }: { banner: BannerCatalogo }) {
+  const alt = banner.titulo ?? "Banner promocional";
+  const {
+    props: { srcSet: srcSetDesktop },
+  } = getImageProps({ alt, src: banner.url, width: 1920, height: 823, sizes: SIZES_BANNER });
+  const {
+    props: { srcSet: srcSetMobile, ...img },
+  } = getImageProps({
+    alt,
+    src: banner.url_mobile ?? banner.url,
+    width: 1080,
+    height: 608,
+    sizes: SIZES_BANNER,
+  });
+
+  return (
+    <picture>
+      <source media="(max-width: 639px)" srcSet={srcSetMobile} sizes={SIZES_BANNER} />
+      <source media="(min-width: 640px)" srcSet={srcSetDesktop} sizes={SIZES_BANNER} />
+      <img
+        {...img}
+        alt={alt}
+        fetchPriority="high"
+        loading="eager"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    </picture>
   );
 }

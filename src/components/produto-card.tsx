@@ -8,6 +8,7 @@ import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import type { ProdutoCatalogo, VarianteProduto } from "@/lib/types";
 import { useCarrinhoRapidoContext } from "@/components/carrinho/carrinho-rapido-provider";
+import { caminhoProduto } from "@/lib/seo";
 import { formatarPreco, percentualDesconto, precoExibicao } from "@/lib/utils";
 import { extrairPeso } from "@/lib/variantes";
 
@@ -108,7 +109,7 @@ export function ProdutoCard({
   return (
     <>
       <Link
-        href={`/loja/${slug}/produto/${selecionada.id}`}
+        href={caminhoProduto(slug, selecionada.id, selecionada.nome)}
         className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-black/5 bg-[var(--surface)] shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10"
       >
         <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5">

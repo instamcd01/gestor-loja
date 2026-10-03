@@ -17,8 +17,33 @@ export function caminhoLoja(slug: string) {
   return `/loja/${slug}`;
 }
 
-export function caminhoProduto(slug: string, id: string) {
-  return `/loja/${slug}/produto/${id}`;
+const UUID_NO_FIM = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/**
+ * Segmento da URL do produto: nome legível + id no fim, como Petz/Cobasi
+ * (`racao-golden-special-15kg-<uuid>`). O id continua sendo a chave — o
+ * nome é só pra quem lê o link (Google, WhatsApp); trocar o nome do produto
+ * gera URL nova e a antiga redireciona (ver página do produto).
+ */
+export function segmentoProduto(id: string, nome?: string | null) {
+  const legivel = (nome ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80)
+    .replace(/-+$/g, "");
+  return legivel ? `${legivel}-${id}` : id;
+}
+
+/** Id do produto a partir do segmento da URL — aceita o formato novo e o antigo (só o id). */
+export function idDoSegmentoProduto(segmento: string) {
+  return decodeURIComponent(segmento).match(UUID_NO_FIM)?.[1]?.toLowerCase() ?? null;
+}
+
+export function caminhoProduto(slug: string, id: string, nome?: string | null) {
+  return `/loja/${slug}/produto/${segmentoProduto(id, nome)}`;
 }
 
 export function caminhoCategoria(slug: string, categoria: string) {
@@ -136,7 +161,7 @@ export function jsonLdLoja(empresa: EmpresaCatalogo, origem: string) {
 }
 
 export function jsonLdProduto(empresa: EmpresaCatalogo, produto: ProdutoCatalogo, origem: string) {
-  const url = `${origem}${caminhoProduto(empresa.catalogo_slug, produto.id)}`;
+  const url = `${origem}${caminhoProduto(empresa.catalogo_slug, produto.id, produto.nome)}`;
   const imagens = [produto.imagem_url, produto.imagem_url_secundaria].filter((i): i is string => !!i);
   return {
     "@context": "https://schema.org",

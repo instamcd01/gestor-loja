@@ -980,14 +980,14 @@ export async function getCategoriasCatalogo(empresaId: string): Promise<Categori
  */
 export async function getUrlsSitemapCatalogo(
   empresaId: string,
-): Promise<{ id: string; categoria: string | null; updated_at: string | null }[]> {
+): Promise<{ id: string; nome: string; categoria: string | null; updated_at: string | null }[]> {
   const supabase = await createClient();
   const PAGINA = 1000;
-  const todos: { id: string; categoria: string | null; updated_at: string | null }[] = [];
+  const todos: { id: string; nome: string; categoria: string | null; updated_at: string | null }[] = [];
   for (let inicio = 0; ; inicio += PAGINA) {
     const { data, error } = await supabase
       .from("catalogo_produtos_publico")
-      .select("id, categoria, updated_at")
+      .select("id, nome, categoria, updated_at")
       .eq("empresa_id", empresaId)
       .order("id")
       .range(inicio, inicio + PAGINA - 1);
@@ -1005,7 +1005,7 @@ export async function getUrlsSitemapCatalogo(
   const umAnoAtras = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const { data: esgotados, error: erroEsgotados } = await supabase
     .from("catalogo_produtos_esgotados_publico")
-    .select("id, categoria, updated_at")
+    .select("id, nome, categoria, updated_at")
     .eq("empresa_id", empresaId)
     .not("imagem_url", "is", null)
     .gte("ultima_venda_em", umAnoAtras)

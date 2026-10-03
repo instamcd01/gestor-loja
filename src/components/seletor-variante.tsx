@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { caminhoProduto } from "@/lib/seo";
 import type { VarianteProduto } from "@/lib/types";
 
 /**
@@ -32,7 +33,7 @@ export function SeletorVariante({
           <button
             key={variante.id}
             type="button"
-            onClick={() => router.push(`/loja/${slug}/produto/${variante.id}`)}
+            onClick={() => router.push(caminhoProduto(slug, variante.id, variante.nome))}
             className={`rounded-[var(--radius-sm)] border px-3 py-1.5 text-sm ${
               variante.id === idAtual
                 ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10 font-medium text-[var(--brand-primary)]"

@@ -45,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
     ...produtos.map(
       (produto): MetadataRoute.Sitemap[number] => ({
-        url: `${base}${caminhoProduto(slug, produto.id)}`,
+        url: `${base}${caminhoProduto(slug, produto.id, produto.nome)}`,
         ...(produto.updated_at ? { lastModified: new Date(produto.updated_at) } : {}),
         changeFrequency: "weekly",
         priority: 0.7,

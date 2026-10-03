@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { AdicionarCarrinhoButton } from "@/components/carrinho/adicionar-carrinho-button";
+import { CompartilharProdutoButton } from "@/components/compartilhar-produto-button";
 import { FavoritoButton } from "@/components/favoritos/favorito-button";
 import { GaleriaProduto } from "@/components/galeria-produto";
 import { ClubeEmBreve } from "@/components/loja/clube-em-breve";
@@ -24,6 +25,8 @@ import {
   caminhoCategoria,
   caminhoLoja,
   caminhoProduto,
+  idDoSegmentoProduto,
+  segmentoProduto,
   descricaoProduto,
   jsonLdBreadcrumb,
   jsonLdProduto,
@@ -33,7 +36,11 @@ import { rotuloSeletorVariante } from "@/lib/variantes";
 
 export const revalidate = 60;
 
-async function carregar(slug: string, id: string) {
+// `segmento` = "nome-do-produto-<uuid>" (formato atual) ou só "<uuid>"
+// (links antigos, WhatsApp, push). Os dois resolvem pelo id no fim.
+async function carregar(slug: string, segmento: string) {
+  const id = idDoSegmentoProduto(segmento);
+  if (!id) return null;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) return null;
   const emEstoque = await getProdutoCatalogo(empresa.id, id);
@@ -64,8 +71,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string; id: string }>;
 }): Promise<Metadata> {
-  const { slug, id } = await params;
-  const dados = await carregar(slug, id);
+  const { slug, id: segmento } = await params;
+  const dados = await carregar(slug, segmento);
   if (!dados) return {};
   return {
     title: `${dados.produto.nome} · ${dados.empresa.nome}`,
@@ -88,7 +95,7 @@ export async function generateMetadata({
     // diferentes, conteúdo quase idêntico) como cópia da outra e escolhe
     // sozinho qual indexar — achado real: 153 páginas de produto marcadas
     // "Cópia sem página canônica selecionada" no Search Console (04/09).
-    alternates: { canonical: caminhoProduto(slug, id) },
+    alternates: { canonical: caminhoProduto(slug, dados.produto.id, dados.produto.nome) },
   };
 }
 
@@ -97,9 +104,14 @@ export default async function ProdutoPage({
 }: {
   params: Promise<{ slug: string; id: string }>;
 }) {
-  const { slug, id } = await params;
-  const dados = await carregar(slug, id);
+  const { slug, id: segmento } = await params;
+  const dados = await carregar(slug, segmento);
   if (!dados) notFound();
+  // Link antigo (só o id) ou nome do produto mudou: 308 pra URL atual, pra
+  // não existir mais de um endereço pro mesmo produto.
+  if (decodeURIComponent(segmento) !== segmentoProduto(dados.produto.id, dados.produto.nome)) {
+    permanentRedirect(caminhoProduto(slug, dados.produto.id, dados.produto.nome));
+  }
   const { produto, esgotado, variantes, relacionados, empresa, kitComponentes } = dados;
 
   const temPromocao =
@@ -185,7 +197,13 @@ export default async function ProdutoPage({
             )}
             <div className="flex items-start justify-between gap-3">
               <h1 className="text-2xl font-semibold">{produto.nome}</h1>
-              <FavoritoButton produtoId={produto.id} className="shrink-0" />
+              <div className="flex shrink-0 gap-2">
+                <CompartilharProdutoButton
+                  caminho={caminhoProduto(slug, produto.id, produto.nome)}
+                  nome={produto.nome}
+                />
+                <FavoritoButton produtoId={produto.id} />
+              </div>
             </div>
 
             <div className="flex items-baseline gap-3">
