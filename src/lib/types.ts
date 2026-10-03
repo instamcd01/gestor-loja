@@ -64,6 +64,12 @@ export interface EmpresaCatalogo {
   preco_ancora_marketplace_ativo: boolean;
   /** Measurement ID do GA4 (formato "G-XXXXXXXXXX") — null = loja ainda não configurou Google Analytics. */
   ga4_measurement_id: string | null;
+  /** Título da home no Google — null = nome da empresa. Ver `lib/seo.ts`. */
+  seo_titulo: string | null;
+  /** Descrição da home no Google (~150 caracteres) — null = texto gerado. */
+  seo_descricao: string | null;
+  /** Região atendida pros textos de busca local, ex: "Campo Grande - RJ". */
+  seo_regiao: string | null;
 }
 
 /** O que aparece numa posição configurável de marca (header/sidebar do site) — url null = mostrar o nome da empresa em texto. */

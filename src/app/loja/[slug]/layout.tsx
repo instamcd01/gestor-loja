@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,8 +26,27 @@ import {
   getEmpresaPorSlug,
   getMarcaCatalogo,
 } from "@/lib/catalogo";
+import { descricaoHome, tituloHome } from "@/lib/seo";
 
 export const revalidate = 300; // dados de branding mudam raramente
+
+// Padrão pras páginas da loja que não definem o próprio (entrega, FAQ,
+// trocas...) — antes caía no texto do layout raiz, "Catálogo online das
+// lojas Gestor", que aparecia como descrição no Google em toda página.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const empresa = await getEmpresaPorSlug(slug);
+  if (!empresa) return {};
+  return {
+    title: tituloHome(empresa),
+    description: descricaoHome(empresa),
+    openGraph: { siteName: empresa.nome, locale: "pt_BR", type: "website" },
+  };
+}
 
 export default async function LojaLayout({
   children,

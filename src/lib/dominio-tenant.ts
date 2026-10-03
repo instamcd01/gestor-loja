@@ -42,3 +42,20 @@ export async function resolverSlugPorDominio(host: string): Promise<string | nul
   }
   return cache.get(host.toLowerCase()) ?? null;
 }
+
+/**
+ * Caminho inverso: origem pública (ex: "https://minhaloja.com.br") da loja
+ * pelo slug — pra URLs absolutas em dados estruturados (schema.org) sem ler
+ * o Host da requisição, o que forçaria a página a sair do cache ISR. Loja
+ * sem domínio próprio cai no SITE_URL (host do próprio site).
+ */
+export async function origemPublicaPorSlug(slug: string): Promise<string> {
+  if (!cache || Date.now() > cacheExpiraEm) {
+    cache = await carregarMapaDominios();
+    cacheExpiraEm = Date.now() + CACHE_TTL_MS;
+  }
+  for (const [dominio, slugDominio] of cache) {
+    if (slugDominio === slug) return `https://${dominio}`;
+  }
+  return (process.env.SITE_URL ?? "").replace(/\/$/, "");
+}

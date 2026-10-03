@@ -18,6 +18,7 @@ import { HeroBanner } from "@/components/loja/hero-banner";
 import { Destaques, MaisVendidos, PromocoesDoDia } from "@/components/loja/linha-produtos-destaque";
 import { MarcasParceiras } from "@/components/loja/marcas-parceiras";
 import { PetcashFaixaInfo } from "@/components/loja/petcash-faixa-info";
+import { JsonLd } from "@/components/json-ld";
 import { WhatsappRefBeacon } from "@/components/whatsapp/whatsapp-ref-beacon";
 import {
   getBannersCatalogo,
@@ -27,6 +28,16 @@ import {
   getProdutosCatalogo,
   type Ordenacao,
 } from "@/lib/catalogo";
+import { origemPublicaPorSlug } from "@/lib/dominio-tenant";
+import {
+  caminhoCategoria,
+  caminhoLoja,
+  descricaoCategoria,
+  descricaoHome,
+  jsonLdLoja,
+  tituloCategoria,
+  tituloHome,
+} from "@/lib/seo";
 
 // Sem isso, o Next.js trata a home como estática e serve a página em cache
 // indefinidamente — banner trocado no banco (ex: Configurações > Banners)
@@ -39,16 +50,52 @@ export const revalidate = 60;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const empresa = await getEmpresaPorSlug(slug);
   if (!empresa) return {};
+  const filtros = await searchParams;
+  const categoria = typeof filtros.categoria === "string" ? filtros.categoria : undefined;
+
+  // Busca livre: resultado de busca interna não é página pra indexar
+  // (diretriz do Google) — segue os links pros produtos, mas sem listar.
+  if (filtros.q) {
+    return { title: `Busca · ${empresa.nome}`, robots: { index: false, follow: true } };
+  }
+
+  // Categoria vira página própria no Google (título/descrição/canônica
+  // dela). Qualquer outro filtro/ordenação por cima aponta a canônica pra
+  // categoria pura (ou pra home) — sem isso cada combinação de filtro
+  // viraria uma "cópia" a mais no Search Console.
+  if (categoria) {
+    const titulo = tituloCategoria(empresa, categoria);
+    const descricao = descricaoCategoria(empresa, categoria);
+    return {
+      title: titulo,
+      description: descricao,
+      alternates: { canonical: caminhoCategoria(slug, categoria) },
+      openGraph: { title: titulo, description: descricao, siteName: empresa.nome, locale: "pt_BR", type: "website" },
+    };
+  }
+
+  const titulo = tituloHome(empresa);
+  const descricao = descricaoHome(empresa);
   return {
-    title: empresa.nome,
-    description:
-      empresa.catalogo_info_extra ?? `Peça online na ${empresa.nome}`,
+    title: titulo,
+    description: descricao,
+    alternates: { canonical: caminhoLoja(slug) },
+    openGraph: {
+      title: titulo,
+      description: descricao,
+      siteName: empresa.nome,
+      locale: "pt_BR",
+      type: "website",
+      ...(empresa.logo_url ? { images: [empresa.logo_url] } : {}),
+    },
   };
 }
 
@@ -182,8 +229,12 @@ export default async function LojaPage({
       ? { min: Number(pesoMin), max: pesoMax ? Number(pesoMax) : undefined }
       : null;
 
+  // Loja (PetStore) só na home pura — é a página que representa a empresa.
+  const origem = filtroAtivo ? null : await origemPublicaPorSlug(slug);
+
   return (
     <div className="flex flex-col gap-6">
+      {origem !== null && <JsonLd dados={jsonLdLoja(empresa, origem)} />}
       <Suspense fallback={null}>
         <WhatsappRefBeacon />
       </Suspense>

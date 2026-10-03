@@ -945,3 +945,33 @@ export async function getCategoriasCatalogo(empresaId: string): Promise<Categori
   }
   return data ?? [];
 }
+
+/**
+ * Todo produto visível (incluindo cada variante, que tem página e canônica
+ * próprias) só com o necessário pro sitemap. Colunas explícitas, nunca "*":
+ * a view calcula `preco_ancora_canais` por linha (ver comentário em
+ * getContagemProdutosCatalogo). Paginado pra não esbarrar no teto de 1000
+ * linhas por resposta do Supabase.
+ */
+export async function getUrlsSitemapCatalogo(
+  empresaId: string,
+): Promise<{ id: string; categoria: string | null; updated_at: string | null }[]> {
+  const supabase = await createClient();
+  const PAGINA = 1000;
+  const todos: { id: string; categoria: string | null; updated_at: string | null }[] = [];
+  for (let inicio = 0; ; inicio += PAGINA) {
+    const { data, error } = await supabase
+      .from("catalogo_produtos_publico")
+      .select("id, categoria, updated_at")
+      .eq("empresa_id", empresaId)
+      .order("id")
+      .range(inicio, inicio + PAGINA - 1);
+    if (error) {
+      console.error("Erro ao listar produtos pro sitemap:", error.message);
+      break;
+    }
+    todos.push(...(data ?? []));
+    if (!data || data.length < PAGINA) break;
+  }
+  return todos;
+}

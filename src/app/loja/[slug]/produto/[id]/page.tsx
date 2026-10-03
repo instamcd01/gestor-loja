@@ -9,6 +9,7 @@ import { ProdutosRelacionados } from "@/components/loja/produtos-relacionados";
 import { SeletorVariante } from "@/components/seletor-variante";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { JsonLd } from "@/components/json-ld";
 import { ButtonLink } from "@/components/ui/button";
 import {
   getEmpresaPorSlug,
@@ -17,6 +18,15 @@ import {
   getProdutosCatalogo,
   getVariantesDoProduto,
 } from "@/lib/catalogo";
+import { origemPublicaPorSlug } from "@/lib/dominio-tenant";
+import {
+  caminhoCategoria,
+  caminhoLoja,
+  caminhoProduto,
+  descricaoProduto,
+  jsonLdBreadcrumb,
+  jsonLdProduto,
+} from "@/lib/seo";
 import { formatarPreco, percentualDesconto, precoExibicao } from "@/lib/utils";
 import { rotuloSeletorVariante } from "@/lib/variantes";
 
@@ -53,6 +63,15 @@ export async function generateMetadata({
   if (!dados) return {};
   return {
     title: `${dados.produto.nome} · ${dados.empresa.nome}`,
+    description: descricaoProduto(dados.empresa, dados.produto),
+    openGraph: {
+      title: dados.produto.nome,
+      description: descricaoProduto(dados.empresa, dados.produto),
+      siteName: dados.empresa.nome,
+      locale: "pt_BR",
+      type: "website",
+      ...(dados.produto.imagem_url ? { images: [dados.produto.imagem_url] } : {}),
+    },
     // Caminho relativo (sem domínio fixo) de propósito: cada loja pode ter
     // domínio próprio (ver dominio-tenant.ts), e ler o host da requisição
     // aqui pra montar uma URL absoluta forçaria a rota inteira a virar
@@ -63,7 +82,7 @@ export async function generateMetadata({
     // diferentes, conteúdo quase idêntico) como cópia da outra e escolhe
     // sozinho qual indexar — achado real: 153 páginas de produto marcadas
     // "Cópia sem página canônica selecionada" no Search Console (04/09).
-    alternates: { canonical: `/loja/${slug}/produto/${id}` },
+    alternates: { canonical: caminhoProduto(slug, id) },
   };
 }
 
@@ -99,9 +118,22 @@ export default async function ProdutoPage({
     `Olá! Tenho interesse em: ${produto.nome}`,
   );
   const moderno = empresa.catalogo_modelo === "moderno";
+  const origem = await origemPublicaPorSlug(slug);
 
   return (
     <div className="flex flex-col gap-10">
+      <JsonLd
+        dados={[
+          jsonLdProduto(empresa, produto, origem),
+          jsonLdBreadcrumb([
+            { nome: empresa.nome, url: `${origem}${caminhoLoja(slug)}` },
+            ...(produto.categoria
+              ? [{ nome: produto.categoria, url: `${origem}${caminhoCategoria(slug, produto.categoria)}` }]
+              : []),
+            { nome: produto.nome },
+          ]),
+        ]}
+      />
       <div className="flex flex-col gap-4">
         <Breadcrumb
           itens={[
